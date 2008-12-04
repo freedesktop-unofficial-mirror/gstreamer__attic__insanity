@@ -59,50 +59,6 @@ class MonitorClassInfo(models.Model):
     class Meta:
         db_table = 'monitorclassinfo'
 
-class MonitorClassInfoArgumentsDict(models.Model):
-    id = models.IntegerField(null=True, primary_key=True, blank=True)
-    containerid = models.ForeignKey(MonitorClassInfo,
-                                    db_column="containerid",
-                                    related_name="argument")
-    name = models.TextField(blank=True)
-    value = models.TextField(blank=True,
-                             db_column="txtvalue")
-    class Meta:
-        db_table = 'monitorclassinfo_arguments_dict'
-
-class MonitorClassInfoCheckListDict(models.Model):
-    id = models.IntegerField(null=True, primary_key=True, blank=True)
-    containerid = models.ForeignKey(MonitorClassInfo,
-                                    db_column="containerid",
-                                    related_name="checklist")
-    name = models.TextField(blank=True)
-    value = models.TextField(blank=True,
-                             db_column="txtvalue")
-    class Meta:
-        db_table = 'monitorclassinfo_checklist_dict'
-
-class MonitorClassInfoExtraInfoDict(models.Model):
-    id = models.IntegerField(null=True, primary_key=True, blank=True)
-    containerid = models.ForeignKey(MonitorClassInfo,
-                                    db_column="containerid",
-                                    related_name="extrainfo")
-    name = models.TextField(blank=True)
-    value = models.TextField(blank=True,
-                             db_column="txtvalue")
-
-    class Meta:
-        db_table = 'monitorclassinfo_extrainfo_dict'
-
-class MonitorClassInfoOutputFilesDict(models.Model):
-    id = models.IntegerField(null=True, primary_key=True, blank=True)
-    containerid = models.ForeignKey(MonitorClassInfo,
-                                    db_column="containerid",
-                                    related_name="outputfiles")
-    name = models.TextField(blank=True)
-    value = models.TextField(blank=True,
-                             db_column="txtvalue")
-    class Meta:
-        db_table = 'monitorclassinfo_outputfiles_dict'
 
 class TestClassInfoManager(models.Manager):
     def scenarios(self):
@@ -136,11 +92,8 @@ class TestClassInfo(models.Model):
         # this should be done in two queries
         # 1. get the list of all testclassinfo (from here to base)
         # 2. get the checklist for all those classes
-        if hasattr(self,"__cached_fullchecklist"):
-            return self.__cached_fullchecklist
         classes = self.__get_parentage()
         res = TestClassInfoCheckListDict.objects.filter(containerid__in=classes)
-        self.__cached_fullchecklist = res
         return res
     fullchecklist = property(_get_fullchecklist)
 
@@ -163,12 +116,9 @@ class TestClassInfo(models.Model):
     is_scenario = property(_get_is_scenario)
 
     def __get_parentage(self):
-        if hasattr(self, "__cached_parentage"):
-            return self.__cached_parentage
-        res = [self.id]
+        res = [self.type]
         if self.parent_id:
             res.extend(self.parent.__get_parentage())
-        self.__cached_parentage = res
         return res
 
     def __repr__(self):
@@ -181,25 +131,14 @@ class TestClassInfoArgumentsDict(models.Model):
     id = models.IntegerField(null=True, primary_key=True, blank=True)
     containerid = models.ForeignKey(TestClassInfo,
                                     db_column="containerid",
-                                    related_name="arguments")
+                                    related_name="arguments",
+                                    to_field="type")
     name = models.TextField(blank=True)
-    blobvalue = models.TextField(blank=True) # This field type is a guess.
-
-    def _get_value(self):
-        return loads(str(self.blobvalue))
-    value = property(_get_value)
+    value = models.TextField(blank=True, db_column="txtvalue")
 
     def _get_description(self):
-        return self.value[0]
+        return self.value
     description = property(_get_description)
-
-    def _get_defaultvalue(self):
-        return self.value[1]
-    defaultvalue = property(_get_defaultvalue)
-
-    def _get_fulldescription(self):
-        return self.value[2]
-    fulldescription = property(_get_fulldescription)
 
     def __str__(self):
         return self.name
@@ -211,7 +150,8 @@ class TestClassInfoCheckListDict(models.Model):
     id = models.IntegerField(null=True, primary_key=True, blank=True)
     containerid = models.ForeignKey(TestClassInfo,
                                     db_column="containerid",
-                                    related_name="checklist")
+                                    related_name="checklist",
+                                    to_field="type")
     name = models.TextField(blank=True)
     description = models.TextField(blank=True,
                                    db_column="txtvalue")
@@ -226,7 +166,8 @@ class TestClassInfoExtraInfoDict(models.Model):
     id = models.IntegerField(null=True, primary_key=True, blank=True)
     containerid = models.ForeignKey(TestClassInfo,
                                     db_column="containerid",
-                                    related_name="extrainfos")
+                                    related_name="extrainfos",
+                                    to_field="type")
     name = models.TextField(blank=True)
     description = models.TextField(blank=True, db_column="txtvalue")
     def __str__(self):
@@ -239,7 +180,8 @@ class TestClassInfoOutputFilesDict(models.Model):
     id = models.IntegerField(null=True, primary_key=True, blank=True)
     containerid = models.ForeignKey(TestClassInfo,
                                     db_column="containerid",
-                                    related_name="outputfiles")
+                                    related_name="outputfiles",
+                                    to_field="type")
     name = models.TextField(blank=True)
     value = models.TextField(blank=True, db_column="txtvalue")
     def __str__(self):
@@ -549,7 +491,7 @@ class MonitorArgumentsDict(models.Model):
     id = models.IntegerField(null=True, primary_key=True, blank=True)
     containerid = models.ForeignKey(Monitor, db_column="containerid",
                                     related_name="arguments")
-    name = models.ForeignKey(MonitorClassInfoArgumentsDict,
+    name = models.ForeignKey(TestClassInfoArgumentsDict,
                              db_column="name")
     intvalue = models.IntegerField(null=True, blank=True)
     txtvalue = models.TextField(blank=True)
@@ -575,7 +517,7 @@ class MonitorChecklistDict(models.Model):
     id = models.IntegerField(null=True, primary_key=True, blank=True)
     containerid = models.ForeignKey(Monitor, db_column="containerid",
                                     related_name="checklist")
-    name = models.ForeignKey(MonitorClassInfoCheckListDict,
+    name = models.ForeignKey(TestClassInfoCheckListDict,
                              db_column="name")
     containerid = models.IntegerField(null=True, blank=True)
     name = models.IntegerField(null=True, blank=True)
@@ -588,7 +530,7 @@ class MonitorExtraInfoDict(models.Model):
     id = models.IntegerField(null=True, primary_key=True, blank=True)
     containerid = models.ForeignKey(Monitor, db_column="containerid",
                                     related_name="extrainfos")
-    name = models.ForeignKey(MonitorClassInfoExtraInfoDict,
+    name = models.ForeignKey(TestClassInfoExtraInfoDict,
                              db_column="name")
     containerid = models.IntegerField(null=True, blank=True)
     name = models.IntegerField(null=True, blank=True)
@@ -612,7 +554,7 @@ class MonitorOutputFilesDict(models.Model):
     id = models.IntegerField(null=True, primary_key=True, blank=True)
     containerid = models.ForeignKey(Monitor, db_column="containerid",
                                     related_name="outputfiles")
-    name = models.ForeignKey(MonitorClassInfoOutputFilesDict,
+    name = models.ForeignKey(TestClassInfoOutputFilesDict,
                              db_column="name")
     value = models.TextField(blank=True, db_column="txtvalue")
 

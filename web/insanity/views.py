@@ -75,7 +75,7 @@ def matrix_view(request, testrun_id):
             if len(query) == 0:
                 continue
 
-            checks = TestCheckListList.objects.select_related("containerid", "name","value").filter(containerid__in=query)
+            checks = TestCheckListList.objects.select_related("containerid","name","value").filter(containerid__in=query)
             args = TestArgumentsDict.objects.select_related("containerid", "name","intvalue","txtvalue","blobvalue").filter(containerid__in=query)
             extras = TestExtraInfoDict.objects.select_related("containerid", "name__name", "intvalue", "txtvalue", "blobvalue").filter(containerid__in=query,
                                                                                                                                        name__name__in=["subprocess-return-code","errors"])
