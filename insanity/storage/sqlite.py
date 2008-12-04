@@ -240,56 +240,28 @@ CREATE TABLE monitor_outputfiles_dict (
 
 CREATE TABLE testclassinfo_arguments_dict (
    id INTEGER PRIMARY KEY,
-   containerid INTEGER,
+   containerid TEXT,
    name TEXT,
-   blobvalue BLOB
+   txtvalue TEXT
 );
 
 CREATE TABLE testclassinfo_checklist_dict (
    id INTEGER PRIMARY KEY,
-   containerid INTEGER,
+   containerid TEXT,
    name TEXT,
    txtvalue TEXT
 );
 
 CREATE TABLE testclassinfo_extrainfo_dict (
    id INTEGER PRIMARY KEY,
-   containerid INTEGER,
+   containerid TEXT,
    name TEXT,
    txtvalue TEXT
 );
 
 CREATE TABLE testclassinfo_outputfiles_dict (
    id INTEGER PRIMARY KEY,
-   containerid INTEGER,
-   name TEXT,
-   txtvalue TEXT
-);
-
-CREATE TABLE monitorclassinfo_arguments_dict (
-   id INTEGER PRIMARY KEY,
-   containerid INTEGER,
-   name TEXT,
-   txtvalue TEXT
-);
-
-CREATE TABLE monitorclassinfo_checklist_dict (
-   id INTEGER PRIMARY KEY,
-   containerid INTEGER,
-   name TEXT,
-   txtvalue TEXT
-);
-
-CREATE TABLE monitorclassinfo_extrainfo_dict (
-   id INTEGER PRIMARY KEY,
-   containerid INTEGER,
-   name TEXT,
-   txtvalue TEXT
-);
-
-CREATE TABLE monitorclassinfo_outputfiles_dict (
-   id INTEGER PRIMARY KEY,
-   containerid INTEGER,
+   containerid TEXT,
    name TEXT,
    txtvalue TEXT
 );
@@ -315,11 +287,6 @@ CREATE INDEX tc_a_dict_c_idx ON testclassinfo_arguments_dict (containerid, name)
 CREATE INDEX tc_c_dict_c_idx ON testclassinfo_checklist_dict (containerid, name);
 CREATE INDEX tc_ei_dict_c_idx ON testclassinfo_extrainfo_dict (containerid, name);
 CREATE INDEX tc_of_dict_c_idx ON testclassinfo_outputfiles_dict (containerid, name);
-
-CREATE INDEX mc_a_dict_c_idx ON monitorclassinfo_arguments_dict (containerid, name);
-CREATE INDEX mc_c_dict_c_idx ON monitorclassinfo_checklist_dict (containerid, name);
-CREATE INDEX mc_ei_dict_c_idx ON monitorclassinfo_extrainfo_dict (containerid, name);
-CREATE INDEX mc_of_dict_c_idx ON monitorclassinfo_outputfiles_dict (containerid, name);
 
 CREATE INDEX test_type_idx ON test (type);
 """
