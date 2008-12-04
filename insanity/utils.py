@@ -157,20 +157,37 @@ def reverse_dict(adict):
         d[v] = k
     return d
 
-def map_dict(adict, mapdict):
+def map_dict_full(adict, mapdict):
     """
-    Returns a dictionnary where the keys from adict are replaced
-    by the value mapped in mapdict.
+    Switches the keys of adict using the mapping (oldkey:newkey) from
+    mapdict.
 
-    If a key isn't present in mapdict, the (key,value) is copied
-    in the resulting dictionnary
+    Returns:
+    * a dictionnary where the keys from adict are replaced
+    by the value mapped in mapdict.
+    * a list of unmapped keys
     """
     d = {}
+    unk = []
     if not mapdict:
         return d
     for k, v in adict.iteritems():
         if k in mapdict:
             d[mapdict[k]] = v
+        else:
+            unk.append(k)
+    return d, unk
+
+def map_dict(adict, mapdict):
+    """
+    Switches the keys of adict using the mapping (oldkey:newkey) from
+    mapdict.
+
+    Returns:
+    * a dictionnary where the keys from adict are replaced
+    by the value mapped in mapdict.
+    """
+    d, unk = map_dict_full(adict, mapdict)
     return d
 
 def map_list(alist, mapdict):
