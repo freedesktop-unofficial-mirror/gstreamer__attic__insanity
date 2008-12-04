@@ -126,10 +126,12 @@ class TypeFindTest(GStreamerTest):
         self.validateStep("all-fixed-caps-streams",
                           not len([s for s in raws if s and not s.caps.is_fixed()]))
         self.validateStep("all-streams-decodable", not len(notraws))
-        if len(notraws):
-            self.extraInfo("unhandled-formats", [s.caps.to_string() for s in notraws])
-        xs = [(s.pad.get_name(), s.length, s.caps.to_string()) for s in self._streams]
-        self.extraInfo("streams", dbus.Array(xs, signature="(sxs)"))
+        for s in notraws:
+            self.extraInfo("unhandled-formats", s.caps.to_string())
+        for s in self._streams:
+            padname = s.pad.get_name()
+            self.extraInfo("streams.%s.duration" % padname, s.length)
+            self.extraInfo("streams.%s.caps" % padname, s.caps.to_string())
 
 
     def _analyzeDecodebin(self):
