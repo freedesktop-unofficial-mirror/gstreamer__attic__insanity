@@ -104,10 +104,8 @@ class Test(gobject.GObject):
     being succesfull (True) or not (False).
 
     key : name of the check item
-    value : tuple of:
+    value :
          * short description of the check item
-         * extended description of this step, including what could have possibly
-           gone wrong
     """
 
     __test_timeout__ = 15
@@ -117,9 +115,9 @@ class Test(gobject.GObject):
 
     __test_extra_infos__ = {
         "test-setup-duration" :
-        "How long it took to setup the test (in seconds) for asynchronous tests",
+        "How long it took to setup the test (in microseconds) for asynchronous tests",
         "test-total-duration" :
-        "How long it took to run the entire test (in seconds)"
+        "How long it took to run the entire test (in microseconds)"
         }
     """
     Dictionnary of extra information this test can produce.
@@ -370,7 +368,8 @@ class Test(gobject.GObject):
         if self._teststarttime:
             debug("stoptime:%r , teststarttime:%r",
                   stoptime, self._teststarttime)
-            self.extraInfo("test-total-duration", stoptime - self._teststarttime)
+            self.extraInfo("test-total-duration",
+                           int((stoptime - self._teststarttime) * 1000000))
         for instance in self._monitorinstances:
             instance.tearDown()
         self.emit("done")
@@ -387,7 +386,8 @@ class Test(gobject.GObject):
                 gobject.source_remove(self._asynctimeoutid)
                 self._asynctimeoutid = 0
             curtime = time.time()
-            self.extraInfo("test-setup-duration", curtime - self._teststarttime)
+            self.extraInfo("test-setup-duration",
+                           int((curtime - self._teststarttime) * 1000000))
         self._running = True
         self.emit("start")
         self.validateStep("test-started")
@@ -507,9 +507,16 @@ class Test(gobject.GObject):
         """
         Returns the instance checklist as a list of tuples of:
         * checkitem name
-        * boolean indicating whether the success of that step
+        * value indicating whether the success of that step
+           That value can be one of : True, False, None
+           None means that step was neither validated or invalidated.
         """
-        return self._checklist
+        allk = self.getFullCheckList().keys()
+        d = dict([(k,v) for k,v in self._checklist])
+        for k in allk:
+            if not d.has_key(k):
+                d[k] = None
+        return [(k,v) for k,v in d.iteritems()]
 
     def getArguments(self):
         """
@@ -981,7 +988,7 @@ class DBusTest(Test, dbus.service.Object):
             real_time, user_time, system_time = rusage_diffs
             if real_time:
                 cpu_load = float(user_time + system_time) / real_time * 100.
-                self.extraInfo("cpu-load", cpu_load)
+                self.extraInfo("cpu-load", int(cpu_load))
 
         # remote the timeout
         if self._remotetimeoutid:
@@ -1027,7 +1034,7 @@ class DBusTest(Test, dbus.service.Object):
         self.validateStep("dbus-process-connected")
         self._subprocessconnecttime = time.time()
         delay = self._subprocessconnecttime - self._subprocessspawntime
-        self.extraInfo("subprocess-spawn-time", delay)
+        self.extraInfo("subprocess-spawn-time", int(delay * 1000000))
         # we need to give the remote process the following information:
         # * filename where the Test class is located (self.get_file())
         # * class name (self.__class__.__name__)
@@ -1073,7 +1080,7 @@ class DBusTest(Test, dbus.service.Object):
                 warning("Couldn't get the remote instance for test %r", self.uuid)
                 self.stop()
                 return
-            self.extraInfo("remote-instance-creation-delay", delay)
+            self.extraInfo("remote-instance-creation-delay", int(delay * 1000000))
             self.validateStep("remote-instance-created")
             self._remoteinstance = dbus.Interface(remoteobj,
                                                   "net.gstreamer.Insanity.Test")

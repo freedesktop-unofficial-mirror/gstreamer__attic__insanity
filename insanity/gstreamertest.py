@@ -100,9 +100,8 @@ class GStreamerTestBase(PythonDBusTest):
                 self.remoteStop()
                 return
 
-        self._elements = [(self.pipeline.get_name(),
-                           self.pipeline.get_factory().get_name(),
-                           "")] #name,factoryname,parentname
+        self._elements = ["%s %s" % (self.pipeline.get_name(),
+                                     self.pipeline.get_factory().get_name())]
         self._watchContainer(self.pipeline)
 
         # connect to bus
@@ -123,7 +122,11 @@ class GStreamerTestBase(PythonDBusTest):
             self.pipeline.set_state(gst.STATE_NULL)
         self.validateStep("no-errors-seen", self._errors == [])
         if not self._errors == []:
-            self.extraInfo("errors", self._errors)
+            for i in range(len(self._errors)):
+                code, domain, message, dbg = self._errors[i]
+                self.extraInfo("errors.%d.domain" % i, domain)
+                self.extraInfo("errors.%d.message" % i, message)
+                self.extraInfo("errors.%d.debug" % i, dbg)
 
         if not self._tags == {}:
             debug("Got tags %r", self._tags)
@@ -133,16 +136,7 @@ class GStreamerTestBase(PythonDBusTest):
                     # TODO : this is gonna screw up MASSIVELY with values > 2**63
                     if val >= 2**31:
                         self._tags[key] = long(val)
-            # FIXME : if the value is a list, the dbus python bindings screw up
-            #
-            # For the time being we remove the values of type list, but this is REALLY
-            # bad.
-            listval = [x for x in self._tags.keys() if type(self._tags[x]) == list]
-            if listval:
-                warning("Removing this from the taglist since they're list:%r", listval)
-                for val in listval:
-                    del self._tags[val]
-            self.extraInfo("tags", dbus.Dictionary(self._tags, signature="sv"))
+                self.extraInfo("tags.%s" % key, val)
         if not self._elements == []:
             self.extraInfo("elements-used", self._elements)
         return True
@@ -216,9 +210,8 @@ class GStreamerTestBase(PythonDBusTest):
     def _watchContainer(self, container):
         # add all elements currently preset
         for elt in container:
-            self._elements.append((elt.get_name(),
-                                   elt.get_factory().get_name(),
-                                   container.get_name()))
+            self._elements.append("%s %s" % (elt.get_name(),
+                                             elt.get_factory().get_name()))
             if isinstance(elt, gst.Bin):
                 self._watchContainer(elt)
         container.connect("element-added", self._elementAddedCb)
@@ -231,9 +224,8 @@ class GStreamerTestBase(PythonDBusTest):
         if not factory is None:
             factory_name = factory.get_name()
         # add himself
-        self._elements.append((element.get_name(),
-                               factory_name,
-                               container.get_name()))
+        self._elements.append("%s %s" % (element.get_name(),
+                                         factory_name))
         # if bin, add current and connect signal
         if isinstance(element, gst.Bin):
             self._watchContainer(element)
