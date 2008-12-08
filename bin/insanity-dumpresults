@@ -61,7 +61,7 @@ def printTestInfo(db, testid):
         print "\t% -30s:\t%s" % (key, val)
     if extras:
         print "Extra Information:"
-        for key,val in extras:
+        for key,val in extras.iteritems():
             print "\t% -30s:\t%s" % (key, val)
     if outputfiles:
         print "Output files:"
@@ -159,7 +159,7 @@ if __name__ == "__main__":
         from insanity.storage.sqlite import SQLiteStorage
         db = SQLiteStorage(path=args[0], async=False)
     if options.list:
-        # list all available test rus
+        # list all available test runs
         testruns = db.listTestRuns()
         for runid in testruns:
             printTestRunInfo(db, runid)

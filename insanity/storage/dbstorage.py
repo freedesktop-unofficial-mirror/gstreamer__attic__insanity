@@ -188,6 +188,8 @@ class DBStorage(DataStorage, AsyncStorage):
         liststr = "SELECT COUNT(*) FROM test WHERE testrunid=?"
         if failedonly:
             liststr += " AND resultpercentage <> 100.0"
+        if withscenarios == False:
+            liststr += " AND isscenario=0"
         res = self._FetchOne(liststr, (testrunid, ))
         if not res:
             return 0
@@ -195,12 +197,13 @@ class DBStorage(DataStorage, AsyncStorage):
 
     def getTestsForTestRun(self, testrunid, withscenarios=True, failedonly=False):
         debug("testrunid:%d", testrunid)
-        liststr = "SELECT id FROM test WHERE testrunid=?"
+        liststr = "SELECT test.id  FROM test WHERE test.testrunid=? AND ismonitor<>1"
         if failedonly:
-            liststr += " AND resultpercentage <> 100.0"
+            liststr += " AND test.resultpercentage <> 100.0"
         if withscenarios == False:
-            liststr += " AND NOT id in (SELECT scenarioid FROM subtests)"
+            liststr += " AND test.isscenario=0"
         res = self._FetchAll(liststr, (testrunid, ))
+        print res
         if not res:
             return []
         tmp = list(zip(*res)[0])
@@ -209,22 +212,15 @@ class DBStorage(DataStorage, AsyncStorage):
     def getScenariosForTestRun(self, testrunid):
         debug("testrunid:%d", testrunid)
         liststr = """
-        SELECT test.id,subtests.testid
-        FROM test
-        INNER JOIN subtests
-        ON test.id=subtests.scenarioid
-        WHERE test.testrunid=?"""
+        SELECT test.parentid, test.id FROM test
+        WHERE test.parentid IN (
+        SELECT test.id FROM test
+        WHERE test.testrunid=?
+        AND test.isscenario=1)"""
         res = self._FetchAll(liststr, (testrunid, ))
         if not res:
             return {}
-        # make list unique
-        dc = {}
-        for scenarioid, subtestid in res:
-            if not scenarioid in dc.keys():
-                dc[scenarioid] = [subtestid]
-            else:
-                dc[scenarioid].append(subtestid)
-        return dc
+        return dict(res)
 
     def getClientInfoForTestRun(self, testrunid):
         debug("testrunid:%d", testrunid)
@@ -296,23 +292,16 @@ class DBStorage(DataStorage, AsyncStorage):
         testrunid, ttype, resperc = self.getTestInfo(testid, rawinfo)
         if testrunid == None:
             return (None, None, None, None, None, None, None)
-        args = self.__getDict("test_arguments_dict", testid)
+
+        # Query should be done differently for rawinfo or not
+        # WE SHOULD NOT DO SEVERAL QUERIES !
+        args = self.__getArguments(testid, rawinfo)
         if onlyargs:
             results, extras, ofs = [], [], {}
         else:
-            results = self.__getList("test_checklist_list", testid, intonly=True)
-            extras = self.__getList("test_extrainfo_dict", testid)
-            ofs = self.__getDict("test_outputfiles_dict", testid, txtonly=True)
-        if not rawinfo:
-            args = map_dict(args,
-                            reverse_dict(self.__getTestClassArgumentMapping(ttype)))
-            if not onlyargs:
-                results = map_list(results,
-                                   reverse_dict(self.__getTestClassCheckListMapping(ttype)))
-                extras = map_list(extras,
-                                  reverse_dict(self.__getTestClassExtraInfoMapping(ttype)))
-                ofs = map_dict(ofs,
-                               reverse_dict(self.__getTestClassOutputFileMapping(ttype)))
+            results = self.__getCheckList(testid, rawinfo)
+            extras = self.__getExtraInfo(testid, rawinfo)
+            ofs = self.__getOutputFiles(testid, rawinfo)
         return (testrunid, ttype, args, results, resperc, extras, ofs)
 
     def getTestClassInfoFull(self, testtype, withparents=True):
@@ -351,7 +340,7 @@ class DBStorage(DataStorage, AsyncStorage):
 
     def getMonitorClassInfoFull(self, monitortype, withparents=True):
         searchstr = """SELECT parent,description
-        FROM monitorclassinfo WHERE type=?"""
+        FROM testclassinfo WHERE type=?"""
         res = self._FetchOne(searchstr, (monitortype, ))
         if not res:
             return (None, None, None, None, None, None)
@@ -384,7 +373,7 @@ class DBStorage(DataStorage, AsyncStorage):
         """
         Returns a list of monitorid for the given test
         """
-        searchstr = "SELECT id FROM monitor WHERE testid=?"
+        searchstr = "SELECT test.id FROM test WHERE test.parentid=? AND test.ismonitor=1"
         res = self._FetchAll(searchstr, (testid, ))
         if not res:
             return []
@@ -402,43 +391,29 @@ class DBStorage(DataStorage, AsyncStorage):
         """
         if rawinfo == False:
             searchstr = """
-            SELECT monitor.testid, monitorclassinfo.type, monitor.resultpercentage
-            FROM monitor,monitorclassinfo
-            WHERE monitor.id=? AND monitorclassinfo.id=monitor.type"""
+            SELECT test.parentid, testclassinfo.type, test.resultpercentage
+            FROM test,testclassinfo
+            WHERE test.id=? AND testclassinfo.id=test.type"""
         else:
             searchstr = """
-            SELECT monitor.testid,monitor.type,monitor.resultpercentage
-            FROM monitor
-            WHERE monitor.id=?"""
+            SELECT test.testid,test.type,test.resultpercentage
+            FROM test
+            WHERE test.id=?"""
         res = self._FetchOne(searchstr, (monitorid, ))
         if not res:
             return (None, None, None)
         return res
 
     def __getExtendedMonitorInfo(self, monitorid, mtype=None, rawinfo=False, onlyargs=False):
-        args = self.__getDict("monitor_arguments_dict", monitorid)
+        args = self.__getArguments(monitorid, rawinfo)
         if onlyargs:
             results = {}
             extras = {}
             outputfiles = {}
         else:
-            results = self.__getDict("monitor_checklist_dict",
-                                     monitorid, intonly=True)
-            extras = self.__getDict("monitor_extrainfo_dict", monitorid)
-            outputfiles = self.__getDict("monitor_outputfiles_dict",
-                                         monitorid, txtonly=True)
-        if rawinfo == False:
-            if mtype == None:
-                raise Exception("The monitortype must be specified when using rawinfo=False")
-            args = map_dict(args,
-                            reverse_dict(self.__getMonitorClassArgumentMapping(mtype)))
-            if onlyargs == False:
-                results = map_dict(results,
-                                   reverse_dict(self.__getMonitorClassCheckListMapping(mtype)))
-                extras = map_dict(extras,
-                                  reverse_dict(self.__getMonitorClassExtraInfoMapping(mtype)))
-                outputfiles = map_dict(outputfiles,
-                                       reverse_dict(self.__getMonitorClassOutputFileMapping(mtype)))
+            results = self.__getCheckList(monitorid, rawinfo)
+            extras = self.__getExtraInfo(monitorid, rawinfo)
+            outputfiles = self.__getOutputFiles(monitorid, rawinfo)
         return (args, results, extras, outputfiles)
 
     def getFullMonitorInfo(self, monitorid, rawinfo=False):
@@ -753,7 +728,10 @@ class DBStorage(DataStorage, AsyncStorage):
         """
         Returns a list of monitor type names being used in the given testrunid
         """
-        getstr = """SELECT DISTINCT monitorclassinfo.type FROM monitor,monitorclassinfo,test WHERE monitor.type=monitorclassinfo.id AND monitor.testid=test.id AND test.testrunid=?"""
+        getstr = """SELECT DISTINCT testclassinfo.type
+        FROM test,testclassinfo
+        WHERE test.type=testclassinfo.id
+        AND test.testrunid=? AND test.ismonitor=1"""
         res = self._FetchAll(getstr, (testrunid, ))
         if len(res):
             return list(zip(*res)[0])
@@ -791,6 +769,30 @@ class DBStorage(DataStorage, AsyncStorage):
         DROP TABLE monitorclassinfo_checklist_dict;
         DROP TABLE monitorclassinfo_extrainfo_dict;
         DROP TABLE monitorclassinfo_outputfiles_dict;
+
+        ALTER TABLE test ADD COLUMN parentid INTEGER;
+        ALTER TABLE test ADD COLUMN ismonitor TINYINT(1) DEFAULT 0;
+        ALTER TABLE test ADD COLUMN isscenario TINYINT(1) DEFAULT 0;
+
+        ALTER TABLE testrun_environment_dict DROP COLUMN blobvalue;
+        ALTER TABLE test_arguments_dict DROP COLUMN blobvalue;
+        ALTER TABLE test_extrainfo_dict DROP COLUMN blobvalue;
+
+        DROP INDEX subtests_scenarioid_idx ON subtests;
+        DROP INDEX monitor_testid_idx ON monitor;
+        DROP INDEX monitorclassinfo_parent_idx ON monitorclassinfo;
+        DROP INDEX m_a_dict_containerid_idx ON monitor_arguments_dict;
+        DROP INDEX m_c_dict_containerid_idx ON monitor_checklist_dict;
+        DROP INDEX m_ei_dict_containerid_idx ON monitor_extrainfo_dict;
+        DROP INDEX m_of_dict_containerid_idx ON monitor_outputfiles_dict;
+
+        DROP TABLE subtests;
+        DROP TABLE monitor;
+        DROP TABLE monitorclassinfo;
+        DROP TABLE monitor_arguments_dict;
+        DROP TABLE monitor_checklist_dict;
+        DROP TABLE monitor_extrainfo_dict;
+        DROP TABLE monitor_outputfiles_dict;
         """
         # Change testclassinfo_*_dict.container from INTEGER to VARCHAR
         #
@@ -806,11 +808,26 @@ class DBStorage(DataStorage, AsyncStorage):
         classes = dict(self._FetchAll("""SELECT id, type FROM testclassinfo"""))
 
         debug("Getting monitorclassinfo_*_ values")
-        margs = self._FetchAll("""SELECT containerid, name, txtvalue FROM monitorclassinfo_arguments_dict""")
-        mchecks = self._FetchAll("""SELECT containerid, name, txtvalue FROM monitorclassinfo_checklist_dict""")
-        mextras = self._FetchAll("""SELECT containerid, name, txtvalue FROM monitorclassinfo_extrainfo_dict""")
-        moutputs = self._FetchAll("""SELECT containerid, name, txtvalue FROM monitorclassinfo_outputfiles_dict""")
+        margs = self._FetchAll("""SELECT id, containerid, name, txtvalue FROM monitorclassinfo_arguments_dict""")
+        mchecks = self._FetchAll("""SELECT id, containerid, name, txtvalue FROM monitorclassinfo_checklist_dict""")
+        mextras = self._FetchAll("""SELECT id, containerid, name, txtvalue FROM monitorclassinfo_extrainfo_dict""")
+        moutputs = self._FetchAll("""SELECT id, containerid, name, txtvalue FROM monitorclassinfo_outputfiles_dict""")
         mclasses = dict(self._FetchAll("""SELECT id, type FROM monitorclassinfo"""))
+
+        debug("Getting subtests contents")
+        # subtests will be a dictionnary of:
+        # * key : test id
+        # * value : container id
+        subtests = self._FetchAll("""SELECT testid, scenarioid FROM subtests""")
+
+        debug("Getting monitor contents")
+        # id, testid, type, resperc, testrunid
+        monitors = self._FetchAll("""SELECT monitor.id, monitor.testid, monitor.type, monitor.resultpercentage, test.testrunid FROM monitor,test WHERE monitor.testid=test.id""")
+        monclassinfo = self._FetchAll("""SELECT id, type, parent, description FROM monitorclassinfo""")
+        monargs = self._FetchAll("""SELECT id, containerid, name, intvalue, txtvalue FROM monitor_arguments_dict""")
+        monchecks = self._FetchAll("""SELECT id, containerid, name, intvalue FROM monitor_checklist_dict""")
+        monextras = self._FetchAll("""SELECT id, containerid, name, intvalue, txtvalue FROM monitor_extrainfo_dict""")
+        monoutputs = self._FetchAll("""SELECT id, containerid, name, txtvalue FROM monitor_outputfiles_dict""")
 
         try:
             debug("Converting 'containerid' columns from INT to TEXT")
@@ -819,6 +836,24 @@ class DBStorage(DataStorage, AsyncStorage):
         except:
             error("Can't upgrade DB scheme !")
             raise
+
+        # STEP 1 : Move monitorclassinfo to testclassinfo and remember the mapping
+        # of monitorclassinfo.id to testclassinfo.id
+        debug("Moving old monitorclassinfo contents to testclassinfo")
+        mci_mapping = {}
+        for id, type, parent, description in monclassinfo:
+            mci_mapping[id] = self._ExecuteCommit("""INSERT INTO testclassinfo (type, parent, description) VALUES (?, ?, ?)""",
+                                                  (type, parent, description))
+
+        # STEP 2 : Move monitor to test, using the mci_mapping and remember the
+        # mapping of monitor.id to test.id
+        debug("Moving old monitor contents to test")
+        monitor_mapping = {}
+        for id, testid, type, resultpercentage, testrunid in monitors:
+            monitor_mapping[id] = self._ExecuteCommit("""INSERT INTO test (testrunid, type, resultpercentage, parentid, ismonitor) VALUES (?, ?, ?, ?, 1)""",
+                                                      (testrunid, mci_mapping[type], resultpercentage, testid))
+
+        # STEP 2b : Convert testclassinfo_*_dict.containerid from int to txt
         debug("Updating converted TestClassInfo* columns")
         self._ExecuteMany("""UPDATE testclassinfo_arguments_dict SET containerid=? , txtvalue=? WHERE id=?""",
                           [(classes[int(b)],loads(c)[0],a) for a,b,c in args])
@@ -829,19 +864,64 @@ class DBStorage(DataStorage, AsyncStorage):
         self._ExecuteMany("""UPDATE testclassinfo_outputfiles_dict SET containerid=? WHERE id=?""",
                           [(classes[int(b)],a) for a,b in outputs])
 
-        debug("Adding converted MonitorClassInfo* columns")
-        if margs:
-            self._ExecuteMany("""INSERT INTO testclassinfo_arguments_dict (containerid, name, txtvalue) VALUES (?, ?, ?)""",
-                              [(mclasses[int(a)],b,c) for a,b,c in margs])
-        if mchecks:
-            self._ExecuteMany("""INSERT INTO testclassinfo_checklist_dict (containerid, name, txtvalue) VALUES (?, ?, ?)""",
-                              [(mclasses[int(a)],b,c) for a,b,c in mchecks])
-        if mextras:
-            self._ExecuteMany("""INSERT INTO testclassinfo_extrainfo_dict (containerid, name, txtvalue) VALUES (?, ?, ?)""",
-                              [(mclasses[int(a)],b,c) for a,b,c in mextras])
-        if moutputs:
-            self._ExecuteMany("""INSERT INTO testclassinfo_outputfiles_dict (containerid, name, txtvalue) VALUES (?, ?, ?)""",
-                              [(mclasses[int(a)],b,c) for a,b,c in moutputs])
+        # STEP 3 : Move monitorclassinfo_*_dict to testclassinfo_*_dict and remember
+        # the mapping of monitorclassinfo_*_dict.id to testclassinfo_*_dict.id for
+        # each of the tables.
+        # Also, be careful to now use the classinfo name
+        debug("Moving old monitorclassinfo_arguments_dict to testclassinfo_arguments_dict")
+        mcia_mapping = {}
+        for id, containerid, name, value in margs:
+            mcia_mapping[id] = self._ExecuteCommit("""INSERT INTO testclassinfo_arguments_dict (containerid, name, txtvalue) VALUES (?, ?, ?)""",
+                                                   (mclasses[containerid], name, value))
+        debug("Moving old monitorclassinfo_checklist_dict to testclassinfo_checklist_dict")
+        mcic_mapping = {}
+        for id, containerid, name, value in mchecks:
+            mcic_mapping[id] = self._ExecuteCommit("""INSERT INTO testclassinfo_checklist_dict (containerid, name, txtvalue) VALUES (?, ?, ?)""",
+                                                   (mclasses[containerid], name, value))
+
+        debug("Moving old monitorclassinfo_extrainfo_dict to testclassinfo_extrainfo_dict")
+        mcie_mapping = {}
+        for id, containerid, name, value in mextras:
+            mcie_mapping[id] = self._ExecuteCommit("""INSERT INTO testclassinfo_extrainfo_dict (containerid, name, txtvalue) VALUES (?, ?, ?)""",
+                                                   (mclasses[containerid], name, value))
+
+        debug("Moving old monitorclassinfo_outputfiles_dict to testclassinfo_outputfiles_dict")
+        mcio_mapping = {}
+        for id, containerid, name, value in margs:
+            mcio_mapping[id] = self._ExecuteCommit("""INSERT INTO testclassinfo_outputfiles_dict (containerid, name, txtvalue) VALUES (?, ?, ?)""",
+                                                   (mclasses[containerid], name, value))
+
+        # STEP 4 : Move all monitor_*_dict to test_*_dict using the mci_mapping and the
+        # mci*_mapping
+        debug("Moving monitor_arguments_dict to test_arguments_dict")
+        for id, containerid, name, intvalue, txtvalue in monargs:
+            self._ExecuteCommit("""INSERT into test_arguments_dict (containerid, name, intvalue, txtvalue) VALUES (?, ?, ?, ?)""",
+                                (monitor_mapping[containerid], mcia_mapping[name], intvalue, txtvalue))
+
+        debug("Moving monitor_checklist_dict to test_checklist_list")
+        for id, containerid, name, intvalue in monchecks:
+            self._ExecuteCommit("""INSERT into test_checklist_list (containerid, name, intvalue) VALUES (?, ?, ?)""",
+                                (monitor_mapping[containerid], mcic_mapping[name], intvalue))
+
+        debug("Moving monitor_extrainfo_dict to test_extrainfo_dict")
+        for id, containerid, name, intvalue, txtvalue in monextras:
+            self._ExecuteCommit("""INSERT into test_extrainfo_dict (containerid, name, intvalue, txtvalue) VALUES (?, ?, ?, ?)""",
+                                (monitor_mapping[containerid], mcie_mapping[name], intvalue, txtvalue))
+
+        debug("Moving monitor_outputfiles_dict to test_outputfiles_dict")
+        for id, containerid, name, txtvalue in monoutputs:
+            self._ExecuteCommit("""INSERT into test_outputfiles_dict (containerid, name, txtvalue) VALUES (?, ?, ?)""",
+                                (monitor_mapping[containerid], mcio_mapping[name], txtvalue))
+
+        # STEP 5 : Transfer information from subtests to test
+        # subtests.testid => test.ismonitor = 0
+        # test.parentid = subtests.scenarioid
+        debug("Moving old subtests data to test (parentid, ismonitor)")
+        for testid, scenarioid in subtests:
+            self._ExecuteCommit("""UPDATE test SET test.parentid=?,test.ismonitor=0 WHERE test.id=?""",
+                                (scenarioid, testid))
+            self._ExecuteCommit("""UPDATE test SET test.ismonitor=0,test.isscenario=1 WHERE test.id=?""", (scenarioid, ))
+
         debug("done")
 
     def __merge(self, otherdb, testruns=None):
@@ -1096,15 +1176,16 @@ class DBStorage(DataStorage, AsyncStorage):
 
 
     def __rawStoreMonitor(self, testid, monitortype, monitorname,
-                          resperc, args, checks, extras, outputfiles):
+                          resperc, args, checks, extras, outputfiles,
+                          testrunid):
         insertstr = """
-        INSERT INTO monitor (testid, type, resultpercentage)
-        VALUES (?, ?, ?)
+        INSERT INTO test (parentid, type, resultpercentage, ismonitor, testrunid)
+        VALUES (?, ?, ?, 1, ?)
         """
-        mid = self._ExecuteCommit(insertstr, (testid, monitortype,
-                                              resperc))
         debug("testid:%d, monitortype:%s, monitorname:%s, resperc:%f",
               testid, monitortype, monitorname, resperc)
+        mid = self._ExecuteCommit(insertstr, (testid, monitortype,
+                                              resperc, testrunid))
         debug("args:%r", args)
         debug("checks:%r", checks)
         debug("extras:%r", extras)
@@ -1115,7 +1196,7 @@ class DBStorage(DataStorage, AsyncStorage):
         self.__storeMonitorExtraInfoDict(mid, extras, monitorname)
         self.__storeMonitorOutputFileDict(mid, outputfiles, monitorname)
 
-    def __storeMonitor(self, monitor, testid):
+    def __storeMonitor(self, monitor, testid, testrunid):
         debug("monitor:%r:%d", monitor, testid)
         # store monitor
         self.__storeMonitorClassInfo(monitor)
@@ -1126,16 +1207,19 @@ class DBStorage(DataStorage, AsyncStorage):
                                monitor.getArguments(),
                                monitor.getCheckList(),
                                monitor.getExtraInfo(),
-                               monitor.getOutputFiles())
+                               monitor.getOutputFiles(),
+                               testrunid)
 
-    def __newTestFinished(self, testrun, test):
+    def __newTestFinished(self, testrun, test, parentid=None):
         debug("testrun:%r, test:%r", testrun, test)
         if not testrun in self.__testruns.keys():
             debug("different testrun, starting new one")
             self.__startNewTestRun(testrun, None)
+
         if not self.__tests.has_key(test):
             debug("we don't have test yet, starting that one")
             self.__newTestStarted(testrun, test, commit=False)
+
         tid = self.__tests[test]
         debug("test:%r:%d", test, tid)
 
@@ -1144,13 +1228,9 @@ class DBStorage(DataStorage, AsyncStorage):
         if isinstance(test, Scenario):
             debug("test is a scenario, adding subtests")
             for sub in test.tests:
-                self.__newTestFinished(testrun, sub)
-            # now add those to the subtests table
-            insertstr = "INSERT INTO subtests (testid, scenarioid) VALUES (?,?)"
-            for sub in test.tests:
-                self._ExecuteCommit(insertstr, (self.__tests[sub],
-                                                self.__tests[test]))
+                self.__newTestFinished(testrun, sub, parentid=tid)
             debug("done adding subtests")
+            self._ExecuteCommit("""UPDATE test SET test.isscenario=1 WHERE test.id=?""", (tid, ))
 
         # store the dictionnaries
         self.__storeTestArgumentsDict(tid, test.getArguments(),
@@ -1163,13 +1243,13 @@ class DBStorage(DataStorage, AsyncStorage):
                                       test.__test_name__)
 
         # finally update the test
-        updatestr = "UPDATE test SET resultpercentage=? WHERE id=?"
+        updatestr = "UPDATE test SET resultpercentage=?, parentid=? WHERE id=?"
         resultpercentage = test.getSuccessPercentage()
-        self._ExecuteCommit(updatestr, (resultpercentage, tid))
+        self._ExecuteCommit(updatestr, (resultpercentage, parentid, tid))
 
         # and on to the monitors
         for monitor in test._monitorinstances:
-            self.__storeMonitor(monitor, tid)
+            self.__storeMonitor(monitor, tid, self.__testruns[testrun])
         debug("done adding information for test %d", tid)
 
 
@@ -1180,7 +1260,7 @@ class DBStorage(DataStorage, AsyncStorage):
 
     def __getMonitorClassMapping(self, monitortype, dictname):
         return self.__getClassMapping(self.__mcmapping,
-                                      "monitorclassinfo",
+                                      "testclassinfo",
                                       monitortype, dictname)
 
     def __getClassMapping(self, mapping, classtable, classtype, dictname,
@@ -1308,6 +1388,90 @@ class DBStorage(DataStorage, AsyncStorage):
         finally:
             self._lock.release()
 
+    def __getArguments(self, containerid, rawinfo=False):
+        fullsearch = """SELECT testclassinfo_arguments_dict.name,
+        test_arguments_dict.intvalue, test_arguments_dict.txtvalue
+        FROM test_arguments_dict, testclassinfo_arguments_dict
+        WHERE test_arguments_dict.containerid=? AND
+        test_arguments_dict.name=testclassinfo_arguments_dict.id"""
+
+        normalsearch = """SELECT test_arguments_dict.name,
+        test_arguments_dict.intvalue, test_arguments_dict.txtvalue
+        FROM test_arguments_dict
+        WHERE test_arguments_dict.containerid=?"""
+
+        if rawinfo == False:
+            res = self._FetchAll(fullsearch, (containerid, ))
+        else:
+            res = self._FetchAll(normalsearch, (containerid, ))
+        d = {}
+        for n, iv, tv in res:
+            if iv != None:
+                d[n] = iv
+            else:
+                d[n] = tv
+        return d
+
+    def __getExtraInfo(self, containerid, rawinfo=False):
+        fullsearch = """SELECT testclassinfo_extrainfo_dict.name,
+        test_extrainfo_dict.intvalue, test_extrainfo_dict.txtvalue
+        FROM test_extrainfo_dict, testclassinfo_extrainfo_dict
+        WHERE test_extrainfo_dict.containerid=? AND
+        test_extrainfo_dict.name=testclassinfo_extrainfo_dict.id"""
+
+        normalsearch = """SELECT test_extrainfo_dict.name,
+        test_extrainfo_dict.intvalue, test_extrainfo_dict.txtvalue
+        FROM test_extrainfo_dict
+        WHERE test_extrainfo_dict.containerid=?"""
+
+        if rawinfo == False:
+            res = self._FetchAll(fullsearch, (containerid, ))
+        else:
+            res = self._FetchAll(normalsearch, (containerid, ))
+        d = {}
+        for n, iv, tv in res:
+            if iv != None:
+                d[n] = iv
+            else:
+                d[n] = tv
+        return d
+
+    def __getCheckList(self, containerid, rawinfo=False):
+        fullsearch = """SELECT testclassinfo_checklist_dict.name,
+        test_checklist_list.intvalue
+        FROM test_checklist_list, testclassinfo_checklist_dict
+        WHERE test_checklist_list.containerid=? AND
+        test_checklist_list.name=testclassinfo_checklist_dict.id"""
+
+        normalsearch = """SELECT test_checklist_list.name,
+        test_checklist_list.intvalue
+        FROM test_checklist_list
+        WHERE test_checklist_list.containerid=?"""
+
+        if rawinfo == False:
+            res = self._FetchAll(fullsearch, (containerid, ))
+        else:
+            res = self._FetchAll(normalsearch, (containerid, ))
+        return list(res)
+
+    def __getOutputFiles(self, containerid, rawinfo=False):
+        fullsearch = """SELECT testclassinfo_outputfiles_dict.name,
+        test_outputfiles_dict.txtvalue
+        FROM test_outputfiles_dict, testclassinfo_outputfiles_dict
+        WHERE test_outputfiles_dict.containerid=? AND
+        test_outputfiles_dict.name=testclassinfo_outputfiles_dict.id"""
+
+        normalsearch = """SELECT test_outputfiles_dict.name,
+        test_outputfiles_dict.txtvalue
+        FROM test_outputfiles_dict
+        WHERE test_outputfiles_dict.containerid=?"""
+
+        if rawinfo == False:
+            res = self._FetchAll(fullsearch, (containerid, ))
+        else:
+            res = self._FetchAll(normalsearch, (containerid, ))
+        return dict(res)
+
     def __getDict(self, tablename, containerid, txtonly=False,
                  intonly=False):
         return dict(self.__getList(tablename, containerid,
@@ -1326,13 +1490,11 @@ class DBStorage(DataStorage, AsyncStorage):
                 val = row[3]
             else:
                 # we need to figure it out
-                ival, tval, bval = row[3:]
+                ival, tval = row[3:]
                 if not ival == None:
                     val = ival
                 elif not tval == None:
                     val = str(tval)
-                elif bval != None:
-                    val = loads(str(bval))
                 else:
                     val = None
             dc.append((row[2], val))
@@ -1361,22 +1523,22 @@ class DBStorage(DataStorage, AsyncStorage):
 
     def __storeMonitorArgumentsDict(self, monitorid, dic, monitortype):
         maps = self.__getMonitorClassArgumentMapping(monitortype)
-        return self.__storeDict("monitor_arguments_dict",
+        return self.__storeDict("test_arguments_dict",
                                monitorid, map_dict(dic, maps))
 
     def __storeMonitorCheckListDict(self, monitorid, dic, monitortype):
         maps = self.__getMonitorClassCheckListMapping(monitortype)
-        return self.__storeDict("monitor_checklist_dict",
+        return self.__storeDict("test_checklist_list",
                                monitorid, map_dict(dic, maps))
 
     def __storeMonitorExtraInfoDict(self, monitorid, dic, monitortype):
         maps = self.__getMonitorClassExtraInfoMapping(monitortype)
-        return self.__storeDict("monitor_extrainfo_dict",
+        return self.__storeDict("test_extrainfo_dict",
                                monitorid, map_dict(dic, maps))
 
     def __storeMonitorOutputFileDict(self, monitorid, dic, monitortype):
         maps = self.__getMonitorClassOutputFileMapping(monitortype)
-        return self.__storeDict("monitor_outputfiles_dict",
+        return self.__storeDict("test_outputfiles_dict",
                                monitorid, map_dict(dic, maps))
 
     def __storeTestClassArgumentsDict(self, testclassinfoid, dic):

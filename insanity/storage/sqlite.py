@@ -135,19 +135,10 @@ CREATE TABLE test (
    id INTEGER PRIMARY KEY,
    testrunid INTEGER,
    type INTEGER,
-   resultpercentage FLOAT
-);
-
-CREATE TABLE subtests (
-   testid INTEGER PRIMARY KEY,
-   scenarioid INTEGER
-);
-
-CREATE TABLE monitor (
-   id INTEGER PRIMARY KEY,
-   testid INTEGER,
-   type INTEGER,
-   resultpercentage FLOAT
+   resultpercentage FLOAT,
+   parentid INTEGER,
+   ismonitor TINYINT(1) DEFAULT 0,
+   isscenario TINYINT(1) DEFAULT 0,
 );
 
 CREATE TABLE testclassinfo (
@@ -158,20 +149,12 @@ CREATE TABLE testclassinfo (
    fulldescription TEXT
 );
 
-CREATE TABLE monitorclassinfo (
-   id INTEGER PRIMARY KEY,
-   type TEXT,
-   parent TEXT,
-   description TEXT
-);
-
 CREATE TABLE testrun_environment_dict (
    id INTEGER PRIMARY KEY,
    containerid INTEGER,
    name TEXT,
    intvalue INTEGER,
    txtvalue TEXT,
-   blobvalue BLOB
 );
 
 CREATE TABLE test_arguments_dict (
@@ -180,7 +163,6 @@ CREATE TABLE test_arguments_dict (
    name INTEGER,
    intvalue INTEGER,
    txtvalue TEXT,
-   blobvalue BLOB
 );
 
 CREATE TABLE test_checklist_list (
@@ -195,43 +177,10 @@ CREATE TABLE test_extrainfo_dict (
    containerid INTEGER,
    name INTEGER,
    intvalue INTEGER,
-   txtvalue TEXT,
-   blobvalue BLOB
-);
-
-CREATE TABLE test_outputfiles_dict (
-   id INTEGER PRIMARY KEY,
-   containerid INTEGER,
-   name INTEGER,
    txtvalue TEXT
 );
 
-CREATE TABLE monitor_arguments_dict (
-   id INTEGER PRIMARY KEY,
-   containerid INTEGER,
-   name INTEGER,
-   intvalue INTEGER,
-   txtvalue TEXT,
-   blobvalue BLOB
-);
-
-CREATE TABLE monitor_checklist_dict (
-   id INTEGER PRIMARY KEY,
-   containerid INTEGER,
-   name INTEGER,
-   intvalue INTEGER
-);
-
-CREATE TABLE monitor_extrainfo_dict (
-   id INTEGER PRIMARY KEY,
-   containerid INTEGER,
-   name INTEGER,
-   intvalue INTEGER,
-   txtvalue TEXT,
-   blobvalue BLOB
-);
-
-CREATE TABLE monitor_outputfiles_dict (
+CREATE TABLE test_outputfiles_dict (
    id INTEGER PRIMARY KEY,
    containerid INTEGER,
    name INTEGER,
@@ -267,21 +216,13 @@ CREATE TABLE testclassinfo_outputfiles_dict (
 );
 
 CREATE INDEX test_testrunid_idx ON test(testrunid, resultpercentage);
-CREATE INDEX subtests_scenarioid_idx ON subtests(scenarioid);
-CREATE INDEX monitor_testid_idx ON monitor(testid);
 CREATE INDEX testclassinfo_parent_idx ON testclassinfo (parent);
-CREATE INDEX monitorclassinfo_parent_idx ON monitorclassinfo (parent);
 CREATE INDEX testrun_env_dict_container_idx ON testrun_environment_dict (containerid);
 
 CREATE INDEX t_a_dict_containerid_idx ON test_arguments_dict (containerid, name);
 CREATE INDEX t_c_list_containerid_idx ON test_checklist_list (containerid, name);
 CREATE INDEX t_ei_dict_containerid_idx ON test_extrainfo_dict (containerid, name);
 CREATE INDEX t_of_dict_containerid_idx ON test_outputfiles_dict (containerid, name);
-
-CREATE INDEX m_a_dict_containerid_idx ON monitor_arguments_dict (containerid, name);
-CREATE INDEX m_c_dict_containerid_idx ON monitor_checklist_dict (containerid, name);
-CREATE INDEX m_ei_dict_containerid_idx ON monitor_extrainfo_dict (containerid, name);
-CREATE INDEX m_of_dict_containerid_idx ON monitor_outputfiles_dict (containerid, name);
 
 CREATE INDEX tc_a_dict_c_idx ON testclassinfo_arguments_dict (containerid, name);
 CREATE INDEX tc_c_dict_c_idx ON testclassinfo_checklist_dict (containerid, name);
