@@ -170,7 +170,7 @@ def map_dict_full(adict, mapdict):
     d = {}
     unk = []
     if not mapdict:
-        return d
+        return d, unk
     for k, v in adict.iteritems():
         if k in mapdict:
             d[mapdict[k]] = v
