@@ -54,12 +54,11 @@ def __updateDatabaseFrom1To2(storage):
 
 def testrun_env_2to3(storage):
     # go over all testrun environment and convert them accordingly
-    envs = storage._FetchAll("""SELECT id, name, containerid, intvalue, txtvalue, blobvalue FROM testrun_environment_dict""")
+    envs = storage._FetchAll("""SELECT id, name, containerid, intvalue, txtvalue, blobvalue FROM testrun_environment_dict WHERE blobvalue IS NOT NULL""")
     for eid, name, container, intvalue, txtvalue, blobvalue in envs:
         drop = False
         update = False
         add = None # list of new (name, intvalue, txtvalue)
-        print name, intvalue, txtvalue, blobvalue
         if name == "uname" and blobvalue != None:
             update = True
             txtvalue = ' '.join(loads(blobvalue))
@@ -72,14 +71,10 @@ def testrun_env_2to3(storage):
             add = []
             for k in d.keys():
                 filename, date, version, features = d[k]
-                print k, filename, date, version, features
                 add.append(("gst-registry.%s.filename"%k, None, filename))
                 add.append(("gst-registry.%s.date"%k, None, date))
                 add.append(("gst-registry.%s.version"%k, None, version))
                 add.append(("gst-registry.%s.features"%k, None, ','.join(features)))
-        print drop, update
-        if add:
-            print "Adding", add
         if update == True:
             storage._ExecuteCommit("""UPDATE testrun_environment_dict SET intvalue=?,txtvalue=? WHERE id=?""",
                                    (intvalue, txtvalue, eid))
@@ -90,18 +85,178 @@ def testrun_env_2to3(storage):
             storage._ExecuteMany("""INSERT INTO testrun_environment_dict (containerid, name, intvalue, txtvalue) VALUES (?, ?, ?, ?)""",
                                  [(container, a, b, c) for a,b,c in add])
 
+def _get_classid_or_create(storage, tablename, classes, name, parentname=None, description=None):
+    if name in classes.keys():
+        return classes[name][0]
+    # we need to create a new testclassinfo based on the previous one
+    insstr = """INSERT INTO %s (containerid, name, txtvalue) VALUES (?, ?, ?)""" % tablename
+    nid = storage._ExecuteCommit(insstr, (parentname, name, description))
+    classes[name] = (nid, parentname)
+    return nid
+
+def get_classextrainfo(storage, classes, name, parentname=None, description=None):
+    return _get_classid_or_create(storage, "testclassinfo_extrainfo_dict", classes, name, parentname, description)
+
+def get_classarguments(storage, classes, name, parentname=None, description=None):
+    return _get_classid_or_create(storage, "testclassinfo_arguments_dict", classes, name, parentname, description)
+
+def test_arguments_nonblob_2to3(storage):
+    tofix = ["media-start", "media-duration", "start", "duration"]
+    selsrc = """
+    SELECT test_arguments_dict.id, test_arguments_dict.containerid,
+    test_arguments_dict.intvalue, test_arguments_dict.txtvalue, testclassinfo_arguments_dict.name
+    FROM test_arguments_dict, testclassinfo_arguments_dict
+    WHERE test_arguments_dict.name=testclassinfo_arguments_dict.id
+    AND test_arguments_dict.blobvalue IS NULL
+    AND testclassinfo_arguments_dict.name in (%s)
+    """ % (','.join(["'%s'" % x for x in tofix]))
+    extras = storage._FetchAll(selsrc)
+    for eid, cid, intv, txtv, name in extras:
+        # divide nanoseconds by 1000000 to end up with milliseconds
+        if intv and intv != -1:
+            storage._ExecuteCommit("""UPDATE test_arguments_dict SET intvalue=? WHERE id=?""",
+                                   (intv / 1000000, eid))
+
+
+def test_extrainfo_2to3(storage):
+    selsrc = """
+    SELECT test_extrainfo_dict.id, test_extrainfo_dict.containerid,
+    test_extrainfo_dict.blobvalue, testclassinfo_extrainfo_dict.name
+    FROM test_extrainfo_dict
+    INNER JOIN testclassinfo_extrainfo_dict ON test_extrainfo_dict.name=testclassinfo_extrainfo_dict.id
+    WHERE test_extrainfo_dict.blobvalue IS NOT NULL
+    """
+    test_extrainfo_nonblob_2to3(storage)
+    extras = storage._FetchAll(selsrc)
+    classes = dict([(c, (a,b)) for a,b,c in storage._FetchAll("""SELECT id, containerid, name FROM testclassinfo_extrainfo_dict""")])
+    unhandled = []
+    for eid, container, blobvalue, name in extras:
+        intvalue = None
+        txtvalue = None
+        drop = False
+        update = False
+        add = None # list of new (name, intvalue, txtvalue)
+        if name in ["test-total-duration", "remote-instance-creation-delay", "subprocess-spawn-time",
+                    "test-setup-duration"]:
+            # values previously stored as floats, now stored as milliseconds
+            update = True
+            intvalue = int(loads(blobvalue) * 1000)
+        elif name in ["first-buffer-timestamp", "total-uri-duration"]:
+            # values previously stored as nanoseconds, now stored as milliseconds
+            update = True
+            intvalue = int(loads(blobvalue) / 1000000)
+        elif name == "streams":
+            drop = True
+            add = []
+            for padname, length, caps in loads(blobvalue):
+                add.append(("streams.%s.duration" % padname, length / 1000000, None))
+                add.append(("streams.%s.caps" % padname, None, caps))
+        elif name == "tags":
+            drop = True
+            add = []
+            for k,v in loads(blobvalue).iteritems():
+                add.append(("tags.%s" % k, None, v))
+        elif name == "errors":
+            drop = True
+            add = []
+            errors = loads(blobvalue)
+            for i in range(len(errors)):
+                code, domain, message, dbg = errors[i]
+                add.append(("errors.%d.domain" % i, None, domain))
+                add.append(("errors.%d.message" % i, None, message))
+                add.append(("errors.%d.debug" % i, None, dbg))
+        elif name == "elements-used":
+            drop = True
+            add = []
+            elements = loads(blobvalue)
+            for name, factoryname, parentname in elements:
+                add.append(("elements-used", None, "%s %s" % (name, factoryname)))
+        elif name == "newsegment-values":
+            update = True
+            txtvalue = ' '.join([str(x) for x in loads(blobvalue)])
+        elif name == "unhandled-formats":
+            ls = loads(blobvalue)
+            drop = True
+            add = []
+            for x in ls:
+                add.append(("unhandled-formats", None, str(x)))
+        elif name == "cpu-load":
+            update = True
+            intvalue = int(loads(blobvalue))
+        else:
+            if not name in unhandled:
+                unhandled.append(name)
+        if update == True:
+            storage._ExecuteCommit("""UPDATE test_extrainfo_dict SET intvalue=?,txtvalue=? WHERE id=?""",
+                                   (intvalue, txtvalue, eid))
+        if drop == True:
+            storage._ExecuteCommit("""DELETE FROM test_extrainfo_dict WHERE id=?""",
+                                   (eid, ))
+        if add != None:
+            # we first need to make sure we have proper testclassinfo_extrainfo_dict entries !
+            for newname, newintval, newtxtval in add:
+                cid = get_classextrainfo(storage, classes, newname, name, "")
+                storage._ExecuteCommit("""INSERT INTO test_extrainfo_dict (containerid, name, intvalue, txtvalue) VALUES (?, ?, ?, ?)""",
+                                       (container, cid, newintval, newtxtval))
+    if unhandled != []:
+        print "Unhandled extrainfo blobvalues ! : ", unhandled
+
+def test_arguments_2to3(storage):
+    selsrc = """
+    SELECT test_arguments_dict.id, test_arguments_dict.containerid,
+    test_arguments_dict.blobvalue, testclassinfo_arguments_dict.name
+    FROM test_arguments_dict
+    INNER JOIN testclassinfo_arguments_dict ON test_arguments_dict.name=testclassinfo_arguments_dict.id
+    WHERE test_arguments_dict.blobvalue IS NOT NULL
+    """
+    test_arguments_nonblob_2to3(storage)
+    extras = storage._FetchAll(selsrc)
+    classes = dict([(c, (a,b)) for a,b,c in storage._FetchAll("""SELECT id, containerid, name FROM testclassinfo_arguments_dict""")])
+    unhandled = []
+    for eid, container, blobvalue, name in extras:
+        intvalue = None
+        txtvalue = None
+        drop = False
+        update = False
+        add = None # list of new (name, intvalue, txtvalue)
+        # values in nanoseconds, convert to ms (in order to fit in 32bit)
+        if name in ["media-start", "duration", "media-start", "media-duration"]:
+            update = True
+            intvalue = int(loads(blobvalue) / 1000000)
+        elif name == "uri":
+            # This is WEIRD, for some reason it's not a string ...
+            update = True
+            try:
+                txtvalue = str(loads(blobvalue))
+            except:
+                txtvale = "<Can't convert name>"
+        elif name == "subtest-class":
+            # This was broken from the start, we should have never allowed having non-strings
+            # in arguments.
+            update = True
+            try:
+                txtvalue = str(loads(blobvalue))
+            except:
+                txtvalue = "<Can't convert name>"
+        else:
+            if not name in unhandled:
+                unhandled.append(name)
+        if update == True:
+            storage._ExecuteCommit("""UPDATE test_arguments_dict SET intvalue=?,txtvalue=? WHERE id=?""",
+                                   (intvalue, txtvalue, eid))
+        if drop == True:
+            storage._ExecuteCommit("""DELETE FROM test_arguments_dict WHERE id=?""",
+                                   (eid, ))
+        if add != None:
+            # we first need to make sure we have proper testclassinfo_arguments_dict entries !
+            for newname, newintval, newtxtval in add:
+                cid = get_classarguments(storage, classes, newname, name, "")
+                storage._ExecuteCommit("""INSERT INTO test_arguments_dict (containerid, name, intvalue, txtvalue) VALUES (?, ?, ?, ?)""",
+                                       (container, cid, newintval, newtxtval))
+    if unhandled != []:
+        print "Unhandled argument blobvalues : ", unhandled
+
 def __updateDatabaseFrom2To3(storage):
-    def convert_extrainfo_data(name, intvalue, txtvalue, blobvalue):
-        """ Converts the extrainfo data to remove blobvalues
-        Returns a tuple of :
-        * name
-        * intvalue
-        * txtvalue"""
-        if name in ["subprocess-spawn-time", "remote-instance-creation-delay",
-                    "test-setup-duration", "test-total-duration"]:
-            val = loads(blobvalue)
-            return (name, intvalue, txtvalue, int(val * 1000))
-        return (name, intvalue, txtvalue)
     create2to3 = """
     ALTER TABLE testclassinfo_arguments_dict CHANGE containerid containerid VARCHAR(255);
     ALTER TABLE testclassinfo_arguments_dict CHANGE blobvalue txtvalue TEXT;
@@ -123,10 +278,6 @@ def __updateDatabaseFrom2To3(storage):
     ALTER TABLE test ADD COLUMN ismonitor TINYINT(1) DEFAULT 0;
     ALTER TABLE test ADD COLUMN isscenario TINYINT(1) DEFAULT 0;
 
-    ALTER TABLE testrun_environment_dict DROP COLUMN blobvalue;
-    ALTER TABLE test_arguments_dict DROP COLUMN blobvalue;
-    ALTER TABLE test_extrainfo_dict DROP COLUMN blobvalue;
-
     DROP INDEX subtests_scenarioid_idx ON subtests;
     DROP INDEX monitor_testid_idx ON monitor;
     DROP INDEX monitorclassinfo_parent_idx ON monitorclassinfo;
@@ -142,6 +293,11 @@ def __updateDatabaseFrom2To3(storage):
     DROP TABLE monitor_checklist_dict;
     DROP TABLE monitor_extrainfo_dict;
     DROP TABLE monitor_outputfiles_dict;
+    """
+    move2to3 = """
+    ALTER TABLE testrun_environment_dict DROP COLUMN blobvalue;
+    ALTER TABLE test_arguments_dict DROP COLUMN blobvalue;
+    ALTER TABLE test_extrainfo_dict DROP COLUMN blobvalue;
     """
     # Change testclassinfo_*_dict.container from INTEGER to VARCHAR
     #
@@ -173,16 +329,13 @@ def __updateDatabaseFrom2To3(storage):
     # id, testid, type, resperc, testrunid
     monitors = storage._FetchAll("""SELECT monitor.id, monitor.testid, monitor.type, monitor.resultpercentage, test.testrunid FROM monitor,test WHERE monitor.testid=test.id""")
     monclassinfo = storage._FetchAll("""SELECT id, type, parent, description FROM monitorclassinfo""")
-    monargs = storage._FetchAll("""SELECT id, containerid, name, intvalue, txtvalue FROM monitor_arguments_dict""")
+    monargs = storage._FetchAll("""SELECT id, containerid, name, intvalue, txtvalue, blobvalue FROM monitor_arguments_dict""")
     monchecks = storage._FetchAll("""SELECT id, containerid, name, intvalue FROM monitor_checklist_dict""")
-    monextras = storage._FetchAll("""SELECT id, containerid, name, intvalue, txtvalue FROM monitor_extrainfo_dict""")
+    monextras = storage._FetchAll("""SELECT id, containerid, name, intvalue, txtvalue, blobvalue FROM monitor_extrainfo_dict""")
     monoutputs = storage._FetchAll("""SELECT id, containerid, name, txtvalue FROM monitor_outputfiles_dict""")
 
-    print("Going over testrun_environment_dict to convert blob values to non-blob values")
-    testrun_env_2to3(storage)
-
     try:
-        print("Converting 'containerid' columns from INT to TEXT")
+        print("Upgrading DB Scheme (STEP 1)")
         storage._ExecuteScript(create2to3)
         storage.con.commit()
     except:
@@ -246,9 +399,9 @@ def __updateDatabaseFrom2To3(storage):
     # STEP 4 : Move all monitor_*_dict to test_*_dict using the mci_mapping and the
     # mci*_mapping
     print("Moving monitor_arguments_dict to test_arguments_dict")
-    for id, containerid, name, intvalue, txtvalue in monargs:
-        storage._ExecuteCommit("""INSERT into test_arguments_dict (containerid, name, intvalue, txtvalue) VALUES (?, ?, ?, ?)""",
-                            (monitor_mapping[containerid], mcia_mapping[name], intvalue, txtvalue))
+    for id, containerid, name, intvalue, txtvalue, blobvalue in monargs:
+        storage._ExecuteCommit("""INSERT into test_arguments_dict (containerid, name, intvalue, txtvalue, blobvalue) VALUES (?, ?, ?, ?, ?)""",
+                            (monitor_mapping[containerid], mcia_mapping[name], intvalue, txtvalue, blobvalue))
 
     print("Moving monitor_checklist_dict to test_checklist_list")
     for id, containerid, name, intvalue in monchecks:
@@ -256,9 +409,9 @@ def __updateDatabaseFrom2To3(storage):
                             (monitor_mapping[containerid], mcic_mapping[name], intvalue))
 
     print("Moving monitor_extrainfo_dict to test_extrainfo_dict")
-    for id, containerid, name, intvalue, txtvalue in monextras:
-        storage._ExecuteCommit("""INSERT into test_extrainfo_dict (containerid, name, intvalue, txtvalue) VALUES (?, ?, ?, ?)""",
-                            (monitor_mapping[containerid], mcie_mapping[name], intvalue, txtvalue))
+    for id, containerid, name, intvalue, txtvalue, blobvalue in monextras:
+        storage._ExecuteCommit("""INSERT into test_extrainfo_dict (containerid, name, intvalue, txtvalue, blobvalue) VALUES (?, ?, ?, ?, ?)""",
+                            (monitor_mapping[containerid], mcie_mapping[name], intvalue, txtvalue, blobvalue))
 
     print("Moving monitor_outputfiles_dict to test_outputfiles_dict")
     for id, containerid, name, txtvalue in monoutputs:
@@ -273,5 +426,25 @@ def __updateDatabaseFrom2To3(storage):
         storage._ExecuteCommit("""UPDATE test SET test.parentid=?,test.ismonitor=0 WHERE test.id=?""",
                             (scenarioid, testid))
         storage._ExecuteCommit("""UPDATE test SET test.ismonitor=0,test.isscenario=1 WHERE test.id=?""", (scenarioid, ))
+
+    ## WE SHOULD UPDATE THE DATA AT THIS POINT ???
+
+    print("Going over testrun_environment_dict to convert blob values to non-blob values")
+    testrun_env_2to3(storage)
+
+    print("Converting extrainfo")
+    test_extrainfo_2to3(storage)
+
+    print("Converting arguments")
+    test_arguments_2to3(storage)
+
+    try:
+        print("Upgrading DB Scheme (STEP 2)")
+        storage._ExecuteScript(move2to3)
+        storage.con.commit()
+    except:
+        error("Can't upgrade DB scheme !")
+        raise
+
 
     print("done")
