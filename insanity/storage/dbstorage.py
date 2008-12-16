@@ -692,7 +692,7 @@ class DBStorage(DataStorage, AsyncStorage):
 
         Returns None if there is no information regarding the given monitortype
         """
-        res = self._FetchOne("SELECT id FROM monitorclassinfo WHERE type=?",
+        res = self._FetchOne("SELECT id FROM testclassinfo WHERE type=?",
                              (monitortype, ))
         if res == None:
             return None
@@ -921,7 +921,7 @@ class DBStorage(DataStorage, AsyncStorage):
         Key : monitorname
         Value : (id in selfdb, id in otherdb)
         """
-        return self.__getRemoteMapping("monitorclassinfo", otherdb)
+        return self.__getRemoteMapping("testclassinfo", otherdb)
 
     def __rawStartNewTestRun(self, clientid, starttime):
         insertstr = """
@@ -1449,7 +1449,7 @@ class DBStorage(DataStorage, AsyncStorage):
                 break
 
     def __hasMonitorClassInfo(self, monitortype):
-        existstr = "SELECT * FROM monitorclassinfo WHERE type=?"
+        existstr = "SELECT * FROM testclassinfo WHERE type=?"
         res = self._FetchAll(existstr, (monitortype, ))
         if len(res) > 0:
             # type already exists, returning
@@ -1461,7 +1461,7 @@ class DBStorage(DataStorage, AsyncStorage):
         # insert into db
         debug("ctype:%r, parent:%r, desc:%r", ctype, parent, desc)
         insertstr = """
-        INSERT INTO monitorclassinfo (type, parent, description) VALUES (?, ?, ?)
+        INSERT INTO testclassinfo (type, parent, description) VALUES (?, ?, ?)
         """
         tcid = self._ExecuteCommit(insertstr, (ctype, parent, desc))
 
