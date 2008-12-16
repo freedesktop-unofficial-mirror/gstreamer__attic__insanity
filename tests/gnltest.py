@@ -32,7 +32,7 @@ import gst
 def valtime(someval):
     if someval == gst.CLOCK_TIME_NONE:
         return -1
-    return someval
+    return someval / gst.MSECOND
 
 class GnlFileSourceTest(GStreamerTest):
 
@@ -43,13 +43,13 @@ class GnlFileSourceTest(GStreamerTest):
     __test_arguments__ = {
         "uri" : ( "URI to test gnlfilesource with",
                   None, None ),
-        "start" : ( "start position in nanoseconds",
+        "start" : ( "start position in milliseconds",
                     0, None ),
-        "duration" : ( "duration in nanoseconds",
-                       gst.SECOND, None ) ,
-        "media-start" : ( "media-start position in nanoseconds",
-                          5 * gst.SECOND, None ),
-        "media-duration" : ( "media-duration in nanoseconds",
+        "duration" : ( "duration in milliseconds",
+                       1000, None ) ,
+        "media-start" : ( "media-start position in milliseconds",
+                          5000, None ),
+        "media-duration" : ( "media-duration in milliseconds",
                              None, "Same as duration if not specified" ),
         "caps-string" : ( "caps property to use on gnlfilesource as a string",
                           "audio/x-raw-int;audio/x-raw-float", None)
@@ -65,7 +65,7 @@ class GnlFileSourceTest(GStreamerTest):
         }
 
     __test_extra_infos__ = {
-        "first-buffer-timestamp" : "The timestamp of the first buffer",
+        "first-buffer-timestamp" : "The timestamp of the first buffer (in milliseconds)",
         "newsegment-values" : "The values of the first newsegment"
         }
 
@@ -81,9 +81,9 @@ class GnlFileSourceTest(GStreamerTest):
         self._gotFirstBuffer = False
         self._gotNewSegment = False
         self._start = self.arguments.get("start", 0)
-        self._duration = self.arguments.get("duration", gst.SECOND)
-        self._mstart = self.arguments.get("media-start", 5 * gst.SECOND)
-        self._mduration = self.arguments.get("media-duration", self._duration)
+        self._duration = self.arguments.get("duration", gst.MSECOND) * 1000
+        self._mstart = self.arguments.get("media-start", 5 * gst.MSECOND) * 1000
+        self._mduration = self.arguments.get("media-duration", self._duration) * 1000
         warning("Got caps-string:%r", self.arguments.get("caps-string", "audio/x-raw-int;audio/x-raw-float"))
         self._caps = gst.Caps(str(self.arguments.get("caps-string", "audio/x-raw-int;audio/x-raw-float")))
         GStreamerTest.remoteSetUp(self)

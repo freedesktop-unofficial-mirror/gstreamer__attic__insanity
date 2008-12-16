@@ -38,7 +38,7 @@ def matrix_view(request, testrun_id):
     offset = int(request.GET.get("offset", 0))
 
     # let's get the test instances ...
-    testsinst = Test.objects.select_related(depth=1).filter(testrunid=tr)
+    testsinst = Test.objects.nomonitors().select_related(depth=1).filter(testrunid=tr)
 
     # and filter them according to the given parameters
     if onlyfailed:

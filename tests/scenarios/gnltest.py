@@ -86,8 +86,8 @@ class FullGnlFileSourceScenario(Scenario):
             padname, length, caps = stream
             args = self.arguments.copy()
             args["caps-string"] = caps
-            args["media-start"] = mstart
-            args["duration"] = duration
+            args["media-start"] = mstart / gst.MSECOND
+            args["duration"] = duration / gst.MSECOND
             self.addSubTest(GnlFileSourceTest, args)
         self.__doneTypeFindTest = True
         return True

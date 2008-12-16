@@ -115,9 +115,9 @@ class Test(gobject.GObject):
 
     __test_extra_infos__ = {
         "test-setup-duration" :
-        "How long it took to setup the test (in microseconds) for asynchronous tests",
+        "How long it took to setup the test (in milliseconds) for asynchronous tests",
         "test-total-duration" :
-        "How long it took to run the entire test (in microseconds)"
+        "How long it took to run the entire test (in milliseconds)"
         }
     """
     Dictionnary of extra information this test can produce.
@@ -369,7 +369,7 @@ class Test(gobject.GObject):
             debug("stoptime:%r , teststarttime:%r",
                   stoptime, self._teststarttime)
             self.extraInfo("test-total-duration",
-                           int((stoptime - self._teststarttime) * 1000000))
+                           int((stoptime - self._teststarttime) * gst.MSECOND))
         for instance in self._monitorinstances:
             instance.tearDown()
         self.emit("done")
@@ -387,7 +387,7 @@ class Test(gobject.GObject):
                 self._asynctimeoutid = 0
             curtime = time.time()
             self.extraInfo("test-setup-duration",
-                           int((curtime - self._teststarttime) * 1000000))
+                           int((curtime - self._teststarttime) * gst.MSECOND))
         self._running = True
         self.emit("start")
         self.validateStep("test-started")
@@ -629,8 +629,8 @@ class DBusTest(Test, dbus.service.Object):
 
     __test_extra_infos__ = {
     "subprocess-return-code":"The exit value returned by the subprocess",
-    "subprocess-spawn-time":"How long it took to spawn the subprocess in seconds",
-    "remote-instance-creation-delay":"How long it took to create the remote instance",
+    "subprocess-spawn-time":"How long it took to spawn the subprocess (in milliseconds)",
+    "remote-instance-creation-delay":"How long it took to create the remote instance (in milliseconds)",
     "cpu-load" : "CPU load in percent (can exceed 100% on multi core systems)"
     }
 
@@ -1034,7 +1034,7 @@ class DBusTest(Test, dbus.service.Object):
         self.validateStep("dbus-process-connected")
         self._subprocessconnecttime = time.time()
         delay = self._subprocessconnecttime - self._subprocessspawntime
-        self.extraInfo("subprocess-spawn-time", int(delay * 1000000))
+        self.extraInfo("subprocess-spawn-time", int(delay * gst.MSECOND))
         # we need to give the remote process the following information:
         # * filename where the Test class is located (self.get_file())
         # * class name (self.__class__.__name__)
@@ -1080,7 +1080,7 @@ class DBusTest(Test, dbus.service.Object):
                 warning("Couldn't get the remote instance for test %r", self.uuid)
                 self.stop()
                 return
-            self.extraInfo("remote-instance-creation-delay", int(delay * 1000000))
+            self.extraInfo("remote-instance-creation-delay", int(delay * gst.MSECOND))
             self.validateStep("remote-instance-created")
             self._remoteinstance = dbus.Interface(remoteobj,
                                                   "net.gstreamer.Insanity.Test")

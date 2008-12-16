@@ -183,7 +183,7 @@ class TestClassInfoOutputFilesDict(models.Model):
 
 class TestRunManager(models.Manager):
     def withcounts(self):
-        return self.all().extra(select={'nbtests':"SELECT COUNT(*) FROM test WHERE test.testrunid = testrun.id"})
+        return self.all().extra(select={'nbtests':"SELECT COUNT(*) FROM test WHERE test.testrunid = testrun.id and test.ismonitor=0"})
 
 class TestRun(models.Model, CustomSQLInterface):
     objects = TestRunManager()
@@ -295,6 +295,10 @@ class TestManager(models.Manager):
         return self.failed().exclude(checklist__name__name="no-timeout",
                                      checklist__value=1)
 
+    def nomonitors(self):
+        """Filters the QuerySet to only return non-monitors"""
+        return self.filter(ismonitor=0)
+
 class Test(models.Model):
     objects = TestManager()
     id = models.IntegerField(null=True, primary_key=True, blank=True)
@@ -313,10 +317,10 @@ class Test(models.Model):
     get_absolute_url = permalink(get_absolute_url)
 
     def is_scenario(self):
-        return isscenario
+        return self.isscenario
 
     def _is_subtest(self):
-        return (self.ismonitor == False) and (parent == None)
+        return (self.ismonitor == False) and (self.parent == None)
     is_subtest = property(_is_subtest)
 
     def _is_success(self):
@@ -526,6 +530,9 @@ class TestExtraInfoDict(models.Model):
             return self.txtvalue
         return None
     value = property(_get_value)
+
+    def __str__(self):
+        return "%s:%s" % (self.name.name, self.value)
 
     class Meta:
         db_table = 'test_extrainfo_dict'
