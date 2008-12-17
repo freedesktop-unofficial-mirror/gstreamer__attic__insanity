@@ -137,8 +137,8 @@ CREATE TABLE test (
    type INTEGER,
    resultpercentage FLOAT,
    parentid INTEGER,
-   ismonitor TINYINT(1) DEFAULT 0,
-   isscenario TINYINT(1) DEFAULT 0,
+   ismonitor INTEGER,
+   isscenario INTEGER
 );
 
 CREATE TABLE testclassinfo (
@@ -154,7 +154,7 @@ CREATE TABLE testrun_environment_dict (
    containerid INTEGER,
    name TEXT,
    intvalue INTEGER,
-   txtvalue TEXT,
+   txtvalue TEXT
 );
 
 CREATE TABLE test_arguments_dict (
@@ -162,7 +162,7 @@ CREATE TABLE test_arguments_dict (
    containerid INTEGER,
    name INTEGER,
    intvalue INTEGER,
-   txtvalue TEXT,
+   txtvalue TEXT
 );
 
 CREATE TABLE test_checklist_list (
