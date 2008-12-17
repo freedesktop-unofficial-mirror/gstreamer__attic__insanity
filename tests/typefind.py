@@ -115,7 +115,7 @@ class TypeFindTest(GStreamerTest):
         debug("length:%s, similar:%r", gst.TIME_ARGS(length), issimilar)
         self.validateStep("stream-duration-identical", issimilar)
         self.validateStep("duration-available", not length == -1)
-        self.extraInfo("total-uri-duration", length / gst.MSECOND)
+        self.extraInfo("total-uri-duration", int(length / gst.MSECOND))
         self.validateStep("available-demuxer",
                           not self._mimetype in [s.caps.to_string() for s in self._streams])
 
@@ -130,7 +130,8 @@ class TypeFindTest(GStreamerTest):
             self.extraInfo("unhandled-formats", s.caps.to_string())
         for s in self._streams:
             padname = s.pad.get_name()
-            self.extraInfo("streams.%s.duration" % padname, s.length / gst.MSECOND)
+            self.extraInfo("streams.%s.duration" % padname,
+                           int(s.length / gst.MSECOND))
             self.extraInfo("streams.%s.caps" % padname, s.caps.to_string())
 
 

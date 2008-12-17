@@ -53,7 +53,16 @@ class FullGnlFileSourceScenario(Scenario):
 
         # let's have a look at the streams
         infos = test.getExtraInfo()
-        if not 'streams' in infos.keys():
+        streamsduration = {}
+        streamscaps = {}
+        for x,y in infos.iteritems():
+            if x.startswith('streams.'):
+                nm = x.split('.')[1]
+                if x.endswith('.duration'):
+                    streamsduration[nm] = y
+                elif x.endswith('.caps'):
+                    streamscaps[nm] = y
+        if streamsduration == {}:
             return False
 
         if not 'total-uri-duration' in infos.keys():
@@ -66,28 +75,25 @@ class FullGnlFileSourceScenario(Scenario):
             if checks[item] == False:
                 return False
 
+        # duration is in ms
         uriduration = infos['total-uri-duration']
         if uriduration <= 0:
             return False
         # pick a duration/media-start which is within the given uri duration
         mstart = uriduration / 2
-        duration = gst.SECOND
-        if uriduration < 2 * gst.SECOND:
+        duration = 1000 # 1s
+        if uriduration < 2000: # 2s
             duration = mstart
 
-        # we can carry on if we have some raw streams
-        upstreams = infos["streams"]
-        streams = self._extractRawStreams(upstreams)
-        if streams == []:
+        if [caps for x, caps in streamscaps.iteritems() if 'o/x-raw-' in caps] == []:
             return False
 
         # finally, add a GnlFileSourceTest for each stream
-        for stream in streams:
-            padname, length, caps = stream
+        for streamcap in streamscaps.itervalues():
             args = self.arguments.copy()
-            args["caps-string"] = caps
-            args["media-start"] = mstart / gst.MSECOND
-            args["duration"] = duration / gst.MSECOND
+            args["caps-string"] = streamcap
+            args["media-start"] = mstart
+            args["duration"] = duration
             self.addSubTest(GnlFileSourceTest, args)
         self.__doneTypeFindTest = True
         return True
