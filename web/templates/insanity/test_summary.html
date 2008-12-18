@@ -29,12 +29,12 @@ Test #{{test.id}}
       </tr>
 
       {% if test.is_scenario %}
-      {% if test.subtest.count %}
+      {% if test.child.count %}
       <tr>
 	<th class="side">Subtests</th>
 	<td>
-	  {% for subtest in test.subtest.all %}
-	  Test <a href={{subtest.testid.get_absolute_url}}>#{{ subtest.testid.id }}</a> Success:{{subtest.testid.resultpercentage|floatformat:1}}%<br/>
+	  {% for subtest in test.child.all %}
+	  Test <a href={{subtest.get_absolute_url}}>#{{ subtest.id }}</a> Success:{{subtest.resultpercentage|floatformat:1}}%<br/>
 	  {% endfor %}
 	</td>
       </tr>
@@ -44,11 +44,11 @@ Test #{{test.id}}
       {% if test.is_subtest %}
       <tr>
 	<th class="side">Container</th>
-	<td>Scenario #<a href={{test.parent.scenarioid.get_absolute_url}}>{{ test.parent.scenarioid.id }}</a></td>
+	<td>Scenario #<a href={{test.parent.get_absolute_url}}>{{ test.parent.id }}</a></td>
       </tr>
       {% endif %}
 
-      {% if test.arguments.count %}
+      {% if test.arguments %}
       <tr>
 	<th class="side">Arguments</th>
 	<td>
@@ -57,7 +57,7 @@ Test #{{test.id}}
       </tr>
       {% endif %}
 
-      {% if test.checklist.count %}
+      {% if test.checklist %}
       <tr>
 	<th class="side">CheckList</th>
 	<td>
@@ -66,7 +66,7 @@ Test #{{test.id}}
       </tr>
       {% endif %}
 
-      {% if test.outputfiles.count %}
+      {% if test.outputfiles %}
       <tr>
 	<th class="side">OutputFiles</th>
 	<td>
@@ -79,7 +79,7 @@ Test #{{test.id}}
       </tr>
       {% endif %}
 
-      {% if test.extrainfo.count %}
+      {% if test.extrainfo %}
       <tr>
 	<th class="side">ExtraInfo</th>
 	<td>
@@ -88,7 +88,7 @@ Test #{{test.id}}
       </tr>
       {% endif %}
 
-      {% if test.monitor_set.count %}
+      {% if test.monitors %}
       <tr>
 	<th class="side">Monitors</th>
 	<td>
@@ -98,11 +98,11 @@ Test #{{test.id}}
 	      <th>Type</th>
 	      <th>Output files</th>
 	    </tr>
-	    {% for mon in test.monitor_set.all %}
+	    {% for mon in test.monitors %}
 	    <tr class="{% cycle row1,row2 %}">
 	      <td>{{ mon.id }}</td>
 	      <td>{{ mon.type.type }}</td>
-	      {% if mon.outputfiles.count %}
+	      {% if mon.outputfiles %}
 	      <td>
 		{% for outf in mon.outputfiles.all %}
 		<a href="{{ outf.value|safe }}">{{ outf.basename }}</a><br/>

@@ -156,8 +156,7 @@ def test_args_dict(test, fullarguments=None):
 
 @register.inclusion_tag('insanity/test_checklist_dict.html')
 def test_checklist_dict(test, fullchecklist=None):
-    results = test._get_results_dict(fullchecklist)
-    return {'results':results}
+    return {'results':test.checklist.all().select_related(depth=1)}
 
 @register.inclusion_tag('insanity/test_extrainfo_dict.html')
 def test_extrainfo_dict(test):

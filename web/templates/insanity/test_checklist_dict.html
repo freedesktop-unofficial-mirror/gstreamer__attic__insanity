@@ -6,7 +6,7 @@
   </tr>
   {% for result in results %}
   <tr class="{% cycle row1,row2 %}">
-    <th class="side">{{result.type.name}}</th>
+    <th class="side">{{result.name}}</th>
     {% if result.skipped %}
     <td class="result-skipped">
       ?
@@ -16,7 +16,7 @@
       {{result.value}}
     </td>
     {% endif %}
-    <td>{{result.type.description}}</td>
+    <td>{{result.name.description}}</td>
   </tr>
   {% endfor %}
 </table>

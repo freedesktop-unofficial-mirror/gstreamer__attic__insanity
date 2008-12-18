@@ -320,12 +320,17 @@ class Test(models.Model):
         return self.isscenario
 
     def _is_subtest(self):
-        return (self.ismonitor == False) and (self.parent == None)
+        return (self.ismonitor == False) and (self.parent != None)
     is_subtest = property(_is_subtest)
 
     def _is_success(self):
         return bool(self.resultpercentage == 100.0)
     is_success = property(_is_success)
+
+    @property
+    def monitors(self):
+        """Monitors controling the given test"""
+        return Test.objects.filter(ismonitor=1,parent=self.id)
 
     def _get_results_dict(self, checklist=None, allchecks=None):
         """
@@ -500,6 +505,10 @@ class TestCheckListList(models.Model):
                              db_column="name")
     value = models.IntegerField(null=True, blank=True,
                                 db_column="intvalue")
+    @property
+    def skipped(self):
+        return self.value == None
+
     class Meta:
         db_table = 'test_checklist_list'
 
