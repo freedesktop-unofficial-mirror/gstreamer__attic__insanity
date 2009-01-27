@@ -113,7 +113,7 @@ class SQLiteStorage(DBStorage):
 
 DB_SCHEME = """
 CREATE TABLE version (
-   version INTEGER,
+   version INTEGER AUTO_INCREMENT PRIMARY KEY,
    modificationtime INTEGER
 );
 
@@ -137,8 +137,8 @@ CREATE TABLE test (
    type INTEGER,
    resultpercentage FLOAT,
    parentid INTEGER,
-   ismonitor INTEGER,
-   isscenario INTEGER
+   ismonitor INTEGER NOT NULL DEFAULT 0,
+   isscenario INTEGER NOT NULL DEFAULT 0
 );
 
 CREATE TABLE testclassinfo (
