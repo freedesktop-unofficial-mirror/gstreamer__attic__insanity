@@ -51,10 +51,12 @@ Matrix View of Testrun #{{testrun.id}}
 	      {% for arg in sortedtest.type.arguments.all %}
 	        <th>{% split_dash_lines arg.name %}</th>
 	      {% endfor %}
+
 	      <th>Result</th>
 	      {% for item in sortedtest.fullchecklist %}
 	        <th><span title="{{item.name}}">{% verticalize item.name %}</span></th>
 	      {% endfor %}
+
 	      <th>Errors seen</th>
 	    </tr>
 

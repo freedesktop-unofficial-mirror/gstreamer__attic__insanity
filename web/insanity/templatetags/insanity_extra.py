@@ -166,12 +166,13 @@ def test_extrainfo_dict(test):
 @register.inclusion_tag('insanity/matrix_checklist_row.html')
 def matrix_checklist_row(test, fullchecklist, fullarguments,
                          allchecks, allargs, allextrainfo):
-    arguments = test._get_full_arguments(fullarguments, allargs)
-    results = test._get_results_dict(fullchecklist, allchecks)
-    test_error = test._test_error(allextras=allextrainfo)
+    args = allargs.get(test, [])
+    checks = allchecks.get(test, [])
+    print allextrainfo
+    test_error = test._test_error(allextras=allextrainfo.get(test, []))
     return {'test':test,
-            'arguments':arguments,
-            'results':results,
+            'arguments':args,
+            'results':checks,
             'test_error':test_error}
 
 @register.inclusion_tag('insanity/matrix_navigation.html', takes_context=True)

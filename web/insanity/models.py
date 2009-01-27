@@ -21,6 +21,16 @@ class DateTimeIntegerField(models.IntegerField):
     def get_db_prep_value(self, val):
         return time.mktime(val.timetuple())
 
+class MyBooleanField(models.IntegerField):
+
+    __metaclass__ = models.SubfieldBase
+
+    def to_python(self, value):
+        return bool(value)
+
+    def get_db_prep_value(self, val):
+        return int(val)
+
 class CustomSQLInterface:
 
     def _fetchAll(self, instruction, *args, **kwargs):
@@ -53,7 +63,10 @@ class Client(models.Model):
 class TestClassInfoManager(models.Manager):
     def scenarios(self):
         """Returns all scenario TestClasses"""
-        sct = self.get(type="scenario")
+        try:
+            sct = self.get(type="scenario")
+        except:
+            return []
         v = self.all().select_related("id", "type", "parent")
         def filter_subclass(ptype, avail):
             res = [ptype]
@@ -309,8 +322,8 @@ class Test(models.Model):
     parent = models.ForeignKey("self", to_field="id",
                                db_column="parentid",
                                related_name="child")
-    ismonitor = models.BooleanField()
-    isscenario = models.BooleanField()
+    ismonitor = MyBooleanField(null=False, default=False)
+    isscenario = MyBooleanField(null=False, default=False)
 
     def get_absolute_url(self):
         return ('web.insanity.views.test_summary', [str(self.id)])
@@ -448,7 +461,7 @@ class Test(models.Model):
 
         # pre-computed extras
         if allextras != None:
-            errs = [x for x in allextras if x.containerid==self and x.name.name in ["subprocess-return-code","errors"]]
+            errs = allextras
         else:
             try:
                 errs = self.extrainfo.all().select_related("name__name", "intvalue","txtvalue").filter(name__name__in=["errors", "subprocess-return-code"])
@@ -490,6 +503,9 @@ class TestArgumentsDict(models.Model):
             return self.txtvalue
         return None
     value = property(_get_value)
+
+    def skipped(self):
+        return self.value == None
 
     class Meta:
         db_table = 'test_arguments_dict'

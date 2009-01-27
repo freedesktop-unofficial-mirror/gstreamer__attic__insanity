@@ -38,7 +38,7 @@ def matrix_view(request, testrun_id):
     offset = int(request.GET.get("offset", 0))
 
     # let's get the test instances ...
-    testsinst = Test.objects.nomonitors().select_related(depth=1).filter(testrunid=tr)
+    testsinst = Test.objects.nomonitors().select_related("type__type", "checklist").filter(testrunid=tr)
 
     # and filter them according to the given parameters
     if onlyfailed:
@@ -75,10 +75,28 @@ def matrix_view(request, testrun_id):
             if len(query) == 0:
                 continue
 
-            checks = TestCheckListList.objects.select_related("containerid","name","value").filter(containerid__in=query)
-            args = TestArgumentsDict.objects.select_related("containerid", "name","intvalue","txtvalue","blobvalue").filter(containerid__in=query)
-            extras = TestExtraInfoDict.objects.select_related("containerid", "name__name", "intvalue", "txtvalue", "blobvalue").filter(containerid__in=query,
-                                                                                                                                       name__name__in=["subprocess-return-code","errors"])
+            # return dictionnaries of:
+            # key : test
+            # value : list of args/checks/extrainfos
+            checks = {}
+            for checkitem in TestCheckListList.objects.select_related("containerid","name","value").filter(containerid__in=query):
+                if not checkitem.containerid in checks.keys():
+                    checks[checkitem.containerid] = [checkitem]
+                else:
+                    checks[checkitem.containerid].append(checkitem)
+            args = {}
+            for x in TestArgumentsDict.objects.select_related("containerid", "name","intvalue","txtvalue","blobvalue").filter(containerid__in=query):
+                if not x in args.keys():
+                    args[x.containerid] = [x]
+                else:
+                    args[x.containerid].append(x)
+            extras = {}
+            for x in TestExtraInfoDict.objects.select_related("containerid", "name__name", "intvalue", "txtvalue", "blobvalue").filter(containerid__in=query,
+                                                                                                                                       name__name__in=["subprocess-return-code","errors"]):
+                if not x in extras.keys():
+                    extras[x.containerid] = [x]
+                else:
+                    extras[x.conatinerid].append(x)
             tests.append({"type":t,
                           "tests":query,
                           "fullchecklist":t.fullchecklist,
