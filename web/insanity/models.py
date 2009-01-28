@@ -96,7 +96,7 @@ class TestClassInfo(models.Model):
         # 1. get the list of all testclassinfo (from here to base)
         # 2. get the checklist for all those classes
         classes = self.__get_parentage()
-        res = TestClassInfoCheckListDict.objects.filter(containerid__in=classes)
+        res = TestClassInfoCheckListDict.objects.filter(containerid__in=classes).order_by("id")
         return res
     fullchecklist = property(_get_fullchecklist)
 
@@ -106,7 +106,7 @@ class TestClassInfo(models.Model):
         The list is ordered by classes and then by id.
         """
         classes = self.__get_parentage()
-        res = TestClassInfoArgumentsDict.objects.filter(containerid__in=classes).select_related(depth=1)
+        res = TestClassInfoArgumentsDict.objects.filter(containerid__in=classes).select_related(depth=1).order_by("id")
         return res
     fullarguments = property(_get_fullarguments)
 

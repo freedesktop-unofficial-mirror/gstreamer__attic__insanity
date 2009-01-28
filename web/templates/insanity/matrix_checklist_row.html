@@ -12,11 +12,11 @@
   {% for item in results %}
     {% if item.skipped %}
       <td class="result-skipped">
-	<span title="{{item.type.name}} : skipped/unavailable">?</span>
+	<span title="{{item.name}} : skipped/unavailable">?</span>
       </td>
     {% else %}
       <td class="{%if item.value %}result-OK{% else %}result-FAIL{% endif %}">
-	<span title="{{item.type.name}} : {%if item.value %}OK{% else %}failed{% endif %}">{{ item.value }}</span>
+	<span title="{{item.name}} : {%if item.value %}OK{% else %}failed{% endif %}">{{ item.value }}</span>
       </td>
     {% endif %}
   {% endfor %}
