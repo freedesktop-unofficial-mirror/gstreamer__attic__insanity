@@ -168,7 +168,6 @@ def matrix_checklist_row(test, fullchecklist, fullarguments,
                          allchecks, allargs, allextrainfo):
     args = allargs.get(test, [])
     checks = allchecks.get(test, [])
-    print allextrainfo
     test_error = test._test_error(allextras=allextrainfo.get(test, []))
     return {'test':test,
             'arguments':args,
