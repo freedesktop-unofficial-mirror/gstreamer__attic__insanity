@@ -535,6 +535,11 @@ class TestOutputFilesDict(models.Model):
     name = models.ForeignKey(TestClassInfoOutputFilesDict,
                              db_column="name")
     value = models.TextField(blank=True, db_column="txtvalue")
+
+    def _get_basename(self):
+        return os.path.basename(self.value)
+    basename = property(_get_basename)
+
     class Meta:
         db_table = 'test_outputfiles_dict'
 
