@@ -998,6 +998,7 @@ class DBStorage(DataStorage, AsyncStorage):
 
 
     def __getTestClassMapping(self, testtype, dictname):
+        debug("testtype:%r, dictname:%r", testtype, dictname)
         return self.__getClassMapping(self.__tcmapping,
                                       "testclassinfo",
                                       testtype, dictname)
@@ -1016,7 +1017,6 @@ class DBStorage(DataStorage, AsyncStorage):
         If 'vals' is provided, then we will ensure that all keys of vals are
         present in 'dictname' for the provided 'classtype'
         """
-
         # Search in cache first
         if classtype in mapping:
             if dictname in mapping[classtype]:
@@ -1025,19 +1025,16 @@ class DBStorage(DataStorage, AsyncStorage):
         # returns a dictionnary of name : id mapping for a test's
         # arguments, including the parent class mapping
         searchstr = "SELECT parent,id FROM %s WHERE type=?" % classtable
-        res = self._FetchOne(searchstr, (classtype, ))
-        if not res:
-            return {}
-        rp, tcid = res
         mapsearch = """
         SELECT name,id
         FROM %s
         WHERE containerid=?""" % dictname
-        maps = self._FetchAll(mapsearch, (tcid, ))
+        maps = self._FetchAll(mapsearch, (classtype, ))
+        rp = classtype
         while rp:
             res = self._FetchOne(searchstr, (rp, ))
             rp, tcid = res
-            vals = self._FetchAll(mapsearch, (tcid, ))
+            vals = self._FetchAll(mapsearch, (rp, ))
             maps.extend(vals)
 
         if not classtype in mapping:
@@ -1248,21 +1245,21 @@ class DBStorage(DataStorage, AsyncStorage):
         return self.__storeDict("test_outputfiles_dict",
                                testid, map_dict(dic, maps))
 
-    def __storeTestClassArgumentsDict(self, testclassinfoid, dic):
+    def __storeTestClassArgumentsDict(self, testclass, dic):
         return self.__storeDict("testclassinfo_arguments_dict",
-                               testclassinfoid, dic)
+                               testclass, dic)
 
-    def __storeTestClassCheckListDict(self, testclassinfoid, dic):
+    def __storeTestClassCheckListDict(self, testclass, dic):
         return self.__storeDict("testclassinfo_checklist_dict",
-                               testclassinfoid, dic)
+                               testclass, dic)
 
-    def __storeTestClassExtraInfoDict(self, testclassinfoid, dic):
+    def __storeTestClassExtraInfoDict(self, testclass, dic):
         return self.__storeDict("testclassinfo_extrainfo_dict",
-                               testclassinfoid, dic)
+                               testclass, dic)
 
-    def __storeTestClassOutputFileDict(self, testclassinfoid, dic):
+    def __storeTestClassOutputFileDict(self, testclass, dic):
         return self.__storeDict("testclassinfo_outputfiles_dict",
-                               testclassinfoid, dic)
+                               testclass, dic)
 
     def _storeEnvironmentDict(self, testrunid, dic):
         return self.__storeDict("testrun_environment_dict",
@@ -1272,6 +1269,9 @@ class DBStorage(DataStorage, AsyncStorage):
                                  args, checklist,
                                  extrainfo, outputfiles,
                                  parent, fulldescription=None):
+        # ctype : text name of the class
+        # description : description of the class
+        debug("ctype:%r, description:%r", ctype, description)
         # insert into db
         insertstr = """INSERT INTO testclassinfo
         (type, parent, description, fulldescription)
@@ -1280,10 +1280,10 @@ class DBStorage(DataStorage, AsyncStorage):
                                                fulldescription))
 
         # store the dicts
-        self.__storeTestClassArgumentsDict(tcid, args)
-        self.__storeTestClassCheckListDict(tcid, checklist)
-        self.__storeTestClassExtraInfoDict(tcid, extrainfo)
-        self.__storeTestClassOutputFileDict(tcid, outputfiles)
+        self.__storeTestClassArgumentsDict(ctype, args)
+        self.__storeTestClassCheckListDict(ctype, checklist)
+        self.__storeTestClassExtraInfoDict(ctype, extrainfo)
+        self.__storeTestClassOutputFileDict(ctype, outputfiles)
 
 
     def __insertTestClassInfo(self, tclass):
