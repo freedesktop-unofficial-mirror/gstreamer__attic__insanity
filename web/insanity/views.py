@@ -79,13 +79,13 @@ def matrix_view(request, testrun_id):
             # key : test
             # value : list of args/checks/extrainfos
             checks = {}
-            for checkitem in TestCheckListList.objects.select_related("containerid","name","value").filter(containerid__in=query):
+            for checkitem in TestCheckListList.objects.select_related("containerid","name","value").filter(containerid__in=query).order_by("name"):
                 if not checkitem.containerid in checks.keys():
                     checks[checkitem.containerid] = [checkitem]
                 else:
                     checks[checkitem.containerid].append(checkitem)
             args = {}
-            for x in TestArgumentsDict.objects.select_related("containerid", "name","intvalue","txtvalue","blobvalue").filter(containerid__in=query):
+            for x in TestArgumentsDict.objects.select_related("containerid", "name","intvalue","txtvalue","blobvalue").filter(containerid__in=query).order_by("name"):
                 if not x in args.keys():
                     args[x.containerid] = [x]
                 else:
