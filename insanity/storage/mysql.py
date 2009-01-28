@@ -207,7 +207,7 @@ CREATE TABLE test (
    resultpercentage FLOAT,
    parentid INTEGER,
    ismonitor TINYINT(1) DEFAULT 0,
-   isscenario TINYINT(1) DEFAULT 0,
+   isscenario TINYINT(1) DEFAULT 0
 );
 
 CREATE TABLE testclassinfo (
