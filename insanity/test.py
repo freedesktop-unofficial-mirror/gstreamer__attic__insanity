@@ -715,7 +715,10 @@ class DBusTest(Test, dbus.service.Object):
         if self._isproxy:
             Test.extraInfo(self, key, value)
         else:
-            self.remoteExtraInfoSignal(key, value)
+            try:
+                self.remoteExtraInfoSignal(key, value)
+            except:
+                error("Error signaling extra info %r : %r", key, value)
 
 
     def setUp(self):
