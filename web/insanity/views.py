@@ -38,7 +38,7 @@ def matrix_view(request, testrun_id):
     offset = int(request.GET.get("offset", 0))
 
     # let's get the test instances ...
-    testsinst = Test.objects.nomonitors().select_related("type__type", "checklist").filter(testrunid=tr)
+    testsinst = Test.objects.nomonitors().select_related("type", "parentid", "checklist").filter(testrunid=tr)
 
     # and filter them according to the given parameters
     if onlyfailed:
@@ -79,24 +79,27 @@ def matrix_view(request, testrun_id):
             # key : test
             # value : list of args/checks/extrainfos
             checks = {}
-            for checkitem in TestCheckListList.objects.select_related("containerid","name","value").filter(containerid__in=query).order_by("name"):
-                if not checkitem.containerid in checks.keys():
-                    checks[checkitem.containerid] = [checkitem]
+            for x in TestCheckListList.objects.select_related("containerid__type","name","value").filter(containerid__in=query).order_by("name"):
+                if not x.containerid in checks.keys():
+                    checks[x.containerid] = [x]
                 else:
-                    checks[checkitem.containerid].append(checkitem)
+                    checks[x.containerid].append(x)
+
             args = {}
-            for x in TestArgumentsDict.objects.select_related("containerid", "name","intvalue","txtvalue","blobvalue").filter(containerid__in=query).order_by("name"):
-                if not x in args.keys():
+            for x in TestArgumentsDict.objects.select_related("containerid__type", "name","intvalue","txtvalue","blobvalue").filter(containerid__in=query).order_by("name"):
+                if not x.containerid in args.keys():
                     args[x.containerid] = [x]
                 else:
                     args[x.containerid].append(x)
+
             extras = {}
-            for x in TestExtraInfoDict.objects.select_related("containerid", "name__name", "intvalue", "txtvalue", "blobvalue").filter(containerid__in=query,
+            for x in TestExtraInfoDict.objects.select_related("containerid__type", "name__name", "intvalue", "txtvalue", "blobvalue").filter(containerid__in=query,
                                                                                                                                        name__name__in=["subprocess-return-code","errors"]):
-                if not x in extras.keys():
+                if not x.containerid in extras.keys():
                     extras[x.containerid] = [x]
                 else:
                     extras[x.conatinerid].append(x)
+
             tests.append({"type":t,
                           "tests":query,
                           "fullchecklist":t.fullchecklist,
