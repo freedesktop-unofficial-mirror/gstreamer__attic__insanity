@@ -418,7 +418,9 @@ class Test(models.Model):
                     break
             if val == None:
                 d['skipped'] = True
-            d['value'] = val
+                d['value'] = "Default"
+            else:
+                d['value'] = val
             res.append(d)
         return res
     fullarguments = property(_get_full_arguments)
