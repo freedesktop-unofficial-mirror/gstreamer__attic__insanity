@@ -27,7 +27,7 @@ import time
 import threading
 from weakref import WeakKeyDictionary
 from insanity.log import error, warning, debug
-from insanity.utils import map_dict, map_list
+from insanity.utils import map_dict, map_list, map_dict_full
 from insanity.storage.storage import DataStorage
 from insanity.storage.async import AsyncStorage, queuemethod
 
@@ -61,9 +61,6 @@ class DBStorage(DataStorage, AsyncStorage):
         # cache of mappings for testclassinfo
         # { 'testtype' : { 'dictname' : mapping } }
         self.__tcmapping = {}
-        # cache of mappings for testclassinfo
-        # { 'testtype' : { 'dictname' : mapping } }
-        self.__mcmapping = {}
 
         DataStorage.__init__(self, *args, **kwargs)
         AsyncStorage.__init__(self, async)
@@ -1017,40 +1014,21 @@ class DBStorage(DataStorage, AsyncStorage):
         If 'vals' is provided, then we will ensure that all keys of vals are
         present in 'dictname' for the provided 'classtype'
         """
-        # Search in cache first
-        if classtype in mapping:
-            if dictname in mapping[classtype]:
-                return mapping[classtype][dictname]
-
-        # returns a dictionnary of name : id mapping for a test's
-        # arguments, including the parent class mapping
-        searchstr = "SELECT parent,id FROM %s WHERE type=?" % classtable
-        mapsearch = """
-        SELECT name,id
-        FROM %s
-        WHERE containerid=?""" % dictname
-        maps = self._FetchAll(mapsearch, (classtype, ))
-        rp = classtype
-        while rp:
-            res = self._FetchOne(searchstr, (rp, ))
-            rp, tcid = res
-            vals = self._FetchAll(mapsearch, (rp, ))
-            maps.extend(vals)
-
-        if not classtype in mapping:
-            mapping[classtype] = {}
-        mapping[classtype][dictname] = dict(maps)
-        return mapping[classtype][dictname]
-
+        mapsearch = """SELECT name,id FROM %s""" % dictname
+        return dict(self._FetchAll(mapsearch))
 
     def __getTestClassArgumentMapping(self, testtype):
-        return self.__getTestClassMapping(testtype, "testclassinfo_arguments_dict")
+        return self.__getTestClassMapping(testtype,
+                                          "testclassinfo_arguments_dict")
     def __getTestClassCheckListMapping(self, testtype):
-        return self.__getTestClassMapping(testtype, "testclassinfo_checklist_dict")
+        return self.__getTestClassMapping(testtype,
+                                          "testclassinfo_checklist_dict")
     def __getTestClassExtraInfoMapping(self, testtype):
-        return self.__getTestClassMapping(testtype, "testclassinfo_extrainfo_dict")
+        return self.__getTestClassMapping(testtype,
+                                          "testclassinfo_extrainfo_dict")
     def __getTestClassOutputFileMapping(self, testtype):
-        return self.__getTestClassMapping(testtype, "testclassinfo_outputfiles_dict")
+        return self.__getTestClassMapping(testtype,
+                                          "testclassinfo_outputfiles_dict")
 
     def __storeDict(self, dicttable, containerid, pdict):
         if not pdict:
@@ -1240,8 +1218,12 @@ class DBStorage(DataStorage, AsyncStorage):
 
     def __storeTestExtraInfoDict(self, testid, dic, testtype):
         maps = self.__getTestClassExtraInfoMapping(testtype)
+        res, unk = map_dict_full(dic, maps)
+        if unk:
+            nd = self.__storeTestClassExtraInfoDict("", dict((x,"") for x in unk))
+            res.update(dict((nd[a],b) for a,b in dic.iteritems() if a in nd))
         return self.__storeDict("test_extrainfo_dict",
-                               testid, map_dict(dic, maps))
+                               testid, res)
 
     def __storeTestOutputFileDict(self, testid, dic, testtype):
         maps = self.__getTestClassOutputFileMapping(testtype)
