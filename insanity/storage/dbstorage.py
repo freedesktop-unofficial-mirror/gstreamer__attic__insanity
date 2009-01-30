@@ -1060,7 +1060,8 @@ class DBStorage(DataStorage, AsyncStorage):
         # let's sort the dictionnary by keys, just for the sake of it
         keys = pdict.keys()
         keys.sort()
-        self.__storeList(dicttable, containerid, [(k,pdict[k]) for k in keys])
+        return self.__storeList(dicttable, containerid,
+                                [(k,pdict[k]) for k in keys])
 
     def __storeList(self, dicttable, containerid, pdict):
         if not pdict:
@@ -1084,6 +1085,7 @@ class DBStorage(DataStorage, AsyncStorage):
             return res
 
         pdict = flatten_tuple(pdict)
+        dres = {}
 
         self._lock.acquire()
         try:
@@ -1107,10 +1109,11 @@ class DBStorage(DataStorage, AsyncStorage):
                 comstr = insertstr % (dicttable, valstr)
                 #debug("instruction:%s", comstr)
                 #debug("%s, %s, %s", containerid, key, val)
-                self._ExecuteCommit(comstr, (containerid, key, val),
-                                    commit=False, threadsafe=True)
+                dres[key] = self._ExecuteCommit(comstr, (containerid, key, val),
+                                                commit=False, threadsafe=True)
         finally:
             self._lock.release()
+            return dres
 
     def __getArguments(self, containerid, rawinfo=False):
         fullsearch = """SELECT testclassinfo_arguments_dict.name,
