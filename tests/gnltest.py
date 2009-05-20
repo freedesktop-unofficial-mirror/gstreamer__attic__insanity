@@ -61,12 +61,15 @@ class GnlFileSourceTest(GStreamerTest):
         "correct-newsegment-stop" : "The new-segment had the correct 'stop' value",
         "correct-newsegment-position" : "The new-segment had the correct 'position' value",
         "correct-initial-buffer" : "The first buffer received had the proper timestamp",
+        "correct-final-buffer" : "The last buffer received has proper timestamp and duration",
         "first-buffer-after-newsegment" : "The first buffer was seen after a newsegment"
         }
 
     __test_extra_infos__ = {
         "first-buffer-timestamp" : "The timestamp of the first buffer (in milliseconds)",
-        "newsegment-values" : "The values of the first newsegment"
+        "last-buffer-timestamp" : "The timestamp of the last buffer",
+        "last-buffer-duration" : "The duration of the last buffer",
+        "last-buffer-stop" : "The stop position of the last buffer"
         }
 
     __pipeline_initial_state__ = gst.STATE_PAUSED
@@ -79,11 +82,13 @@ class GnlFileSourceTest(GStreamerTest):
     def remoteSetUp(self):
         self._fakesink = None
         self._gotFirstBuffer = False
+        self._gotLastBuffer = False
         self._gotNewSegment = False
-        self._start = self.arguments.get("start", 0)
-        self._duration = self.arguments.get("duration", gst.MSECOND) * 1000
-        self._mstart = self.arguments.get("media-start", 5 * gst.MSECOND) * 1000
-        self._mduration = self.arguments.get("media-duration", self._duration) * 1000
+        self._lastBuffer = None
+        self._start = self.arguments.get("start", 0) * gst.MSECOND
+        self._duration = self.arguments.get("duration", 1000) * gst.MSECOND
+        self._mstart = self.arguments.get("media-start", 5 * 1000) * gst.MSECOND
+        self._mduration = self.arguments.get("media-duration", self._duration / gst.MSECOND) * gst.MSECOND
         warning("Got caps-string:%r", self.arguments.get("caps-string", "audio/x-raw-int;audio/x-raw-float"))
         self._caps = gst.Caps(str(self.arguments.get("caps-string", "audio/x-raw-int;audio/x-raw-float")))
         GStreamerTest.remoteSetUp(self)
@@ -117,6 +122,9 @@ class GnlFileSourceTest(GStreamerTest):
                 self.validateStep("correct-initial-buffer", data.timestamp == self._mstart)
                 self.validateStep("first-buffer-after-newsegment", self._gotNewSegment)
                 self._gotFirstBuffer = True
+            self._lastBuffer = data
+            # we're returning False, we'll only let the events pass (like EOS)
+            return False
         elif data.type == gst.EVENT_NEWSEGMENT:
             if not self._gotNewSegment:
                 debug("newsegment")
@@ -132,4 +140,15 @@ class GnlFileSourceTest(GStreamerTest):
                 self._gotNewSegment = True
             else:
                 gobject.idle_add(self.stop)
+        elif data.type == gst.EVENT_EOS:
+            if self._lastBuffer:
+                buf = self._lastBuffer
+                self.extraInfo("last-buffer-timestamp", valtime(buf.timestamp))
+                self.extraInfo("last-buffer-duration", valtime(buf.duration))
+                if buf.timestamp != gst.CLOCK_TIME_NONE and buf.duration != gst.CLOCK_TIME_NONE:
+                    self.extraInfo("last-buffer-stop", valtime(buf.duration + buf.timestamp))
+                    self.validateStep("correct-final-buffer",
+                                      buf.timestamp + buf.duration == self._mstart + self._mduration)
+                else:
+                    self.validateStep("correct-final-buffer", False)
         return True
