@@ -35,7 +35,8 @@ INSANITY_DEBUG   LEVEL
 5               DEBUG
 """
 
-from logging import *
+from logging import debug, info, error, critical, warning, exception, \
+     ERROR, CRITICAL, WARNING, INFO, DEBUG, basicConfig
 import sys
 import os
 
