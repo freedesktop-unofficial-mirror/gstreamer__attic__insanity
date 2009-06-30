@@ -1133,12 +1133,13 @@ class DBStorage(DataStorage, AsyncStorage):
             res = self._FetchAll(fullsearch, (containerid, ))
         else:
             res = self._FetchAll(normalsearch, (containerid, ))
-        d = {}
+        d = []
         for n, iv, tv in res:
             if iv != None:
-                d[n] = iv
+                d.append((n, iv))
             else:
-                d[n] = tv
+                d.append((n, tv))
+        d.sort()
         return d
 
     def __getCheckList(self, containerid, rawinfo=False):
