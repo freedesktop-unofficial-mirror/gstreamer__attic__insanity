@@ -100,8 +100,13 @@ class GStreamerTestBase(PythonDBusTest):
                 self.remoteStop()
                 return
 
-        self._elements = ["%s %s" % (self.pipeline.get_name(),
-                                     self.pipeline.get_factory().get_name())]
+        factory = self.pipeline.get_factory()
+        if factory is None:
+            facname = "(no factory)"
+        else:
+            facname = factory.get_name()
+        self._elements = ["%s %s" % (self.pipeline.get_name(), facname)]
+
         self._watchContainer(self.pipeline)
 
         # connect to bus
