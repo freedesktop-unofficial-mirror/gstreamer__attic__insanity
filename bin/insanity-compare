@@ -32,7 +32,7 @@ from insanity.storage.sqlite import SQLiteStorage
 from insanity.log import initLogging
 
 def printTestInfo(db, testid, failedonly=False):
-    trid, ttype, args, checks, resperc, extras, outputfiles = db.getFullTestInfo(testid)
+    trid, ttype, args, checks, resperc, extras, outputfiles, parentid, ismon, isscen = db.getFullTestInfo(testid)
     if failedonly and resperc == 100.0:
         return
     # test number + name
@@ -44,10 +44,10 @@ def printTestInfo(db, testid, failedonly=False):
     # results
     print "Results :"
     for key,val in checks:
-        print "\t% -30s:\t%d" % (key, val)
+        print "\t% -30s:\t%s" % (key, val)
     if extras:
         print "Extra Information:"
-        for key,val in extras.iteritems():
+        for key,val in extras:
             print "\t% -30s:\t%s" % (key, val)
     if outputfiles:
         print "Output files:"
@@ -121,13 +121,14 @@ def compare(storage, testrun1, testrun2, ignoremonitors=False):
             print "[%6d/%6d] %02.2f%% %.2fs avg:%.2fms TOTAL:%04ds ETA:%04ds" % (i, nb2, percdone,
                                                                                  diff, (diff/i) * 1000,
                                                                                  TOTAL, ETA)
-        tid, ttype, args, results, resperc, extras, outputfiles = storage.getFullTestInfo(newid,
-                                                                                          rawinfo=True,
-                                                                                          onlyargs=True)
+        tid, ttype, args, results, resperc, extras, outputfiles, parentid, ismonitor, isscenario = storage.getFullTestInfo(newid,
+                                                                                                                           rawinfo=True,
+                                                                                                                           onlyargs=True)
         if ignoremonitors:
             ancestors = storage.findTestsByArgument(ttype, args, testrun1)
         else:
             ancestors = storage.findTestsByArgument(ttype, args, testrun1, previd=newid)
+
         if ancestors == []:
             newtests.append(newid)
         else:
@@ -148,8 +149,8 @@ def compare(storage, testrun1, testrun2, ignoremonitors=False):
     imps = []
     for new, olds in newmapping.iteritems():
         old = olds[0]
-        tid1, a1, perc1 = storage.getTestInfo(old, rawinfo=True)
-        tid2, a2, perc2 = storage.getTestInfo(new, rawinfo=True)
+        tid1, a1, perc1, pid1, ismonitor1, isscenario1 = storage.getTestInfo(old, rawinfo=True)
+        tid2, a2, perc2, pid2, ismonitor2, isscenario2 = storage.getTestInfo(new, rawinfo=True)
         if perc1 == 100 and perc2 == 100:
             continue
         if perc1 < perc2:
@@ -178,7 +179,7 @@ if __name__ == "__main__":
     print "****REGRESSIONS****"
     for test in regs:
         for ptest in mapping[test]:
-            print "OLD TEST %d", ptest
+            print "OLD TEST", ptest
             printTestInfo(db, ptest)
-        print "NEW TEST %d", test
+        print "NEW TEST", test
         printTestInfo(db, test)
