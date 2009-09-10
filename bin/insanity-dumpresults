@@ -52,7 +52,7 @@ def printTestInfo(db, testid):
     # test number + name
     print "Test #% 3d (%s) Success : %0.1f%%" % (testid, ttype, resperc)
     # arguments
-    print "Arguments :"
+    print "Arguments :", args
     for key,val in args.iteritems():
         print "\t% -30s:\t%s" % (key, val)
     # results
