@@ -88,8 +88,8 @@ class EncoderMuxerTest(GStreamerTest):
         "muxer-factory": ( "Name of the gst.ElementFactory to use to contain the streams",
                            None,
                            None ),
-        "media-duration": ( "Duration of the media to generate (in nanoseconds)",
-                            20 * gst.SECOND,
+        "media-duration": ( "Duration of the media to generate (in milliseconds)",
+                            20 * 1000,
                             None ),
         "media-offset": ( "Initial buffer timestamp",
                           0,
@@ -118,7 +118,7 @@ class EncoderMuxerTest(GStreamerTest):
         self._videoCaps = self.arguments.get("video-caps")
         self._audioCaps = self.arguments.get("audio-caps")
         self._muxerFact = self.arguments.get("muxer-factory")
-        self._mediaDuration = self.arguments.get("media-duration", 20 * gst.SECOND)
+        self._mediaDuration = self.arguments.get("media-duration", 20 * 1000) * gst.MSECOND
         self._audioSource = None
         self._videoSource = None
         self._audioEncoder = None

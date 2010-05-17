@@ -45,24 +45,24 @@ def printTestRunInfo(db, testrunid, verbose=False):
                                                                            clientuser)
 
 def printTestInfo(db, testid):
-    trid, ttype, args, checks, resperc, extras, outputfiles = db.getFullTestInfo(testid)
+    trid, ttype, args, checks, resperc, extras, outputfiles, parentid, ismon, isscen = db.getFullTestInfo(testid)
     if resperc == None:
         # test didn't end in the database
         return
     # test number + name
     print "Test #% 3d (%s) Success : %0.1f%%" % (testid, ttype, resperc)
     # arguments
-    print "Arguments :"
+    print "Arguments :", args
     for key,val in args.iteritems():
         print "\t% -30s:\t%s" % (key, val)
     # results
     print "Results :"
     for key,val in checks:
-        print "\t% -30s:\t%d" % (key, val)
+        print "\t% -30s:\t%s" % (key, val)
     if extras:
         print "Extra Information:"
-        for key,val in extras.iteritems():
-            print "\t% -30s:\t%s" % (key, val)
+        for k, v in extras:
+            print "\t% -30s:\t%s" % (k, v)
     if outputfiles:
         print "Output files:"
         for key,val in outputfiles.iteritems():
@@ -159,7 +159,7 @@ if __name__ == "__main__":
         from insanity.storage.sqlite import SQLiteStorage
         db = SQLiteStorage(path=args[0], async=False)
     if options.list:
-        # list all available test rus
+        # list all available test runs
         testruns = db.listTestRuns()
         for runid in testruns:
             printTestRunInfo(db, runid)

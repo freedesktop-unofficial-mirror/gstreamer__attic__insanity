@@ -69,10 +69,10 @@ class TypeFindTest(GStreamerTest):
     __test_extra_infos__ = {
         "mimetype" : "The mimetype of the URI",
         "redirection-uri" : "A redirection URI",
-        "total-uri-duration" : "The total duration of the URI",
+        "total-uri-duration" : "The total duration of the URI (in milliseconds)",
         "unknown-mime-type" : "Mimetype of formats we don't know how to handle",
         "unhandled-formats" : "List of formats GStreamer can not handle",
-        "streams" : "List of stream information (padname, length(ns), caps)"
+        "streams" : "List of stream information (padname: length(ms), caps)"
         }
 
     __pipeline_initial_state__ = gst.STATE_PAUSED
@@ -115,7 +115,7 @@ class TypeFindTest(GStreamerTest):
         debug("length:%s, similar:%r", gst.TIME_ARGS(length), issimilar)
         self.validateStep("stream-duration-identical", issimilar)
         self.validateStep("duration-available", not length == -1)
-        self.extraInfo("total-uri-duration", length)
+        self.extraInfo("total-uri-duration", int(length / gst.MSECOND))
         self.validateStep("available-demuxer",
                           not self._mimetype in [s.caps.to_string() for s in self._streams])
 
@@ -126,10 +126,13 @@ class TypeFindTest(GStreamerTest):
         self.validateStep("all-fixed-caps-streams",
                           not len([s for s in raws if s and not s.caps.is_fixed()]))
         self.validateStep("all-streams-decodable", not len(notraws))
-        if len(notraws):
-            self.extraInfo("unhandled-formats", [s.caps.to_string() for s in notraws])
-        xs = [(s.pad.get_name(), s.length, s.caps.to_string()) for s in self._streams]
-        self.extraInfo("streams", dbus.Array(xs, signature="(sxs)"))
+        for s in notraws:
+            self.extraInfo("unhandled-formats", s.caps.to_string())
+        for s in self._streams:
+            padname = s.pad.get_name()
+            self.extraInfo("streams.%s.duration" % padname,
+                           int(s.length / gst.MSECOND))
+            self.extraInfo("streams.%s.caps" % padname, s.caps.to_string())
 
 
     def _analyzeDecodebin(self):

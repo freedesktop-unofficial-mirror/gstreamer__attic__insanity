@@ -53,16 +53,37 @@ def escape_val(val, safe=False):
     return escape(unicode(val))
 
 
+def time_to_string(value):
+    if value == -1.0:
+        return "--:--:--.---"
+    ms = value / 1000000
+    sec = ms / 1000
+    ms = ms % 1000
+    mins = sec / 60
+    sec = sec % 60
+    hours = mins / 60
+    return "%02d:%02d:%02d.%03d" % (hours, mins, sec, ms)
+
 class TestArgValueNode(template.Node):
 
     def __init__(self, arg):
         self._arg_name = arg
 
     def render(self, context):
+        mstypes = ["media-start",
+                   "media-duration",
+                   "start",
+                   "duration"]
         # render based on the type
         arg = context[self._arg_name]
-        # insert custom arg value handling here
-        return arg.value
+        res = None
+        try:
+            if arg.name.name in mstypes:
+                res = time_to_string(arg.value * 1000000)
+            else:
+                res = escape_val(arg.value)
+        finally:
+            return res
 
 class TestExtraInfoValueNode(template.Node):
 
@@ -70,12 +91,12 @@ class TestExtraInfoValueNode(template.Node):
         self._extrainfo_name = extrainfo
 
     def render(self, context):
-        floatsecondtypes = ["test-total-duration",
-                            "test-setup-duration",
-                            "remote-instance-creation-delay",
-                            "subprocess-spawn-time"]
-        gstsecondtypes = ["first-buffer-timestamp",
-                          "total-uri-duration"]
+        mstypes = ["test-total-duration",
+                   "test-setup-duration",
+                   "remote-instance-creation-delay",
+                   "subprocess-spawn-time",
+                   "first-buffer-timestamp",
+                   "total-uri-duration"]
 
 
         def elements_used_dict(elements):
@@ -104,17 +125,6 @@ class TestExtraInfoValueNode(template.Node):
 
             return switch_dict(d)
 
-        def time_to_string(value):
-            if value == -1.0:
-                return "--:--:--.---"
-            ms = value / 1000000
-            sec = ms / 1000
-            ms = ms % 1000
-            mins = sec / 60
-            sec = sec % 60
-            hours = mins / 60
-            return "%02d:%02d:%02d.%03d" % (hours, mins, sec, ms)
-
         def newsegment_tuple(tup):
             update,rate,format,start,stop,pos = tup
             return "<br>".join(["Update : %d" % update,
@@ -127,17 +137,17 @@ class TestExtraInfoValueNode(template.Node):
         # render based on the type
         extrainfo = context[self._extrainfo_name]
         # insert custom extrainfo value handling here
-        if extrainfo.name.name in gstsecondtypes:
-            res = time_to_string(extrainfo.value)
-        elif extrainfo.name.name in floatsecondtypes:
-            res = time_to_string(float(extrainfo.value) * 1000000000)
-        elif extrainfo.name.name == "elements-used":
-            res = escape_val(elements_used_dict(extrainfo.value), safe=True)
-        elif extrainfo.name.name == "newsegment-values":
-            res = newsegment_tuple(extrainfo.value)
-        else:
-            res = escape_val(extrainfo.value)
-        return res
+        res = None
+        try:
+            if extrainfo.name.name in mstypes:
+                # values are stored in milliseconds, we bring them back to ns
+                res = time_to_string(extrainfo.value * 1000000)
+            elif extrainfo.name.name.endswith(".duration"):
+                res = time_to_string(extrainfo.value * 1000000)
+            else:
+                res = escape_val(extrainfo.value)
+        finally:
+            return res
 
 @register.inclusion_tag('insanity/test_args_dict.html')
 def test_args_dict(test, fullarguments=None):
@@ -147,8 +157,7 @@ def test_args_dict(test, fullarguments=None):
 
 @register.inclusion_tag('insanity/test_checklist_dict.html')
 def test_checklist_dict(test, fullchecklist=None):
-    results = test._get_results_dict(fullchecklist)
-    return {'results':results}
+    return {'results':test.checklist.all().select_related(depth=1)}
 
 @register.inclusion_tag('insanity/test_extrainfo_dict.html')
 def test_extrainfo_dict(test):
@@ -158,12 +167,12 @@ def test_extrainfo_dict(test):
 @register.inclusion_tag('insanity/matrix_checklist_row.html')
 def matrix_checklist_row(test, fullchecklist, fullarguments,
                          allchecks, allargs, allextrainfo):
-    arguments = test._get_full_arguments(fullarguments, allargs)
-    results = test._get_results_dict(fullchecklist, allchecks)
-    test_error = test._test_error(allextras=allextrainfo)
+    args = test._get_full_arguments(fullarguments, allargs.get(test, []))
+    checks = allchecks.get(test, [])
+    test_error = test._test_error(allextras=allextrainfo.get(test, []))
     return {'test':test,
-            'arguments':arguments,
-            'results':results,
+            'arguments':args,
+            'results':checks,
             'test_error':test_error}
 
 @register.inclusion_tag('insanity/matrix_navigation.html', takes_context=True)
