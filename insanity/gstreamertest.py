@@ -23,7 +23,7 @@ import sys
 import os
 
 from insanity.log import error, warning, debug, info, exception
-from insanity.test import PythonDBusTest
+from insanity.dbustest import PythonDBusTest
 
 import dbus
 import gobject
