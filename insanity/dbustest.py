@@ -122,6 +122,7 @@ class DBusTest(Test, dbus.service.Object):
             self._remotetimeoutid = 0
             self._remotetimedout = False
             # connect to bus
+            info("Connecting to bus as /net/gstreamer/Insanity/Test/Test%s" % self.uuid)
             self.objectpath = "/net/gstreamer/Insanity/Test/Test%s" % self.uuid
             dbus.service.Object.__init__(self, conn=self._bus,
                                          object_path=self.objectpath)
@@ -484,8 +485,8 @@ class DBusTest(Test, dbus.service.Object):
         # * filename where the Test class is located (self.get_file())
         # * class name (self.__class__.__name__)
         # * the arguments (self.arguments) + proxy=True
-        rname = "net.gstreamer.Insanity.Test.Test%s" % self.uuid
-        rpath = "/net/gstreamer/Insanity/Test/RemotePythonRunner%s" % self.uuid
+        rname = "net.gstreamer.Insanity.RemotePythonRunner.RemotePythonRunner%s" % self.uuid
+        rpath = "/net/gstreamer/Insanity/RemotePythonRunner/RemotePythonRunner%s" % self.uuid
         # get the proxy object to our counterpart
         remoteobj = self._bus.get_object(rname, rpath)
         debug("Got remote runner object %r" % remoteobj)
@@ -516,7 +517,9 @@ class DBusTest(Test, dbus.service.Object):
         debug("%s retval:%r", self.uuid, retval)
         if retval:
             delay = time.time() - self._subprocessconnecttime
-            rname = "net.gstreamer.Insanity.Test.Test%s" % self.uuid
+            # The runner to connect to
+            rname = "net.gstreamer.Insanity.RemotePythonRunner.RemotePythonRunner%s" % self.uuid
+            # The actual instance
             rpath = "/net/gstreamer/Insanity/Test/Test%s" % self.uuid
             # remote instance was successfully created, let's get it
             try:
@@ -524,6 +527,7 @@ class DBusTest(Test, dbus.service.Object):
             except:
                 warning("Couldn't get the remote instance for test %r", self.uuid)
                 self.stop()
+                raise
                 return
             self.extraInfo("remote-instance-creation-delay", int(delay * 1000))
             self.validateStep("remote-instance-created")

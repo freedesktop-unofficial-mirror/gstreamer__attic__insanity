@@ -58,7 +58,7 @@ class DbusRunner(dbus.service.Object):
     def __init__(self, bus, uuid, busname):
         self.ml = gobject.MainLoop()
         self.bus = bus
-        objectpath = "/net/gstreamer/Insanity/Test/RemotePythonRunner%s" % uuid
+        objectpath = "/net/gstreamer/Insanity/RemotePythonRunner/RemotePythonRunner%s" % uuid
         dbus.service.Object.__init__(self, conn=self.bus,
                                      object_path=objectpath,
                                      bus_name=busname)
@@ -119,7 +119,7 @@ if __name__ == "__main__":
 
     try:
         bus = dbus.bus.BusConnection(dbusadd, mainloop=DBusGMainLoop())
-        busname = dbus.service.BusName("net.gstreamer.Insanity.Test.Test%s" % uuid, bus)
+        busname = dbus.service.BusName("net.gstreamer.Insanity.RemotePythonRunner.RemotePythonRunner%s" % uuid, bus)
 
         dbr = DbusRunner(bus, uuid, busname)
         dbr.run()

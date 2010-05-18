@@ -445,7 +445,7 @@ class GDBMonitor(Monitor):
 
                     # run the backtrace script
                     # This blocks, which is acceptable since we're tearing down
-                    subprocess.Popen(["gdb", "--batch", "-x", self._GDBScript, "python", core],
+                    subprocess.Popen(["gdb", "--batch", "-x", self._GDBScript, "python2.6", core],
                                      stdout = backtracefile,
                                      stderr = backtracefile).wait()
 

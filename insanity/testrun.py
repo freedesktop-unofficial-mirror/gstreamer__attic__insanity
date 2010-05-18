@@ -200,12 +200,12 @@ class TestRun(gobject.GObject):
                                           self._dbusNameOwnerChangedSignal)
 
     def _dbusNameOwnerChangedSignal(self, name, oldowner, newowner):
-        # we only care about connections named net.gstreamer.Insanity.Test.xxx
+        # we only care about connections named net.gstreamer.Insanity.RemotePythonRunner.xxx
         info("name:%s , oldowner:%s, newowner:%s" % (name, oldowner, newowner))
-        if not name.startswith("net.gstreamer.Insanity.Test.Test"):
+        if not name.startswith("net.gstreamer.Insanity.RemotePythonRunner.RemotePythonRunner"):
             return
         # extract uuid
-        uuid = name.rsplit('.Test', 1)[-1]
+        uuid = name.rsplit('.RemotePythonRunner', 1)[-1]
         if newowner == "":
             self.emit("removed-remote-test", uuid)
         elif oldowner == "":
