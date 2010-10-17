@@ -26,6 +26,7 @@ Miscellaneous utility functions and classes
 
 import os
 import imp
+import urllib
 from random import randint
 import gzip
 from insanity.log import exception
@@ -221,12 +222,12 @@ def compress_file(original, compfile):
 
 def unicode_dict(adict):
     """
-    Returns a copy on the given dictionnary where all string values
+    Returns a copy on the given dictionary where all string values
     are validated as proper unicode
     """
     res = {}
     for key, val in adict.iteritems():
-        if isinstance(val, str):
+        if isinstance(val, str) and key != 'uri':
             try:
                 res[key] = unicode(val)
             except:
