@@ -127,9 +127,8 @@ class TestRun(gobject.GObject):
         self._env = os.environ.copy()
         if env:
             self._env.update(env)
-        self._workingdir = workingdir or os.path.join(os.getcwd(), "workingdir")
-        self._outputdir = os.path.join(self._workingdir, "outputfiles")
         self._running = False
+        self.setWorkingDirectory(workingdir or os.path.join(os.getcwd(), "workingdir"))
 
     ## PUBLIC API
 
@@ -140,9 +139,6 @@ class TestRun(gobject.GObject):
         if self._running:
             error("TestRun is already running")
             return
-        # make sure working directory exists
-        if not os.path.exists(self._outputdir):
-            os.makedirs(self._outputdir)
         self._collectEnvironment()
 
     def abort(self):
@@ -346,15 +342,19 @@ class TestRun(gobject.GObject):
         """
         Change the working directory. This can only be called when the
         TestRun isn't running.
+        Creates the directories if they are not present.
 
         Returns True if the working directory was properly changed.
-        Returns False if there was a problem.
+        Returns False if self is running.
         """
         if self._running:
             return False
         debug("Changing workdir to %s", workdir)
         self._workingdir = workdir
         self._outputdir = os.path.join(self._workingdir, "outputfiles")
+        # ensure directories exist
+        if not os.path.exists(self._outputdir):
+            os.makedirs(self._outputdir)
         return True
 
     def get_temp_file(self, nameid='', suffix='', category="insanity-output"):
