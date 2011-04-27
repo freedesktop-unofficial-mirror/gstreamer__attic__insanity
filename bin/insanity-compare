@@ -113,7 +113,7 @@ def compare(storage, testrun1, testrun2, ignoremonitors=False):
     print "Comparing %d tests from second testrun against first testrun" % nb2
     for i in range(nb2):
         newid = tests2[i]
-        if i and (i % 50) == 0:
+        if i and (i % 100) == 0:
             diff = time.time() - starttime
             percdone = float(i)/nb2*100
             TOTAL = (100.0 * diff) / percdone
