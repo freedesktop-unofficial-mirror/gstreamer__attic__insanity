@@ -466,7 +466,7 @@
 # suppression for a glibc bug:
 # http://valgrind.org/docs/manual/faq.html#faq.exit_errors>
 {
-   <Workaround for a glibc bug> 
+   <Workaround for a glibc bug>
    Memcheck:Free
    fun:free
    obj:*libc-*.so
@@ -814,7 +814,7 @@
 }
 
 # More edgy suppressions (Mike)
-{  
+{
    <dlopen Condition jump suppressions for Ubuntu Edgy/x86>
    Memcheck:Cond
    obj:/lib/ld-2.4.so
@@ -827,7 +827,7 @@
    fun:dlopen@@GLIBC_2.1
 }
 
-{  
+{
    <dlopen Condition jump suppressions for Ubuntu Edgy/x86>
    Memcheck:Cond
    obj:/lib/ld-2.4.so
@@ -842,7 +842,7 @@
    fun:dlopen@@GLIBC_2.1
 }
 
-{  
+{
    <dlopen Condition jump suppressions for Ubuntu Edgy/x86>
    Memcheck:Cond
    obj:/lib/ld-2.4.so
@@ -854,7 +854,7 @@
 
 # This one's overly general, but there's zero other information in the stack
 # trace - just these five lines!
-{  
+{
    <dlopen Condition jump suppressions for Ubuntu Edgy/x86>
    Memcheck:Cond
    obj:/lib/ld-2.4.so
@@ -1492,7 +1492,7 @@
    obj:/usr/lib/libgconf-2.so.*
    obj:/usr/lib/libgconf-2.so.*
    fun:gconf_engine_get_default
-}  
+}
 {
    <gconf internal initialisation>
    Memcheck:Leak
@@ -1618,7 +1618,7 @@
    fun:bonobo_activation_init
 }
 
-# More GConf stuff from the FC5 buildbot, mostly variations on the 
+# More GConf stuff from the FC5 buildbot, mostly variations on the
 # above stack traces
 {
    <incompletely initialised ORBit buffer>

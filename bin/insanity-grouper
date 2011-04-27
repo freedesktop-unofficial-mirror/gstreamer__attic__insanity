@@ -221,7 +221,7 @@ def find_similarities(group):
         return
     root = _doit(list(zip(*l)[1]))
 
-    # With this tree we can prune it to 
+    # With this tree we can prune it to
     print_node(root)
     simp = simplify_node(root)
     print ""

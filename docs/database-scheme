@@ -58,8 +58,8 @@ Description of tables
  * parent : parent type, can be ''
  * description : description of the test
  * arguments : arguments
- * checklist : 
- * extrainfo : 
+ * checklist :
+ * extrainfo :
 
 * dicts
  * id : Primary unique key for all dictionnaries in the db

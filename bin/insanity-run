@@ -232,7 +232,7 @@ def main():
 
     test_run = TestRun(maxnbtests=1, workingdir=options.output)
     test_run.addTest(test_class, test_arguments)
-    
+
     client = Client()
     client.setStorage(storage)
     client.addTestRun(test_run)

@@ -45,7 +45,7 @@ REPORTING/ANALYSIS
 
 Find all similar test issues in a testrun, or accross several testruns.
 
-I.e. : 
+I.e. :
   For tests of the same type (else, you can't really comare them)
      For similar checklists
         Assign to a issue group

@@ -115,7 +115,7 @@ MuxerTest
 * run tuples from the 'CompatibleEncMux' and generate files
 * should be followed by TypeFindTest and MuxerConfirmTest
 MuxerConfirmTest
-* 
+*
 
 === execution ===
 client.run
