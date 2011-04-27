@@ -220,6 +220,7 @@ CREATE INDEX testclassinfo_parent_idx ON testclassinfo (parent);
 CREATE INDEX testrun_env_dict_container_idx ON testrun_environment_dict (containerid);
 
 CREATE INDEX t_a_dict_containerid_idx ON test_arguments_dict (containerid, name);
+CREATE INDEX t_a_dict_txtname_idx ON test_arguments_dict (txtvalue, name);
 CREATE INDEX t_c_list_containerid_idx ON test_checklist_list (containerid, name);
 CREATE INDEX t_ei_dict_containerid_idx ON test_extrainfo_dict (containerid, name);
 CREATE INDEX t_of_dict_containerid_idx ON test_outputfiles_dict (containerid, name);
