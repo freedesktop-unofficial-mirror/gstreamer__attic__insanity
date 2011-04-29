@@ -141,7 +141,7 @@ class GStreamerTestBase(PythonDBusTest):
                     # TODO : this is gonna screw up MASSIVELY with values > 2**63
                     if val >= 2**31:
                         self._tags[key] = long(val)
-                self.extraInfo("tags.%s" % key, val)
+                self.extraInfo("tags.%s" % key, self._tags[key])
         if not self._elements == []:
             self.extraInfo("elements-used", self._elements)
         return True
