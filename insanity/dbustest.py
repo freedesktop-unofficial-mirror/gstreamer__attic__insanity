@@ -152,7 +152,7 @@ class DBusTest(Test, dbus.service.Object):
             try:
                 self.remoteExtraInfoSignal(key, value)
             except:
-                error("Error signaling extra info %r : %r", key, value)
+                error("Error signaling extra info %r : %r", key, value, exc_info=1)
 
 
     def setUp(self):
@@ -292,7 +292,7 @@ class DBusTest(Test, dbus.service.Object):
         pass
 
     def _voidRemoteErrBackHandler(self, exc, caller=None, fatal=True):
-        warning("%r : %s", caller, exc)
+        error("%r : %s", caller, exc)
         if fatal:
             warning("FATAL : aborting test")
             # a fatal error happened, DIVE DIVE DIVE !
