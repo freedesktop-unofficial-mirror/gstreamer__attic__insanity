@@ -49,9 +49,7 @@ class Test(gobject.GObject):
     """
     Runs a series of commands
 
-    parameters:
-    * uuid : unique identifier for the test
-        This is assigned by the controlling object
+    @ivar uuid: unique identifier for the test
     """
 
     __test_name__ = "test-base-class"
@@ -170,6 +168,9 @@ class Test(gobject.GObject):
     def __init__(self, testrun=None, uuid=None, timeout=None,
                  asynctimeout=None,
                  **kwargs):
+        """
+        @type testrun: L{TestRun}
+        """
         gobject.GObject.__init__(self)
         self._timeout = timeout or self.__test_timeout__
         self._asynctimeout = asynctimeout or self.__async_setup_timeout__
