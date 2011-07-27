@@ -2,6 +2,9 @@ from django.conf.urls.defaults import *
 
 urlpatterns = patterns('web.insanityweb.views',
                        (r'^$', 'index'),
+                       (r'^current/progress.json$', 'current_progress'),
+                       (r'^current/stop/$', 'stop_current'),
+                       (r'^current/$', 'current'),
                        (r'^testrun/(?P<testrun_id>\d+)/$', 'testrun_summary'),
                        (r'^test/(?P<test_id>\d+)/$', 'test_summary'),
                        (r'^matrix/(?P<testrun_id>\d+)/$', 'matrix_view'),

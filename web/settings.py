@@ -87,3 +87,8 @@ INSTALLED_APPS = (
     'django.contrib.admin',
     'web.insanityweb'
 )
+
+# A map of folders that the tests can be run in
+INSANITY_TEST_FOLDERS = {
+    os.path.join(PROJECT_PATH, 'test_media'): 'Test Media Folder'
+}

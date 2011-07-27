@@ -6,37 +6,44 @@ Insanity QA system (latest {{nbruns}} runs)
 
 {% block content %}
 
-    {% if latest_runs %}
-    <table class="testruns">
-      <tr>
-	<th class="side"></th>
-        <th>Time</th>
-	<th>Test(s)</th>
-	<th>Client</th>
-	<th colspan="6">Views</th>
-      </tr>
-      {% for run in latest_runs %}
-	<tr class="{% cycle row1,row2 %}">
-	<th class="side">TestRun #{{ run.id }}</th>
-        <td>{{ run.starttime|date:"Y-m-d H:i:s" }}</td>
-	<td class="numeric">{{ run.nbtests }}</td>
-        <td>
-          {{run.clientid.name}}
-          {% if run.clientid.user %}
-          / {{run.clientid.user}}
-          {% endif %}
-        </td>
-	<td><a href="{{run.get_matrix_view_url}}?showscenario=0">Tests only</a></td>
-	<td><a href="{{run.get_matrix_view_url}}?onlyfailed=1&showscenario=0">Failed Tests</a></td>
-	<td><a href="{{run.get_matrix_view_url}}">Tests+Scenarios</a></td>
-	<td><a href="{{run.get_matrix_view_url}}?onlyfailed=1">Failed Tests+Scenarios</a></td>
-	<td><a href="{{run.get_matrix_view_url}}?crashonly=1">Crashed Tests</a></td>
-	<td><a href="{{run.get_matrix_view_url}}?timedoutonly=1">Timed-out Tests</a></td>
-      </tr>
-      {% endfor %}
-    </table>
-    {% else %}
-    <p>No Test Runs are currently available.</p>
-    {% endif %}
+<p>
+  <a href="{% url web.insanityweb.views.current %}">Run new test or view test progress</a>
+</p>
+
+{% if latest_runs %}
+  <h2>
+    Overview of the latest {{ nbruns }} runs
+  </h2>
+
+  <table class="testruns">
+    <tr>
+      <th class="side"></th>
+      <th>Time</th>
+      <th>Test(s)</th>
+      <th>Client</th>
+      <th colspan="6">Views</th>
+    </tr>
+    {% for run in latest_runs %}
+  	<tr class="{% cycle row1,row2 %}">
+      <th class="side">TestRun #{{ run.id }}</th>
+      <td>{{ run.starttime|date:"Y-m-d H:i:s" }}</td>
+      <td class="numeric">{{ run.nbtests }}</td>
+      <td>
+        {{run.clientid.name}} {% if run.clientid.user %}/ {{run.clientid.user}}{% endif %}
+      </td>
+      <td><a href="{{run.get_matrix_view_url}}?showscenario=0">Tests only</a></td>
+      <td><a href="{{run.get_matrix_view_url}}?onlyfailed=1&amp;showscenario=0">Failed Tests</a></td>
+      <td><a href="{{run.get_matrix_view_url}}">Tests+Scenarios</a></td>
+      <td><a href="{{run.get_matrix_view_url}}?onlyfailed=1">Failed Tests+Scenarios</a></td>
+      <td><a href="{{run.get_matrix_view_url}}?crashonly=1">Crashed Tests</a></td>
+      <td><a href="{{run.get_matrix_view_url}}?timedoutonly=1">Timed-out Tests</a></td>
+    </tr>
+    {% endfor %}
+  </table>
+{% else %}
+  <p>
+    No Test Runs are currently available.
+  </p>
+{% endif %}
 
 {% endblock %}

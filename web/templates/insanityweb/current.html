@@ -1,0 +1,58 @@
+{% extends "insanityweb/base.html" %}
+
+{% block title %}
+Insanity QA system - Start / Stop Test
+{% endblock %}
+
+{% block content %}
+
+<h1>Run / View Current Test Run</h1>
+
+<p>
+{% if tests_running %}
+    Running <b>{{ test }}</b> in <b>{{ folder }}</b>: <span id="progress_pct">{{ progress }}</span>% done. <br />
+  <form method="post" action="{% url web.insanityweb.views.stop_current %}">
+    <input type="submit" class="button" name="submit" value="Stop Tests" />
+  </form>
+{% else %}
+  No tests are running.
+
+<form method="post" action="">
+  <h2>Create new test</h2>
+  <select name="test">
+    {% for name in test_names %}
+      <option value="{{ name }}">{{ name }}</option>
+    {% endfor %}
+  </select>
+  in
+  <select name="folder">
+    {% for path, desc in test_folders %}
+      <option value="{{ path }}">{{ desc }}</option>
+    {% endfor %}
+    </select>
+  <input type="submit" class="button" name="submit" value="Start Test Run" />
+</form>
+
+{% endif %}
+</p>
+
+{% if tests_running %}
+<script type="text/javascript">
+$(function() {
+  setInterval(function() {
+    $.getJSON('{% url web.insanityweb.views.current_progress %}', function(data, status, xhr) {
+      if (status == 'success')  {
+        var p = data.progress;
+        if ((p != undefined) && (p != null)) {
+            $('#progress_pct').text(data.progress);
+            return;
+        }
+      }
+      window.location.reload();
+    });
+  }, 500);
+});
+</script>
+{% endif %}
+
+{% endblock %}

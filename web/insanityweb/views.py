@@ -1,8 +1,15 @@
-from web.insanity.models import TestRun, Test, TestClassInfo, TestCheckListList, TestArgumentsDict, TestExtraInfoDict
-from django.shortcuts import render_to_response, get_object_or_404
+from web.insanityweb.models import TestRun, Test, TestClassInfo, TestCheckListList, TestArgumentsDict, TestExtraInfoDict
+from django.shortcuts import render_to_response, get_object_or_404, redirect
 from django.http import HttpResponse
+from django.conf import settings
 import time
 from datetime import date
+
+from insanityweb.runner import runner
+
+from functools import wraps
+from django.http import HttpResponse
+from django.utils import simplejson as json
 
 def index(request):
     nbruns = request.GET.get("nbruns", 20)
@@ -123,3 +130,61 @@ def matrix_view(request, testrun_id):
 
 def handler404(request):
     return "Something went wrong !"
+
+def render_to_json(**jsonargs):
+    """
+    Renders a JSON response with a given returned instance. Assumes json.dumps() can
+    handle the result. The default output uses an indent of 4.
+
+    @render_to_json()
+    def a_view(request, arg1, argN):
+        ...
+        return {'x': range(4)}
+
+    @render_to_json(indent=2)
+    def a_view2(request):
+        ...
+        return [1, 2, 3]
+
+    """
+    def outer(f):
+        @wraps(f)
+        def inner_json(request, *args, **kwargs):
+            result = f(request, *args, **kwargs)
+            r = HttpResponse(mimetype='application/json')
+            if result:
+                indent = jsonargs.pop('indent', 4)
+                r.write(json.dumps(result, indent=indent, **jsonargs))
+            else:
+                r.write("{}")
+            return r
+        return inner_json
+    return outer
+
+@render_to_json()
+def current_progress(request):
+    return {
+        'progress': runner.get_progress()
+    }
+
+def current(request):
+    test_names = runner.get_test_names()
+    test_folders = settings.INSANITY_TEST_FOLDERS.items()
+
+    if 'submit' in request.POST:
+        test = request.POST.get('test', '')
+        folder = request.POST.get('folder', '')
+        if test in test_names and folder in settings.INSANITY_TEST_FOLDERS:
+            runner.start_test(test, folder)
+        return redirect('web.insanityweb.views.current')
+
+    progress = runner.get_progress()
+    tests_running = (progress is not None)
+    test = runner.get_test_name()
+    folder = settings.INSANITY_TEST_FOLDERS.get(runner.get_test_folder(), '(unknown folder)')
+    return render_to_response("insanityweb/current.html", locals())
+
+def stop_current(request):
+    if 'submit' in request.POST:
+        runner.stop_test()
+    return redirect('web.insanityweb.views.current')
