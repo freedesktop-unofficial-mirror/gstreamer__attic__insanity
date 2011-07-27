@@ -208,11 +208,11 @@ class TestRun(models.Model, CustomSQLInterface):
         db_table = 'testrun'
 
     def get_absolute_url(self):
-        return ('web.insanity.views.matrix_view', [str(self.id)])
+        return ('web.insanityweb.views.matrix_view', [str(self.id)])
     get_absolute_url = permalink(get_absolute_url)
 
     def get_matrix_view_url(self):
-        return ('web.insanity.views.matrix_view', [self.id])
+        return ('web.insanityweb.views.matrix_view', [self.id])
     get_matrix_view_url = permalink(get_matrix_view_url)
 
     def find_test_similar_args(self, atest):
@@ -326,7 +326,7 @@ class Test(models.Model):
     isscenario = MyBooleanField(null=False, default=False)
 
     def get_absolute_url(self):
-        return ('web.insanity.views.test_summary', [str(self.id)])
+        return ('web.insanityweb.views.test_summary', [str(self.id)])
     get_absolute_url = permalink(get_absolute_url)
 
     def is_scenario(self):

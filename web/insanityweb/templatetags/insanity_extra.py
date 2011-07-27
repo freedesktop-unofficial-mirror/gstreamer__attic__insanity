@@ -149,22 +149,22 @@ class TestExtraInfoValueNode(template.Node):
         finally:
             return res
 
-@register.inclusion_tag('insanity/test_args_dict.html')
+@register.inclusion_tag('insanityweb/test_args_dict.html')
 def test_args_dict(test, fullarguments=None):
     args = test.arguments.all().select_related(depth=1)
     return {'args':args}
 
 
-@register.inclusion_tag('insanity/test_checklist_dict.html')
+@register.inclusion_tag('insanityweb/test_checklist_dict.html')
 def test_checklist_dict(test, fullchecklist=None):
     return {'results':test.checklist.all().select_related(depth=1)}
 
-@register.inclusion_tag('insanity/test_extrainfo_dict.html')
+@register.inclusion_tag('insanityweb/test_extrainfo_dict.html')
 def test_extrainfo_dict(test):
     extrainfos = test.extrainfo.all().select_related(depth=1)
     return {'extrainfos':extrainfos}
 
-@register.inclusion_tag('insanity/matrix_checklist_row.html')
+@register.inclusion_tag('insanityweb/matrix_checklist_row.html')
 def matrix_checklist_row(test, fullchecklist, fullarguments,
                          allchecks, allargs, allextrainfo):
     args = test._get_full_arguments(fullarguments, allargs.get(test, []))
@@ -175,7 +175,7 @@ def matrix_checklist_row(test, fullchecklist, fullarguments,
             'results':checks,
             'test_error':test_error}
 
-@register.inclusion_tag('insanity/matrix_navigation.html', takes_context=True)
+@register.inclusion_tag('insanityweb/matrix_navigation.html', takes_context=True)
 def matrix_navigation(context, adjacent_pages=2):
     testrun = context['testrun']
     currentoffset = context.get('offset', 0)

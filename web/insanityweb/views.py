@@ -7,24 +7,24 @@ from datetime import date
 def index(request):
     nbruns = request.GET.get("nbruns", 20)
     latest_runs = TestRun.objects.withcounts().order_by("-starttime")[:int(nbruns)]
-    return render_to_response("insanity/index.html", {"latest_runs":latest_runs,
+    return render_to_response("insanityweb/index.html", {"latest_runs":latest_runs,
                                                       "nbruns":nbruns})
 
 def testrun_summary(request, testrun_id):
     toplevel_only = bool(int(request.GET.get("toplevel",True)))
     tr = get_object_or_404(TestRun, pk=testrun_id)
-    return render_to_response('insanity/testrun_summary.html',
+    return render_to_response('insanityweb/testrun_summary.html',
                               {'testrun': tr,
                                'toplevel_only': toplevel_only})
 
 def test_summary(request, test_id):
     tr = get_object_or_404(Test, pk=test_id)
-    return render_to_response('insanity/test_summary.html', {'test': tr})
+    return render_to_response('insanityweb/test_summary.html', {'test': tr})
 
 def available_tests(request):
     """ Returns a tree of all available tests """
     classinfos = TestClassInfo.objects.all()
-    return render_to_response('insanity/available_tests.html',
+    return render_to_response('insanityweb/available_tests.html',
                               {"classinfos": classinfos})
 
 def matrix_view(request, testrun_id):
@@ -108,7 +108,7 @@ def matrix_view(request, testrun_id):
                           "allargs":args,
                           "allextras":extras})
 
-    return render_to_response('insanity/matrix_view.html',
+    return render_to_response('insanityweb/matrix_view.html',
                               {
         'testrun':tr,
         'sortedtests':tests,
