@@ -18,7 +18,7 @@ class DateTimeIntegerField(models.IntegerField):
             value = datetime.datetime.fromtimestamp(value)
         return value
 
-    def get_db_prep_value(self, val):
+    def get_db_prep_value(self, val, connection=None, prepared=False):
         return time.mktime(val.timetuple())
 
 class MyBooleanField(models.IntegerField):
@@ -28,7 +28,7 @@ class MyBooleanField(models.IntegerField):
     def to_python(self, value):
         return bool(value)
 
-    def get_db_prep_value(self, val):
+    def get_db_prep_value(self, val, connection=None, prepared=False):
         return int(val)
 
 class CustomSQLInterface:
@@ -80,7 +80,7 @@ class TestClassInfoManager(models.Manager):
 class TestClassInfo(models.Model):
     objects = TestClassInfoManager()
     id = models.IntegerField(null=True, primary_key=True, blank=True)
-    type = models.TextField(blank=True)
+    type = models.TextField(unique=True)
     parent = models.ForeignKey("self", to_field="type",
                                db_column="parent",
                                related_name="subclass")
