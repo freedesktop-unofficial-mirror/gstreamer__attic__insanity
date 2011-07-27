@@ -3,32 +3,25 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
   <head>
     <link rel="stylesheet" href="/site_media/style.css" rel="stylesheet" />
+    <script type="text/javascript" src="/site_media/jquery.min.js"></script>
     <title>
-      {% block title %}
-
-      Insanity QA system
-
-      {% endblock %}
+      {% block title %}Insanity QA system{% endblock %}
     </title>
   </head>
 
   <body>
     {% block header %}
-
     <div class="header">
-      <h1><a href="/insanity">Insanity QA system</a></h1>
+      <h1><a href="{% url web.insanityweb.views.index %}">Insanity QA system</a></h1>
     </div>
-
     {% endblock %}
 
     <div class="content">
     {% block content %}
-
     {% endblock %}
     </div>
 
     {% block footer %}
-
     {% endblock %}
   </body>
 </html>
