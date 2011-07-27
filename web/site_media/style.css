@@ -1,3 +1,40 @@
+* {
+    margin: 0;
+    padding: 0;
+    outline: 0;
+    vertical-align: baseline;
+}
+
+html, table, input {
+    font-family:Arial, Helvetica, sans-serif;
+}
+
+html {
+    color: #333;
+    background: white;
+    font-size: 14px;
+    line-height: 1.2em;
+}
+
+h1 {
+    font-size: 2em;
+    padding: 0.5em;
+}
+
+h2 {
+    font-size: 1.5em;
+    padding: 0.5em;
+}
+
+h3 {
+    font-size: 1.2em;
+    padding: 0.5em;
+}
+
+table, input {
+    font-size: 12px;
+    line-height: 1.2em;
+}
 
 a {
     color: #204a87;
@@ -7,22 +44,12 @@ a:hover {
     text-decoration: underline;
 }
 
-body {
-    margin: 0;
-    padding: 0;
-}
-
 div.header {
     margin: 0em 0em 2em 0em;
-    padding: 1em;
+    padding: 1em 1em;
 
     color: white;
     background-color: #3465a4;
-}
-
-div.header h1 {
-    margin: 0;
-    padding: 0;
 }
 
 div.header a {
@@ -43,11 +70,12 @@ table.testruns {
     margin: 1em 1em;
 }
 
-td {
-    padding: .1em .2em;
+td,th {
+    padding: .4em .7em;
 }
 
 table {
+    border: 1px solid #888a85;
     border-collapse: collapse;
 }
 td {
@@ -56,18 +84,19 @@ td {
     border: 1px solid #888a85;
 }
 th {
+    background: #e0e0ff;
     font-size: 90%%;
     line-height: 1.15em;
     margin: .5em 0 0 .5em;
     vertical-align: text-bottom;
-    #border-right: 1px solid black;
-    #border-left: 1px solid black;
+    border-right: 1px solid #888a85;
+    border-left: 1px solid #888a85;
 }
 th.side {
     vertical-align: text-top;
     text-align: right;
-    #border-bottom: 1px solid black;
-    #border-left-width: 0px;
+    border-bottom: 1px solid #888a85;
+    border-left-width: 0px;
 }
 td.numeric {
     text-align: right;
@@ -85,10 +114,18 @@ td.arg-default {
     background: #DDDDDD;
 }
 tr.row2 {
-    background: #E0E0FF;
+    background: #EEEEFF;
 }
 table a {
     #color: black;
     text-decoration: none;
 }
 
+input, select {
+    padding: 0.2em;
+    margin: 0.2em;
+}
+
+input.button {
+    padding: 0.2em 1em;
+}
