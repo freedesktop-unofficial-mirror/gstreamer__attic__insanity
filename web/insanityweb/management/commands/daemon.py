@@ -10,6 +10,11 @@ import gobject
 import sys
 import os
 
+# Need to initialise it immediately because insanity.Client runs its
+# own mainloop, creates DBus service, etc. We also need to properly
+# quit it before exiting
+from insanityweb.runner import runner
+
 class Command(BaseRunserverCommand):
     args = ''
     help = 'Start the Insanity integrated web + test runner'
@@ -19,6 +24,7 @@ class Command(BaseRunserverCommand):
             server = WSGIServer((self.addr, int(self.port)), WSGIRequestHandler)
         except WSGIServerException, e:
             sys.stderr.write("ERROR: " + str(e) + "\n")
+            runner.quit()
             return
 
         # alidate models
@@ -45,6 +51,7 @@ class Command(BaseRunserverCommand):
                     server.handle_request()
                 except KeyboardInterrupt:
                     sys.stdout.write("Stopping the server...\n")
+                    runner.quit()
                     gtk.main_quit()
                     return False
                 except Exception, e:
