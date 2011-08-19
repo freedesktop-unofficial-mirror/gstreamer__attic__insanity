@@ -90,5 +90,19 @@ INSTALLED_APPS = (
 
 # A map of folders that the tests can be run in
 INSANITY_TEST_FOLDERS = {
-    os.path.join(PROJECT_PATH, 'test_media'): 'Test Media Folder'
+    os.path.join(PROJECT_PATH, 'test_media'): {
+        'name': 'Test Media Folder',
+    },
+    '/data/non-media-files-for-test/': {
+        'name': 'Non-media Folder',
+
+        'extra-arguments': {
+            'expected_failures': [
+                {
+                    'checkitem': 'is-media-type', # required
+                    'uri': 'file:///data/non-media-files-for-test/file.zip'
+                }
+            ]
+        }
+    }
 }
