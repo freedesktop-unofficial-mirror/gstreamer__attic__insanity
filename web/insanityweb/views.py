@@ -69,6 +69,21 @@ def matrix_view(request, testrun_id):
     totalnb = testsinst.count()
     res = list(testsinst[offset:offset+limit])
 
+    error_summary = {}
+    for t in res:
+        for r in t.checklist.all().select_related(depth=1):
+            if r.failure:
+                if r.name.id not in error_summary:
+                    error_summary[r.name.id] = {
+                        'name': r.name.name,
+                        'description': r.name.description,
+                        'count': 0
+                    }
+                error_summary[r.name.id]['count'] += 1
+
+    error_summary = error_summary.values()
+    error_summary.sort(key=lambda x: x['count'], reverse=True)
+
     if totalnb != 0 and res != []:
         v = Test.objects.values_list("type",flat=True).filter(id__in=(x.id for x in res)).distinct()
 
@@ -125,7 +140,8 @@ def matrix_view(request, testrun_id):
         'crashonly':int(crashonly),
         'timedoutonly':int(timedoutonly),
         "offset":offset,
-        "limit":limit
+        "limit":limit,
+        'errorsummary': error_summary
         })
 
 def handler404(request):

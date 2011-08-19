@@ -105,6 +105,15 @@ class Test(gobject.GObject):
          * short description of the check item
     """
 
+    __test_likely_errors__ = {}
+    """
+    Dictionary of likely error causes for check items for which
+    a likely error cause can be assumed.
+
+    key : name of the check item
+    value : short description of the likely error cause
+    """
+
     __test_timeout__ = 15
     """
     Allowed duration for the test to run (in seconds).
@@ -233,6 +242,10 @@ class Test(gobject.GObject):
 
         # dict containing (checkitem, True) for every expected failure that happened
         self._expected_failures = {}
+
+        # dict containing (checkitem, explanation) for every failure that has
+        # an explanation
+        self._error_explanations = {}
 
 
     @classmethod
@@ -593,6 +606,17 @@ class Test(gobject.GObject):
         """
         return self._outputfiles
 
+    def getErrorExplanations(self):
+        """
+        Returns dict of error explanations for failed check items. Only
+        the failed items that have some explanation are present in the
+        dict.
+
+        key : name of the failed check item
+        value : error explanation
+        """
+        return self._error_explanations
+
     def getTimeout(self):
         """
         Returns the currently configured timeout
@@ -646,7 +670,18 @@ class Test(gobject.GObject):
             return False
         self._monitors.append((monitor, monitorargs))
 
+    def processFailure(self, checkitem, extra_info):
+        """
+        Process the failure and return a human-readable description
+        of why it happened (string).
 
+        By default, returns the likely error explanation from
+        __test_checklist_errors__. Test subclasses can override
+        it to provide detailed processing.
+
+        Returns None if no explanation is available.
+        """
+        return self.__test_likely_errors__.get(checkitem, None)
 
 
 # For compatibility:

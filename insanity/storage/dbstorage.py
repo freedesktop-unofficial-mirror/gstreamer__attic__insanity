@@ -320,6 +320,17 @@ class DBStorage(DataStorage, AsyncStorage):
         return (testrunid, ttype, args, results, resperc,
                 extras, ofs, parentid, ismonitor, isscenario)
 
+    def getTestErrorExplanations(self, testid):
+        """
+        Returns a dict with explanations of failed test check
+        items. Only the failures that have explanations are
+        present in the dict.
+
+        * key : check item name
+        * value : explanation string
+        """
+        return self.__getDict("test_error_explanation_dict", testid, txtonly=True)
+
     def getTestClassInfoFull(self, testtype, withparents=True):
         searchstr = """SELECT id,parent,description,fulldescription
         FROM testclassinfo WHERE type=?"""
@@ -982,6 +993,8 @@ class DBStorage(DataStorage, AsyncStorage):
                                      test.__test_name__)
         self.__storeTestOutputFileDict(tid, test.getOutputFiles(),
                                       test.__test_name__)
+        self.__storeTestErrorExplanationDict(tid, test.getErrorExplanations(),
+                                             test.__test_name__)
 
         # finally update the test
         updatestr = "UPDATE test SET resultpercentage=?, parentid=? WHERE id=?"
@@ -1230,6 +1243,11 @@ class DBStorage(DataStorage, AsyncStorage):
         maps = self.__getTestClassOutputFileMapping(testtype)
         return self.__storeDict("test_outputfiles_dict",
                                testid, map_dict(dic, maps))
+
+    def __storeTestErrorExplanationDict(self, testid, dic, testtype):
+        maps = self.__getTestClassCheckListMapping(testtype)
+        return self.__storeDict("test_error_explanation_dict",
+                                testid, map_dict(dic, maps))
 
     def __storeTestClassArgumentsDict(self, testclass, dic):
         return self.__storeDict("testclassinfo_arguments_dict",

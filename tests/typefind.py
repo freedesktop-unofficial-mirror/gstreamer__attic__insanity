@@ -75,6 +75,10 @@ class TypeFindTest(GStreamerTest):
         "streams" : "List of stream information (padname: length(ms), caps)"
         }
 
+    __test_likely_errors__ = {
+        "is-media-type": "file is not a media file"
+        }
+
     __pipeline_initial_state__ = gst.STATE_PAUSED
 
     @classmethod

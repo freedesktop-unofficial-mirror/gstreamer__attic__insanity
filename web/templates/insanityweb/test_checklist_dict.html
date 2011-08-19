@@ -16,7 +16,7 @@
       {% if result.success %}OK{% else %}Fail{% if result.expected_failure %} (expected){% endif %}{% endif %}
     </td>
     {% endif %}
-    <td>{{result.name.description}}</td>
+    <td>{{result.name.description}}{% if not result.success and result.explanation %} <em>(likely reason: {{ result.explanation }})</em>{% endif %}</td>
   </tr>
   {% endfor %}
 </table>

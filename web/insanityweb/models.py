@@ -600,6 +600,20 @@ class TestExtraInfoDict(models.Model):
     class Meta:
         db_table = 'test_extrainfo_dict'
 
+class TestErrorExplanationDict(models.Model):
+    id = models.IntegerField(null=True, primary_key=True, blank=True)
+    containerid = models.ForeignKey(Test, db_column="containerid",
+                                    related_name="error_explanations")
+    name = models.ForeignKey(TestClassInfoCheckListDict,
+                            db_column="name")
+    txtvalue = models.TextField(blank=True)
+
+    def __str__(self):
+        return "%s:%s" % (self.name.name, self.txtvalue)
+
+    class Meta:
+        db_table = 'test_error_explanation_dict'
+
 class TestRunEnvironmentDict(models.Model):
     id = models.IntegerField(null=True, primary_key=True, blank=True)
     containerid = models.ForeignKey(TestRun, db_column="containerid",

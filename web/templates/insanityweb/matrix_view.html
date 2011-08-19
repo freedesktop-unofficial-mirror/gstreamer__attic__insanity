@@ -68,6 +68,26 @@ Matrix View of Testrun #{{testrun.id}}
 	  </td>
         </tr>
     </table>
+
+    <h3>Error summary</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>Check item</th>
+          <th>Failures</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+      {% for item in errorsummary %}
+        <tr>
+          <td>{{ item.name }}</td>
+          <td class="result-FAIL">{{ item.count }}</td>
+          <td>{{ item.description }}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
     {% endfor %}
 
 {% endblock %}

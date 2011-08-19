@@ -180,6 +180,13 @@ CREATE TABLE test_extrainfo_dict (
    txtvalue TEXT
 );
 
+CREATE TABLE test_error_explanation_dict (
+  id INTEGER PRIMARY KEY,
+  containerid INTEGER,
+  name INTEGER,
+  txtvalue TEXT
+);
+
 CREATE TABLE test_outputfiles_dict (
    id INTEGER PRIMARY KEY,
    containerid INTEGER,
