@@ -32,6 +32,20 @@ class Client(TesterClient):
         except Exception, e:
             debug("Exception while aborting the current test: " + str(e))
 
+    def quit(self):
+        """
+        Quit the client
+        """
+        debug("Quitting...")
+
+        if self._running:
+            self.stop()
+
+        try:
+            self._storage.close(self._exit)
+        except:
+            self._exit()
+
     def clearTestRuns(self):
         if self._running:
             self.stop()
