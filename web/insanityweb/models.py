@@ -352,12 +352,12 @@ class Test(models.Model):
           'type': TestClassInfoCheckListDict
           'value': TestCheckListList
           'skipped': boolean set to True if check was skipped
+          'expected': boolean set to True if the check was expected failure
 
         This differs from checklist_set in the sense that it will indicate
         the skipped check items.
         """
         res = []
-
         # pre-computed fullchecklist
         if checklist == None:
             fcl = self.type.fullchecklist
@@ -373,14 +373,17 @@ class Test(models.Model):
         for checktype in fcl:
             d = {}
             d['type'] = checktype
+            d['expected'] = False
             val = None
             for av in v:
                 if checktype == av.name:
                     d['skipped'] = False
-                    val = av.value
+                    d['expected'] = av.expected
+                    val = av.success
                     break
             if val == None:
                 d['skipped'] = True
+
             d['value'] = val
             res.append(d)
         return res
@@ -516,17 +519,44 @@ class TestArgumentsDict(models.Model):
     def __str__(self):
         return "%s:%s" % (self.name.name, self.value)
 
+
 class TestCheckListList(models.Model):
+    SKIPPED = None
+    FAILURE = 0
+    SUCCESS = 1
+    EXPECTED_FAILURE = 2
+
+    VALUE_CHOICES = (
+        (SKIPPED, 'Skipped'),
+        (FAILURE, 'Failure'),
+        (SUCCESS, 'Success'),
+        (EXPECTED_FAILURE, 'Expected failure'),
+    )
+
     id = models.IntegerField(null=True, primary_key=True, blank=True)
     containerid = models.ForeignKey(Test, db_column="containerid",
                                     related_name="checklist")
     name = models.ForeignKey(TestClassInfoCheckListDict,
                              db_column="name")
     value = models.IntegerField(null=True, blank=True,
-                                db_column="intvalue")
+                                db_column="intvalue",
+                                choices=VALUE_CHOICES)
+
     @property
     def skipped(self):
-        return self.value == None
+        return self.value == self.SKIPPED
+
+    @property
+    def failure(self):
+        return self.value == self.FAILURE
+
+    @property
+    def success(self):
+        return self.value == self.SUCCESS
+
+    @property
+    def expected_failure(self):
+        return self.value == self.EXPECTED_FAILURE
 
     class Meta:
         db_table = 'test_checklist_list'

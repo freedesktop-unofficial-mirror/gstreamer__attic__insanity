@@ -174,14 +174,15 @@ def current(request):
     if 'submit' in request.POST:
         test = request.POST.get('test', '')
         folder = request.POST.get('folder', '')
-        if test in test_names and folder in settings.INSANITY_TEST_FOLDERS:
-            runner.start_test(test, folder)
+        if test in test and folder in settings.INSANITY_TEST_FOLDERS:
+            runner.start_test(test, folder,
+                settings.INSANITY_TEST_FOLDERS[folder].get('extra-arguments', {}))
         return redirect('web.insanityweb.views.current')
 
     progress = runner.get_progress()
     tests_running = (progress is not None)
     test = runner.get_test_name()
-    folder = settings.INSANITY_TEST_FOLDERS.get(runner.get_test_folder(), '(unknown folder)')
+    folder = settings.INSANITY_TEST_FOLDERS.get(runner.get_test_folder(), {'name':'(unknown folder)'})['name']
     return render_to_response("insanityweb/current.html", locals())
 
 def stop_current(request):

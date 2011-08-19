@@ -52,6 +52,11 @@ class Test(gobject.GObject):
     @ivar uuid: unique identifier for the test
     """
 
+    SKIPPED = None
+    FAILURE = 0
+    SUCCESS = 1
+    EXPECTED_FAILURE = 2
+
     __test_name__ = "test-base-class"
     """
     Name of the test
@@ -219,6 +224,16 @@ class Test(gobject.GObject):
         # list of (monitor, monitorargs)
         self._monitors = []
         self._monitorinstances = []
+
+        # list of (checkitem, pattern) where pattern is either:
+        #   - a function taking two params: checkitem, and test extra_info dict
+        #   - a dict containing key/value pairs that must be present in test args
+        #   - True for unconditional match
+        self._expected_failure_patterns = kwargs.get('expected_failures', [])
+
+        # dict containing (checkitem, True) for every expected failure that happened
+        self._expected_failures = {}
+
 
     @classmethod
     def get_file(cls):
@@ -418,8 +433,32 @@ class Test(gobject.GObject):
         if checkitem in dict(self._checklist):
             return
         self._checklist.append((checkitem, bool(validated)))
+
+        if not validated:
+            if self.isExpectedFailure(checkitem, self._extrainfo):
+                self._expected_failures[checkitem] = True
+            explanation = self.processFailure(checkitem, self._extrainfo)
+            if explanation is not None:
+                self._error_explanations[checkitem] = explanation
+
         #self._checklist[checkitem] = True
         self.emit("check", checkitem, validated)
+
+    def isExpectedFailure(self, checkitem, extra_info):
+        for pattern in self._expected_failure_patterns:
+            expected = True
+            for k, v in pattern.items():
+                if k == 'checkitem':
+                    if v != checkitem:
+                        expected = False
+                        break
+                elif self.arguments.get(k, None) != v:
+                    expected = False
+                    break
+
+            if expected:
+                return True
+        return False
 
     def extraInfo(self, key, value):
         """
@@ -503,15 +542,24 @@ class Test(gobject.GObject):
         Returns the instance checklist as a list of tuples of:
         * checkitem name
         * value indicating whether the success of that step
-           That value can be one of : True, False, None
-           None means that step was neither validated or invalidated.
+           That value can be one of: SKIPPED, SUCCESS, FAILURE, EXPECTED_FAILURE
         """
         allk = self.getFullCheckList().keys()
-        d = dict([(k,v) for k,v in self._checklist])
+
+        def to_enum(key, val):
+            if val:
+                return self.SUCCESS
+            elif self._expected_failures.get(key, False):
+                return self.EXPECTED_FAILURE
+            else:
+                return self.FAILURE
+
+        d = dict((k, to_enum(k, v)) for k, v in self._checklist)
         for k in allk:
-            if not d.has_key(k):
-                d[k] = None
-        return [(k,v) for k,v in d.iteritems()]
+            if k not in d:
+                d[k] = self.SKIPPED
+
+        return d.items()
 
     def getArguments(self):
         """

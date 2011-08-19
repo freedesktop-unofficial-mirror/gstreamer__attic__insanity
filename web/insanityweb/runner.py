@@ -96,12 +96,15 @@ class Runner(object):
         tests.extend(t[0] for t in insanity.utils.list_available_scenarios())
         return tests
 
-    def start_test(self, test, folder):
+    def start_test(self, test, folder, extra_arguments):
         self.run = TestRun(maxnbtests=1)
         self.test_class = insanity.utils.get_test_class(test)
-        self.run.addTest(self.test_class, arguments={
+        args = {
             'uri': URIFileSystemGenerator(paths=[folder], recursive=True)
-        })
+        }
+        args.update(extra_arguments)
+
+        self.run.addTest(self.test_class, arguments=args)
         self.client.addTestRun(self.run)
 
         storage = SQLiteStorage(path=settings.DATABASES['default']['NAME'])

@@ -27,7 +27,7 @@ Insanity QA system - Start / Stop Test
   in
   <select name="folder">
     {% for path, desc in test_folders %}
-      <option value="{{ path }}">{{ desc }}</option>
+      <option value="{{ path }}">{{ desc.name }}</option>
     {% endfor %}
     </select>
   <input type="submit" class="button" name="submit" value="Start Test Run" />

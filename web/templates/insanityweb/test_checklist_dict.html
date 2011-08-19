@@ -9,11 +9,11 @@
     <th class="side">{{result.name}}</th>
     {% if result.skipped %}
     <td class="result-skipped">
-      ?
+      Skip
     </td>
     {% else %}
-    <td class="{%if result.value %}result-OK{% else %}result-FAIL{% endif %}">
-      {{result.value}}
+    <td class="{%if result.success %}result-OK{% else %}{% if result.expected_failure %}result-OK{% else %}result-FAIL{% endif %}{% endif %}">
+      {% if result.success %}OK{% else %}Fail{% if result.expected_failure %} (expected){% endif %}{% endif %}
     </td>
     {% endif %}
     <td>{{result.name.description}}</td>
