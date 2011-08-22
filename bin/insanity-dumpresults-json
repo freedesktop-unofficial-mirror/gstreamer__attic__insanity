@@ -1,0 +1,177 @@
+#!/usr/bin/env python
+
+# GStreamer QA system
+#
+#       dumpresults.py
+#
+# Copyright (c) 2008, Edward Hervey <bilboed@bilboed.com>
+#
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU Lesser General Public
+# License as published by the Free Software Foundation; either
+# version 2.1 of the License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public
+# License along with this program; if not, write to the
+# Free Software Foundation, Inc., 59 Temple Place - Suite 330,
+# Boston, MA 02111-1307, USA.
+
+"""
+Dumps the results of a test results DB
+"""
+
+import sys
+import time
+from optparse import OptionParser
+from insanity.log import initLogging
+
+def printTestRunInfo(db, testrunid, verbose=False):
+    # id , date, nbtests, client
+    cid, starttime, stoptime = db.getTestRun(testrunid)
+    softname, clientname, clientuser = db.getClientInfoForTestRun(testrunid)
+    nbtests = db.getNbTestsForTestrun(testrunid)
+    nbfailed = db.getNbTestsForTestrun(testrunid, failedonly=True)
+    print "[% 3d]\tDate:%s\tNbTests:% 5d\tFailed:% 5d\tClient: %s/%s/%s" % (testrunid,
+                                                                           time.ctime(starttime),
+                                                                           nbtests,
+                                                                           nbfailed,
+                                                                           softname,
+                                                                           clientname,
+                                                                           clientuser)
+
+def printTestInfo(db, testid):
+    trid, ttype, args, checks, resperc, extras, outputfiles, parentid, ismon, isscen = db.getFullTestInfo(testid)
+    if resperc == None:
+        # test didn't end in the database
+        return
+    # test number + name
+    print "Test #% 3d (%s) Success : %0.1f%%" % (testid, ttype, resperc)
+    # arguments
+    print "Arguments :", args
+    for key,val in args.iteritems():
+        print "\t% -30s:\t%s" % (key, val)
+    # results
+    print "Results :"
+    for key,val in checks:
+        print "\t% -30s:\t%s" % (key, val)
+    if extras:
+        print "Extra Information:"
+        for k, v in extras:
+            print "\t% -30s:\t%s" % (k, v)
+    if outputfiles:
+        print "Output files:"
+        for key,val in outputfiles.iteritems():
+            print "\t% -30s:\t%s" % (key,val)
+    # monitors
+    monitors = db.getMonitorsIDForTest(testid)
+    if monitors:
+        print "Applied Monitors:"
+        for mid in monitors:
+            tid,mtyp,args,results,resperc,extras,outputfiles = db.getFullMonitorInfo(mid)
+            print "\tMonitor #% 3d (%s) Success : %0.1f%%" % (mid, mtyp, resperc)
+            if args:
+                print "\t\tArguments :"
+                for k,v in args.iteritems():
+                    print "\t\t\t% -30s:\t%s" % (k,v)
+            if results:
+                print "\t\tResults :"
+                for k,v in results.iteritems():
+                    print "\t\t\t% -30s:\t%s" % (k,v)
+            if extras:
+                print "\t\tExtra Information :"
+                for k,v in extras.iteritems():
+                    print "\t\t\t% -30s:\t%s" % (k,v)
+            if outputfiles:
+                print "\t\tOutput Files :"
+                for k,v in outputfiles.iteritems():
+                    print "\t\t\t% -30s:\t%s" % (k,v)
+    print ""
+
+def printEnvironment(d):
+    print "Environment"
+    keys = d.keys()
+    keys.sort()
+    for key in keys:
+        val = d[key]
+        if isinstance(val, dict):
+            print "\t% -30s:" % (key)
+            for dk,dv in val.iteritems():
+                print "\t\t% -30s:\t%s" % (dk,dv)
+        else:
+            print "\t% -30s:\t%s" % (key,val)
+    print ""
+
+def printTestRun(db, testrunid, failedonly=False, hidescenarios=False):
+    # let's output everything !
+    cid, starttime, stoptime = db.getTestRun(testrunid)
+    softname, clientname, clientuser = db.getClientInfoForTestRun(testrunid)
+    environ = db.getEnvironmentForTestRun(testrunid)
+    tests = db.getTestsForTestRun(testrunid, withscenarios=not hidescenarios,
+                                  failedonly=failedonly)
+    print "TestRun #% 3d:" % testrunid
+    print "Started:%s\nStopped:%s" % (time.ctime(starttime), time.ctime(stoptime))
+    if environ:
+        printEnvironment(environ)
+    print "Number of tests:", len(tests)
+    for testid in tests:
+        printTestInfo(db, testid)
+
+if __name__ == "__main__":
+    usage = "usage: %prog database [options]"
+    parser = OptionParser(usage=usage)
+    parser.add_option("-l", "--list", dest="list",
+                      help="List the available test runs with summary",
+                      action="store_true",
+                      default=False)
+    parser.add_option("-t", "--testrun", dest="testrun",
+                      help="Specify a testrun id",
+                      type=int,
+                      default=-1)
+    parser.add_option("-f", "--failed", dest="failed",
+                      help="Only show failed tests",
+                      action="store_true", default=False)
+    parser.add_option("-x", "--hidescenarios", dest="hidescenarios",
+                      help="Do not show scenarios",
+                      action="store_true", default=False)
+    parser.add_option("-m", "--mysql", dest="usemysql",
+                      default=False, action="store_true",
+                      help="Connect to a MySQL database for storage")
+    (options, args) = parser.parse_args(sys.argv[1:])
+    if not options.usemysql and len(args) != 1:
+        print "You need to specify a database file !"
+        parser.print_help()
+        sys.exit()
+    initLogging()
+    if options.usemysql:
+        from insanity.storage.mysql import MySQLStorage
+        if len(args):
+            kw = MySQLStorage.parse_uri(args[0])
+            db = MySQLStorage(async=False, **kw)
+        else:
+            # use default values
+            db = MySQLStorage(async=False)
+    else:
+        from insanity.storage.sqlite import SQLiteStorage
+        db = SQLiteStorage(path=args[0], async=False)
+    if options.list:
+        # list all available test runs
+        testruns = db.listTestRuns()
+        for runid in testruns:
+            printTestRunInfo(db, runid)
+    else:
+        testruns = db.listTestRuns()
+        if options.testrun:
+            if not options.testrun in testruns:
+                print "Specified testrunid not available !"
+                parser.print_help()
+                sys.exit()
+            printTestRun(db, options.testrun, options.failed, options.hidescenarios)
+        else:
+            for runid in testruns:
+                printTestRun(db,runid,options.failed, options.hidescenarios)
+
