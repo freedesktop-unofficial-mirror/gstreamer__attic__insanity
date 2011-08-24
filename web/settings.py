@@ -88,21 +88,19 @@ INSTALLED_APPS = (
     'web.insanityweb'
 )
 
-# A map of folders that the tests can be run in
+# A map of folders that the tests can be run in, with any extra arguments that
+# need to be passed to the tests:
+#
 INSANITY_TEST_FOLDERS = {
-    os.path.join(PROJECT_PATH, 'test_media'): {
-        'name': 'Test Media Folder',
-    },
-    '/data/non-media-files-for-test/': {
-        'name': 'Non-media Folder',
-
-        'extra-arguments': {
-            'expected_failures': [
-                {
-                    'checkitem': 'is-media-type', # required
-                    'uri': 'file:///data/non-media-files-for-test/file.zip'
-                }
-            ]
-        }
-    }
+#     '/path/to/test-media/': {
+#         'name': 'Test Media Folder',
+#         'extra-arguments': {
+#             'expected_failures': [ # patterns of checkitem/arguments to match
+#                 {
+#                     'checkitem': 'is-media-type', # required
+#                     'uri': 'file:///path/to/test/media/not-a-media-file.zip'
+#                 }
+#             ]
+#         }
+#     }
 }
