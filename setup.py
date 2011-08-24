@@ -111,6 +111,16 @@ def add_data_file(destination, source):
         data_files[destination] = []
     data_files[destination].append(source)
 
+def add_data_files(destination, source, extensions):
+    for path, dirs, files in os.walk (source):
+        for filename in files:
+            for ext in extensions:
+                if filename.endswith(ext):
+                    dest_path = os.path.join(destination, path)
+                    file_path = os.path.join (path, filename)
+                    add_data_file(dest_path, file_path)
+                    break
+
 # Keep trailing comma on last entry to stay merge friendly:
 
 packages = [
@@ -134,6 +144,7 @@ add_data_file("share/applications", "insanity-gtk.desktop")
 add_data_file("share/insanity", "bin/gdb.instructions")
 add_data_file("share/insanity", "bin/gst.supp")
 add_data_file("share/insanity/libexec", "bin/insanity-pythondbusrunner")
+add_data_files("share/insanity", "web", ['.py', '.html', '.css', '.js'])
 
 setup (cmdclass = cmdclass,
        packages = packages,
