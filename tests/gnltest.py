@@ -28,6 +28,7 @@ gobject.threads_init()
 from insanity.test import GStreamerTest
 from insanity.log import critical, error, warning, debug, info
 import gst
+import gst.audio
 
 def valtime(someval):
     if someval == gst.CLOCK_TIME_NONE:
