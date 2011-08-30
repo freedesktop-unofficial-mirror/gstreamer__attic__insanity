@@ -11,7 +11,15 @@ from insanity.log import debug
 
 import gobject
 
+# Custom insanity test client. Monkey-patches the
+# insanity TesterClient to split the "stop test" and "quit
+# testing environment" into two separate methods (stop() and
+# quit(), respectively), so there's only one environment
+# for the web server, that can run multiple tests.
 class Client(TesterClient):
+    """
+    Custom insanity test client used by the web service.
+    """
 
     __software_name__ = 'Insanity web service'
 
