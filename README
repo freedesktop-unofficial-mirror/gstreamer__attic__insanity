@@ -18,8 +18,6 @@ Philosophy
    * A series of tests and scenarios (tests/)
    * Some command-line tools (bin/)
    * A django web interface (web/)
-     * /!\ Still under development
-
 
 Provided tools
 --------------
@@ -48,7 +46,7 @@ Requirements
 ------------
   Python >= 2.5 *OR* Python >= 2.4 with the sqlite python module
   DBus and python bindings
-  Django 1.0 (for the web frontend only)
+  Django 1.3 (for the web frontend only)
 
 Database support
 ----------------
@@ -56,16 +54,77 @@ Database support
   Currently the data is stored in a sqlite file.
   The default filename is 'testrun.db' in the current directory.
 
-Django web frontend (for searching and reporting)
--------------------------------------------------
-  The django classes/templates are provided in the web directory.
+Django web frontend
+-------------------
 
-  You will have to modify the database settings in settings.py
-  according to your local settings.
+  Django web frontend is integrated with the GTK+/DBus parts so it
+can configure and run tests as well as view reports.
 
-  > python manage.py runserver
+  The frontend is provided in the web/ directory of the source tree,
+and is installed to /usr/share/insanity/web/ by default.
 
-  This will start a local http daemon. The insanity pages are located
-  in the insanity subdirectory.
+To configure the Django frontend:
 
-  Ex: http://127.0.0.1:8000/insanity/
+  * modify the database settings in settings.py according to your
+    local settings;
+
+  * configure the test folders in settings.py (see below for syntax)
+
+  The hybrid django+gtk server needs to be run from the web/ directory
+using the 'daemon' management command:
+
+  > cd /usr/share/insanity/web/
+  > python manage.py daemon
+
+  The daemon command behaves like 'runserver --noreload', and can take
+any additional arguments that runserver can. So, for example, IP and
+port to bind on can be specified:
+
+  > python manage.py daemon 0.0.0.0:8000
+
+  To stop the app gracefully, press Ctrl-C or send a SIGINT signal to the
+process.
+
+
+Configuring test folders for web frontend
+-----------------------------------------
+
+  The settings.py file defines a Python dict specifying folders with test
+media and their options.
+
+  For each item in the dictionary, the key is a full path to the folder
+containing the test media. The value is a dictionary containing string
+keys and option-dependant values:
+
+ * name -> human-readable folder name representation (string)
+
+ * extra-arguments -> a dictionary of extra arguments ot pass to the tests
+   running in this folder
+
+  If it is expected that some test fail for some test file in the folder, the
+'expected_failures' extra argument can be passed in. The value of the argument
+is a list of patterns.
+
+  Each pattern is a Python dict with at least 'checkitem' key, whose value is
+a check item name that's expected to fail. Other items represent arguments
+that were passed to this test (ie. each item needs to match the test argument)
+in order for the pattern to match the test.
+
+  For example, 'uri' can be passed with the name of the media file that's
+known to cause the specific expected failure.
+
+Example configuration:
+
+  INSANITY_TEST_FOLDERS = {
+      '/path/to/test-media/': {
+          'name': 'Test Media Folder',
+          'extra-arguments': {
+              'expected_failures': [ # patterns of checkitem/arguments to match
+                  {
+                      'checkitem': 'is-media-type', # required
+                      'uri': 'file:///path/to/test/media/not-a-media-file.zip'
+                  }
+              ]
+          }
+      }
+  }
