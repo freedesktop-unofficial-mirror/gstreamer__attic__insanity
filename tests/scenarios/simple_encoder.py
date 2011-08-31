@@ -14,8 +14,10 @@ class SimpleEncoderScenario(Scenario):
         if not Scenario.setUp(self):
             return False
 
-        self.addSubTest(SimpleEncoderTest, {"codec":"theora"})
-        self.addSubTest(SimpleEncoderTest, {"codec":"schro"})
+        self.addSubTest(SimpleEncoderTest, {"codec":"theora"},
+                        instance_name="theora")
+        self.addSubTest(SimpleEncoderTest, {"codec":"schro"},
+                        instance_name="schro")
 
         return True
 
