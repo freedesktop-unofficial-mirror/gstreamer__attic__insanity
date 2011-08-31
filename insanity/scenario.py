@@ -19,6 +19,8 @@
 # Free Software Foundation, Inc., 59 Temple Place - Suite 330,
 # Boston, MA 02111-1307, USA.
 
+from copy import copy
+
 import gobject
 from insanity.test import Test
 from insanity.log import debug, exception
@@ -141,7 +143,8 @@ class Scenario(Test):
                 if validkey in arguments.keys():
                     args[validkey] = arguments[validkey]
         else:
-            args = arguments
+            args = copy(arguments)
+
         debug("Appending subtest %r args:%r", testclass, args)
         if position == -1:
             self._tests.append((testclass, args, monitors, instance_name))
@@ -161,11 +164,30 @@ class Scenario(Test):
 
     # implement Test methods
 
-    def getArguments(self):
-        d = Test.getArguments(self)
+    def _getFullArgumentList(self):
+        """
+        Like Test.getFullArgumentsList(), but takes subtests into account,
+        which would nit be possible with a classmethod.
+        """
+        validkeys = self.getFullArgumentList()
         for sub in self.tests:
-            d.update(sub.getArguments())
-        return d
+            if isinstance(sub, Scenario):
+                validkeys.update(sub._getFullArgumentList())
+            else:
+                validkeys.update(sub.getFullArgumentList())
+
+        return validkeys
+
+    def getArguments(self):
+        """
+        Returns the list of valid arguments for this scenario.
+        """
+        validkeys = self._getFullArgumentList()
+        res = {}
+        for key in self.arguments.iterkeys():
+            if key in validkeys:
+                res[key] = self.arguments[key]
+        return res
 
     def addMonitor(self, monitor, monitorargs=None):
         # the subtests will do the check for validity
