@@ -506,8 +506,6 @@ class Test(gobject.GObject):
         Called by the test itself
         """
         info("uuid:%s, key:%s, value:%r", self.uuid, key, value)
-        if key in self._extrainfo:
-            return
         self._extrainfo[key] = value
         self.emit("extra-info", key, value)
 
