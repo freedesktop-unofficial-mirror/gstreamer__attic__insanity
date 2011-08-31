@@ -90,28 +90,32 @@ class FullGnlFileSourceScenario(Scenario):
         validcaps = [caps for x, caps in streamscaps.iteritems() if 'o/x-raw-' in caps]
         if validcaps == []:
             return False
+        validcaps.sort()
 
+        i = 1
         # finally, add a GnlFileSourceTest for each stream
         for streamcap in validcaps:
             args = self.arguments.copy()
             args["caps-string"] = streamcap
             args["media-start"] = mstart
             args["duration"] = duration
-            self.addSubTest(self._subtest_type, args)
-        # ... and also starting from 0 ...
-        for streamcap in validcaps:
+            self.addSubTest(self._subtest_type, args,
+                    instance_name="stream%s.from_middle" % i)
+            # ... and also starting from 0 ...
             args = self.arguments.copy()
             args["caps-string"] = streamcap
             args["media-start"] = 0
             args["duration"] = duration
-            self.addSubTest(self._subtest_type, args)
-        # ... and also going to the end
-        for streamcap in validcaps:
+            self.addSubTest(self._subtest_type, args,
+                    instance_name="stream%s.from_start" % i)
+            # ... and also going to the end
             args = self.arguments.copy()
             args["caps-string"] = streamcap
             args["media-start"] = uriduration - duration
             args["duration"] = duration
-            self.addSubTest(self._subtest_type, args)
+            self.addSubTest(self._subtest_type, args,
+                    instance_name="stream%s.from_near_end" % i)
+            i += 1
         self.__doneTypeFindTest = True
         return True
 
