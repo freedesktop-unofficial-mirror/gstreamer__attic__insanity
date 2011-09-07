@@ -123,3 +123,254 @@ INSANITY_TEST_FOLDERS = {
 #         }
 #     }
 }
+
+if os.path.exists('/usr/share/samplemedia'):
+    INSANITY_TEST_FOLDERS['/usr/share/samplemedia'] = {
+      'name': 'http://samplemedia.linaro.org test media',
+      'extra-arguments': {
+        'expected-failures': [
+          {
+            'arguments': {
+              'uri': [
+                'file:///usr/share/samplemedia/Audio/big_buck_bunny_AMR_1Channel_8k_7.4K.AMR',
+                'file:///usr/share/samplemedia/Audio/big_buck_bunny_AC3_6Channel_48k_448K.AC3',
+                'file:///usr/share/samplemedia/Audio/big_buck_bunny_AC3_2Channel_48k_384K.AC3',
+              ],
+            },
+            'results': {'duration-available': ['0']},
+          },
+          {
+            'arguments': {
+              'uri': [
+                'file:///usr/share/samplemedia/BigBuckBunnyAttribution.txt',
+                'file:///usr/share/samplemedia/sampleinfo.csv',
+              ],
+            },
+            'results': {
+              'is-media-type': ['0'],
+              'no-errors-seen': ['0'],
+              'reached-initial-state': ['None'],
+              'duration-available': ['None'],
+              'stream-duration-identical': ['None'],
+              'available-demuxer': ['None'],
+              'all-fixed-caps-streams': ['None'],
+              'all-streams-decodable': ['None'],
+            },
+          },
+          {
+            'arguments': {
+              'uri': [
+                'file:///usr/share/samplemedia/Audio/big_buck_bunny_FLAC_2Channel_48k_561K.FLAC',
+              ],
+            },
+            'results': {
+              'no-errors-seen': ['0'],
+              'reached-initial-state': ['None'],
+              'correct-final-buffer': ['None'],
+              'correct-initial-buffer': ['None'],
+              'correct-newsegment-format': ['None'],
+              'correct-newsegment-position': ['None'],
+              'correct-newsegment-start': ['None'],
+              'correct-newsegment-stop': ['None'],
+              'first-buffer-after-newsegment': ['None'],
+            },
+          },
+          {
+            'arguments': {
+              'uri': [
+                'file:///usr/share/samplemedia/H264/big_buck_bunny_1080p_H264_AAC_25fps_7200K.MP4',
+                'file:///usr/share/samplemedia/H264/big_buck_bunny_720p_H264_AAC_25fps_3400K.MP4',
+                'file:///usr/share/samplemedia/H264/big_buck_bunny_480p_H264_AAC_25fps_1800K.MP4',
+              ],
+              'instance-name': ['stream1.from_near_end'],
+            },
+            'results': {'correct-newsegment-stop': ['0']},
+          },
+          {
+            'arguments': {
+              'uri': [
+                'file:///usr/share/samplemedia/VC1/big_buck_bunny_480p_VC1_WMA3_25fps_2100K.WMV',
+                'file:///usr/share/samplemedia/VC1/big_buck_bunny_720p_VC1_WMA3_25fps_4200K.WMV',
+              ],
+              'instance-name': ['stream1.from_near_end',
+                'stream2.from_near_end'],
+            },
+            'results': {
+              'correct-final-buffer': ['None'],
+              'correct-initial-buffer': ['None'],
+              'correct-newsegment-format': ['None'],
+              'correct-newsegment-position': ['None'],
+              'correct-newsegment-start': ['None'],
+              'correct-newsegment-stop': ['None'],
+              'first-buffer-after-newsegment': ['None'],
+            },
+          },
+          {
+            'arguments': {
+              'uri': [
+                'file:///usr/share/samplemedia/Audio/big_buck_bunny_AAC_2Channel_44.1k_128K.AAC',
+                'file:///usr/share/samplemedia/Audio/big_buck_bunny_AAC_2Channel_48k_165K.AAC',
+                'file:///usr/share/samplemedia/Audio/big_buck_bunny_AAC_6Channel_48k_253K.AAC',
+              ],
+              'instance-name': ['stream1.from_near_end'],
+            },
+            'results': {
+              'correct-final-buffer': ['None'],
+              'correct-initial-buffer': ['None'],
+              'first-buffer-after-newsegment': ['None'],
+            },
+          },
+          {
+            'arguments': {
+              'uri': [
+                'file:///usr/share/samplemedia/MPEG2/big_buck_bunny_480p_MPEG2_MP2_25fps_1800K.MPG',
+                'file:///usr/share/samplemedia/MPEG2/big_buck_bunny_720p_MPEG2_MP2_25fps_3600K.MPG',
+              ],
+              'instance-name': ['stream2.from_middle'],
+            },
+            'results': {
+              'correct-final-buffer': ['None'],
+              'correct-initial-buffer': ['None'],
+              'first-buffer-after-newsegment': ['None'],
+            },
+          },
+          {
+            'arguments': {
+              'uri': [
+                'file:///usr/share/samplemedia/MPEG2/big_buck_bunny_480p_MPEG2_MP2_25fps_1800K.MPG',
+              ],
+              'instance-name': ['stream2.from_near_end'],
+            },
+            'results': {
+              'correct-final-buffer': ['None'],
+              'correct-initial-buffer': ['None'],
+              'first-buffer-after-newsegment': ['None'],
+            },
+          },
+          {
+            'arguments': {
+              'uri': [
+                'file:///usr/share/samplemedia/VP8/big_buck_bunny_1080p_VP8_VORBIS_25fps_7800K.WebM',
+                'file:///usr/share/samplemedia/VP8/big_buck_bunny_480p_VP8_VORBIS_25fps_1900K.WebM',
+                'file:///usr/share/samplemedia/VP8/big_buck_bunny_720p_VP8_VORBIS_25fps_3900K.WebM',
+              ],
+              'instance-name': [
+                'stream1.from_start',
+              ],
+            },
+            'results': {'correct-initial-buffer': ['0']},
+          },
+          {
+            'arguments': {
+              'uri': [
+                'file:///usr/share/samplemedia/MPEG2/big_buck_bunny_1080p_MPEG2_MP2_25fps_6600K.MPG',
+                'file:///usr/share/samplemedia/MPEG2/big_buck_bunny_480p_MPEG2_MP2_25fps_1800K.MPG',
+                'file:///usr/share/samplemedia/MPEG2/big_buck_bunny_720p_MPEG2_MP2_25fps_3600K.MPG',
+              ],
+              # All instances fail this check.
+            },
+            'results': {'correct-initial-buffer': ['0']},
+          },
+          {
+            'arguments': {
+              'uri': [
+                'file:///usr/share/samplemedia/Audio/big_buck_bunny_WMA2_2Channel_44.1k_128K.WMA',
+                'file:///usr/share/samplemedia/VC1/big_buck_bunny_720p_VC1_WMA3_25fps_4200K.WMV',
+                'file:///usr/share/samplemedia/VC1/big_buck_bunny_1080p_VC1_WMA3_25fps_8600K.WMV',
+                'file:///usr/share/samplemedia/VC1/big_buck_bunny_480p_VC1_WMA3_25fps_2100K.WMV',
+              ],
+              'instance-name': ['stream1.from_middle'],
+            },
+            'results': {'correct-initial-buffer': ['0']},
+          },
+          {
+            'arguments': {
+              'uri': [
+                'file:///usr/share/samplemedia/Audio/big_buck_bunny_WMA2_2Channel_44.1k_128K.WMA',
+              ],
+              'instance-name': ['stream1.from_near_end'],
+            },
+            'results': {
+              'correct-initial-buffer': ['0'],
+              'correct-final-buffer': ['0'],
+            },
+          },
+          {
+            'arguments': {
+              'uri': [
+                'file:///usr/share/samplemedia/H264/big_buck_bunny_1080p_H264_AAC_25fps_7200K.MP4',
+                'file:///usr/share/samplemedia/H264/big_buck_bunny_480p_H264_AAC_25fps_1800K.MP4',
+                'file:///usr/share/samplemedia/H264/big_buck_bunny_720p_H264_AAC_25fps_3400K.MP4',
+                'file:///usr/share/samplemedia/MPEG4/big_buck_bunny_720p_MPEG4_MP3_25fps_3300K.AVI',
+                'file:///usr/share/samplemedia/MPEG4/big_buck_bunny_1080p_MPEG4_MP3_25fps_7600K.AVI',
+                'file:///usr/share/samplemedia/MPEG4/big_buck_bunny_480p_MPEG4_MP3_25fps_1600K.AVI',
+                '',
+              ],
+              'instance-name': ['stream1.from_start', 'stream1.from_middle', 'stream1.from_near_end'],
+            },
+            'results': {'correct-final-buffer': ['0']},
+          },
+          {
+            'arguments': {
+              'uri': [
+                'file:///usr/share/samplemedia/Audio/big_buck_bunny_MP3_2Channel_44.1k_128K.MP3',
+                'file:///usr/share/samplemedia/MPEG4/big_buck_bunny_1080p_MPEG4_MP3_25fps_7600K.AVI',
+                'file:///usr/share/samplemedia/VP8/big_buck_bunny_720p_VP8_VORBIS_25fps_3900K.WebM',
+                'file:///usr/share/samplemedia/VP8/big_buck_bunny_480p_VP8_VORBIS_25fps_1900K.WebM',
+              ],
+              'instance-name': ['stream1.from_near_end'],
+            },
+            'results': {'correct-final-buffer': ['0']},
+          },
+          {
+            'arguments': {
+              'uri': [
+                'file:///usr/share/samplemedia/VP8/big_buck_bunny_720p_VP8_VORBIS_25fps_3900K.WebM',
+                'file:///usr/share/samplemedia/VP8/big_buck_bunny_480p_VP8_VORBIS_25fps_1900K.WebM',
+                'file:///usr/share/samplemedia/VP8/big_buck_bunny_1080p_VP8_VORBIS_25fps_7800K.WebM',
+                'file:///usr/share/samplemedia/MPEG4/big_buck_bunny_1080p_MPEG4_MP3_25fps_7600K.AVI',
+              ],
+              'instance-name': ['stream2.from_near_end'],
+            },
+            'results': {'correct-final-buffer': ['0']},
+          },
+          {
+            'arguments': {
+              'uri': [
+                'file:///usr/share/samplemedia/MPEG2/big_buck_bunny_1080p_MPEG2_MP2_25fps_6600K.MPG',
+                'file:///usr/share/samplemedia/MPEG2/big_buck_bunny_480p_MPEG2_MP2_25fps_1800K.MPG',
+                'file:///usr/share/samplemedia/MPEG2/big_buck_bunny_720p_MPEG2_MP2_25fps_3600K.MPG',
+              ],
+              'instance-name': ['stream1.from_start', 'stream2.from_start'],
+            },
+            'results': {'correct-newsegment-position': ['0'],
+              'correct-newsegment-start': ['0']},
+          },
+          {
+            'arguments': {
+              'uri': [
+                'file:///usr/share/samplemedia/VC1/big_buck_bunny_1080p_VC1_WMA3_25fps_8600K.WMV',
+              ],
+              'instance-name': ['stream1.from_near_end'],
+            },
+            'results': {
+              'correct-initial-buffer': ['0'],
+              'correct-final-buffer': ['0'],
+            },
+          },
+          {
+            'arguments': {
+              'uri': [
+                'file:///usr/share/samplemedia/VC1/big_buck_bunny_1080p_VC1_WMA3_25fps_8600K.WMV',
+              ],
+              'instance-name': ['stream1.from_start', 'stream2.from_start'],
+            },
+            'results': {
+              'no-timeout': ['0', '1'],
+              'reached-initial-state': ['None', '1'],
+              'correct-final-buffer': ['None', '1'],
+            },
+          },
+        ],
+      },
+    }
