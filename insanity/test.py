@@ -79,7 +79,10 @@ class Test(gobject.GObject):
     in one line their purpose and usage.
     """
 
-    __test_arguments__ = { }
+    __test_arguments__ = {
+        "instance-name": ("Name assigned by parent.", "",
+            "Used to identify similar subtests within a scenario.")
+        }
     """
     Dictionnary of arguments this test can take.
 

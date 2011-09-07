@@ -50,6 +50,7 @@ class Scenario(Test):
             return False
         self._tests = [] # list of (test, args, monitors)
         self.tests = [] # executed tests
+        self._n_tests = 0
 
         # FIXME : asynchronous starts ???
         return True
@@ -76,12 +77,14 @@ class Scenario(Test):
 
     def _startNextSubTest(self):
         try:
-            testclass, args, monitors = self._tests.pop(0)
+            testclass, args, monitors, instance_name = self._tests.pop(0)
             if not 'bus' in args.keys():
                 args["bus"] = self.arguments.get("bus")
             if not 'bus_address' in args.keys():
                 args["bus_address"] = self.arguments.get("bus_address")
-            debug("About to create subtest %r with arguments %r", testclass, args)
+            debug("About to create subtest %r (instance_name=%r) "
+                  "with arguments %r", testclass, instance_name, args)
+            args["instance-name"] = instance_name
             instance = testclass(testrun=self._testrun,
                                  **args)
             if monitors:
@@ -116,14 +119,21 @@ class Scenario(Test):
 
     # overridable methods
 
-    def addSubTest(self, testclass, arguments, monitors=None, position=-1):
+    def addSubTest(self, testclass, arguments, monitors=None, position=-1,
+            instance_name=None):
         """
         testclass : a testclass to run next, can be a Scenario
         arguments : dictionnary of arguments
         monitors : list of (Monitor, monitorargs) to run the test with
+        position : the position to insert the test in (-1 for last)
+        instance_name : a human-readable name for the test.
 
         This method can be called several times in a row at any moment.
         """
+        self._n_tests += 1
+        if instance_name is None:
+            instance_name = "%u.%s" % (self._n_tests,
+                                       testclass.__test_name__)
         # filter out unused arguments in arguments for non-scenarios
         if not issubclass(testclass, Scenario):
             args = {}
@@ -134,9 +144,10 @@ class Scenario(Test):
             args = arguments
         debug("Appending subtest %r args:%r", testclass, args)
         if position == -1:
-            self._tests.append((testclass, args, monitors))
+            self._tests.append((testclass, args, monitors, instance_name))
         else:
-            self._tests.insert(position, (testclass, args, monitors))
+            self._tests.insert(position,
+                                (testclass, args, monitors, instance_name))
 
     def subTestDone(self, subtest):
         """
