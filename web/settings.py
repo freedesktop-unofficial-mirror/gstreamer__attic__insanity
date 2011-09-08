@@ -1,5 +1,19 @@
 import os
+import sys
+
 PROJECT_PATH = os.path.abspath(os.path.dirname(__file__))
+DATA_PATH = os.path.join(PROJECT_PATH, '..')
+
+if not os.access(DATA_PATH, os.W_OK):
+    sys.stderr.write("%s is not writable. Trying xdg-data-path.\n" %
+            DATA_PATH)
+    try:
+        import xdg.BaseDirectory
+        DATA_PATH = xdg.BaseDirectory.save_data_path("insanity")
+    except (ImportError, OSError):
+        sys.stderr.write("xdg.BaseDirectory doesn't exist or doesn't work.\n")
+        DATA_PATH = os.getcwd()
+    sys.stderr.write("Data will be saved to %s.\n" % DATA_PATH)
 
 # Django settings for web project.
 
@@ -15,7 +29,7 @@ MANAGERS = ADMINS
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': os.path.join(PROJECT_PATH, '..', 'testrun.db'),
+        'NAME': os.path.join(DATA_PATH, 'testrun.db'),
         'USER': '',
         'PASSWORD': '',
         'HOST': '',
@@ -85,7 +99,7 @@ INSTALLED_APPS = (
     'django.contrib.sessions',
     'django.contrib.sites',
     'django.contrib.admin',
-    'web.insanityweb'
+    'insanityweb'
 )
 
 # A map of folders that the tests can be run in, with any extra arguments that

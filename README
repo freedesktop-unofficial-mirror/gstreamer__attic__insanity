@@ -70,11 +70,10 @@ To configure the Django frontend:
 
   * configure the test folders in settings.py (see below for syntax)
 
-  The hybrid django+gtk server needs to be run from the web/ directory
-using the 'daemon' management command:
+  The hybrid django+gtk server needs to be run using the 'daemon'
+management command:
 
-  > cd /usr/share/insanity/web/
-  > python manage.py daemon
+  > python /usr/share/insanity/web/manage.py daemon
 
   The daemon command behaves like 'runserver --noreload', and can take
 any additional arguments that runserver can. So, for example, IP and

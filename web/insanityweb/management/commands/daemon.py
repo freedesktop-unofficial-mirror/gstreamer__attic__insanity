@@ -18,6 +18,7 @@ class Command(BaseRunserverCommand):
     help = 'Start the Insanity integrated web + test runner'
 
     def run(self, *args, **options):
+        os.chdir(DATA_PATH)
         runner = get_runner()
         try:
             server = WSGIServer((self.addr, int(self.port)), WSGIRequestHandler)
