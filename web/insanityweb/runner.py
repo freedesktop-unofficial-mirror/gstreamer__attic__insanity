@@ -95,6 +95,9 @@ class Runner(object):
         self.client = Client(self)
         self._clear_info()
 
+        storage = SQLiteStorage(path=settings.DATABASES['default']['NAME'])
+        self.client.setStorage(storage)
+
     def _clear_info(self):
         self.test_name = None
         self.test_folder = None
@@ -119,9 +122,6 @@ class Runner(object):
 
         self.run.addTest(self.test_class, arguments=args)
         self.client.addTestRun(self.run)
-
-        storage = SQLiteStorage(path=settings.DATABASES['default']['NAME'])
-        self.client.setStorage(storage)
 
         self.current_run = self.run
         self.current_run_progress = 0
