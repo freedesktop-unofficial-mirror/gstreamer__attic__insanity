@@ -11,7 +11,7 @@ from insanity.log import debug
 
 import gobject
 
-# Custom insanity test client. Monkey-patches the
+# Custom insanity test client. Extends the
 # insanity TesterClient to split the "stop test" and "quit
 # testing environment" into two separate methods (stop() and
 # quit(), respectively), so there's only one environment
@@ -86,7 +86,12 @@ class Client(TesterClient):
 
 class Runner(object):
 
+    _singleton = None
+
     def __init__(self):
+        assert Runner._singleton is None, "Please use get_runner()."
+        Runner._singleton = self
+
         self.client = Client(self)
         self._clear_info()
 
@@ -152,4 +157,8 @@ class Runner(object):
     def quit(self):
         self.client.quit()
 
-runner = Runner()
+def get_runner():
+    """Get (or create) the Runner singleton."""
+    if Runner._singleton is None:
+        Runner()
+    return Runner._singleton

@@ -5,7 +5,7 @@ from django.conf import settings
 import time
 from datetime import date
 
-from insanityweb.runner import runner
+from insanityweb.runner import get_runner
 
 from functools import wraps
 from django.http import HttpResponse
@@ -180,10 +180,11 @@ def render_to_json(**jsonargs):
 @render_to_json()
 def current_progress(request):
     return {
-        'progress': runner.get_progress()
+        'progress': get_runner().get_progress()
     }
 
 def current(request):
+    runner = get_runner()
     test_names = runner.get_test_names()
     test_folders = settings.INSANITY_TEST_FOLDERS.items()
 
@@ -203,5 +204,5 @@ def current(request):
 
 def stop_current(request):
     if 'submit' in request.POST:
-        runner.stop_test()
+        get_runner().stop_test()
     return redirect('web.insanityweb.views.current')

@@ -10,16 +10,15 @@ import gobject
 import sys
 import os
 
-# Need to initialise it immediately because insanity.Client runs its
-# own mainloop, creates DBus service, etc. We also need to properly
-# quit it before exiting
-from insanityweb.runner import runner
+from insanityweb.runner import get_runner
+from settings import DATA_PATH
 
 class Command(BaseRunserverCommand):
     args = ''
     help = 'Start the Insanity integrated web + test runner'
 
     def run(self, *args, **options):
+        runner = get_runner()
         try:
             server = WSGIServer((self.addr, int(self.port)), WSGIRequestHandler)
         except WSGIServerException, e:
@@ -27,7 +26,7 @@ class Command(BaseRunserverCommand):
             runner.quit()
             return
 
-        # alidate models
+        # validate models
         sys.stdout.write("Validating models...\n")
         self.validate(display_num_errors=True)
 
