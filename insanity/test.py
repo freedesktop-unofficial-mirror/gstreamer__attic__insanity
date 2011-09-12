@@ -603,7 +603,9 @@ class Test(gobject.GObject):
         """
         Returns the list of arguments for the given test
         """
-        validkeys = self.getFullArgumentList().keys()
+        validkeys = self.getFullArgumentList()
+        # Hide expected-failures from the storage backend.
+        validkeys.pop("expected-failures", [])
         res = {}
         for key in self.arguments.iterkeys():
             if key in validkeys:

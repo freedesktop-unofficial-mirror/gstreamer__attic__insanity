@@ -183,6 +183,8 @@ class Scenario(Test):
         Returns the list of valid arguments for this scenario.
         """
         validkeys = self._getFullArgumentList()
+        # Hide expected-failures from the storage backend.
+        validkeys.pop("expected-failures", [])
         res = {}
         for key in self.arguments.iterkeys():
             if key in validkeys:

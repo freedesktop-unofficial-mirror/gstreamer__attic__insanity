@@ -181,9 +181,11 @@ class Monitor(object):
         """
         Returns the list of arguments for the given test
         """
-        validkeys = self.getFullArgumentList().keys()
+        validkeys = self.getFullArgumentList()
+        # Hide expected-failures from the storage backend.
+        validkeys.pop("expected-failures", [])
         res = {}
-        for key in self.arguments.iterkeys():
+        for key in self.arguments:
             if key in validkeys:
                 res[key] = self.arguments[key]
         return res
