@@ -81,7 +81,17 @@ class Test(gobject.GObject):
 
     __test_arguments__ = {
         "instance-name": ("Name assigned by parent.", "",
-            "Used to identify similar subtests within a scenario.")
+            "Used to identify similar subtests within a scenario."),
+        "expected-failures": ("List of dicts documenting expected failures.",
+            [],
+            """Must be of the form:
+            [{
+                "arguments": {argname: [broken_value, ...], ...},
+                "results": {checkitemname: ['0' or 'None'], ...},
+            }, ...],
+            If the test's arguments all match values in arguments, and the
+            result of the check matches one in "results", mark the failure as
+            expected."""),
         }
     """
     Dictionnary of arguments this test can take.
@@ -237,11 +247,8 @@ class Test(gobject.GObject):
         self._monitors = []
         self._monitorinstances = []
 
-        # list of (checkitem, pattern) where pattern is either:
-        #   - a function taking two params: checkitem, and test extra_info dict
-        #   - a dict containing key/value pairs that must be present in test args
-        #   - True for unconditional match
-        self._expected_failure_patterns = kwargs.get('expected_failures', [])
+        # see __test_arguments__ for details.
+        self._expected_failure_patterns = kwargs.get('expected-failures', [])
 
         # dict containing (checkitem, True) for every expected failure that happened
         self._expected_failures = {}
@@ -461,19 +468,31 @@ class Test(gobject.GObject):
         self.emit("check", checkitem, validated)
 
     def isExpectedFailure(self, checkitem, extra_info):
-        for pattern in self._expected_failure_patterns:
-            expected = True
-            for k, v in pattern.items():
-                if k == 'checkitem':
-                    if v != checkitem:
-                        expected = False
-                        break
-                elif self.arguments.get(k, None) != v:
-                    expected = False
-                    break
+        return self.isExpectedResult(checkitem, self.FAILURE, extra_info)
 
-            if expected:
-                return True
+    def isExpectedResult(self, checkitem, result, extra_info):
+        for pattern in self._expected_failure_patterns:
+
+            if checkitem not in pattern["results"]:
+                continue
+            elif str(result) not in pattern["results"][checkitem]:
+                if "None" in pattern["results"][checkitem]:
+                    debug("This rule only matches skipped checks.")
+                elif "0" in pattern["results"][checkitem]:
+                    debug("This rule only matches failed checks.")
+                else:
+                    warning("This rule doesn't match any checks: %s", pattern)
+                continue
+
+            if "arguments" in pattern:
+                for k, v in pattern["arguments"].items():
+                    if k not in self.arguments:
+                        break
+                    if self.arguments[k] not in v:
+                        break
+                else:
+                    return True
+
         return False
 
     def extraInfo(self, key, value):
@@ -573,7 +592,10 @@ class Test(gobject.GObject):
         d = dict((k, to_enum(k, v)) for k, v in self._checklist)
         for k in allk:
             if k not in d:
-                d[k] = self.SKIPPED
+                if self.isExpectedResult(k, self.SKIPPED, self._extrainfo):
+                    d[k] = self.EXPECTED_FAILURE
+                else:
+                    d[k] = self.SKIPPED
 
         return d.items()
 

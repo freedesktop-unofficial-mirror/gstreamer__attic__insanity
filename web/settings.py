@@ -109,10 +109,15 @@ INSANITY_TEST_FOLDERS = {
 #     '/path/to/test-media/': {
 #         'name': 'Test Media Folder',
 #         'extra-arguments': {
-#             'expected_failures': [ # patterns of checkitem/arguments to match
+#             'expected-failures': [ # patterns of checkitem/arguments to match
 #                 {
-#                     'checkitem': 'is-media-type', # required
-#                     'uri': 'file:///path/to/test/media/not-a-media-file.zip'
+#                     'arguments': {
+#                         'uri': [
+#                             'file:///path/to/test/media/not-a-media-file.zip',
+#                             'file:///path/to/test/media/also-not-a-media-file.zip',
+#                         ]
+#                     }
+#                     'results': {'is-media-type': ['0']}
 #                 }
 #             ]
 #         }
