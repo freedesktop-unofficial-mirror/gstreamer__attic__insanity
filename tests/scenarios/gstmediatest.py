@@ -25,6 +25,8 @@ Scenario simulating the behaviour of the historical gst-media-test scenarios
 
 from insanity.scenario import Scenario
 from insanity.monitor import GstDebugLogMonitor
+from insanity.test import Test
+from insanity.log import warning
 
 class GstMediaTestScenario(Scenario):
     """
@@ -71,7 +73,11 @@ class GstMediaTestScenario(Scenario):
             if test.getSuccessPercentage() == self.tests[0].getSuccessPercentage():
                 self.validateStep("similar-results")
             return True
-        if not test.getSuccessPercentage() == 100.0:
+
+        if not test.getSuccessPercentage() == 100.0 and \
+                dict(test.getCheckList()).get("no-unexpected-failures") != 1:
+            warning("Checklist was %s for %s with args %s. Rerunning.",
+                test.getCheckList(), test.__test_name__, test.getArguments())
             subtest = self.arguments.get("subtest-class")
             debuglevel = self.arguments.get("debug-level-2", "*:5")
             self.addSubTest(subtest, self.arguments,
