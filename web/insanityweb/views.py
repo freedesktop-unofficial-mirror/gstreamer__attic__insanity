@@ -191,7 +191,7 @@ def current(request):
     if 'submit' in request.POST:
         test = request.POST.get('test', '')
         folder = request.POST.get('folder', '')
-        if test in test and folder in settings.INSANITY_TEST_FOLDERS:
+        if test in test_names and folder in settings.INSANITY_TEST_FOLDERS:
             runner.start_test(test, folder,
                 settings.INSANITY_TEST_FOLDERS[folder].get('extra-arguments', {}))
         return redirect('web.insanityweb.views.current')
