@@ -165,6 +165,7 @@ if os.path.exists('/usr/share/samplemedia'):
             },
             'results': {
               'no-errors-seen': ['0'],
+              'subprocess-exited-normally': ['0'],
               'reached-initial-state': ['None'],
               'correct-final-buffer': ['None'],
               'correct-initial-buffer': ['None'],
@@ -215,7 +216,7 @@ if os.path.exists('/usr/share/samplemedia'):
               'instance-name': ['stream1.from_near_end'],
             },
             'results': {
-              'correct-final-buffer': ['None'],
+              'correct-final-buffer': ['None', '0'],
               'correct-initial-buffer': ['None'],
               'first-buffer-after-newsegment': ['None'],
             },
@@ -369,6 +370,17 @@ if os.path.exists('/usr/share/samplemedia'):
               'no-timeout': ['0', '1'],
               'reached-initial-state': ['None', '1'],
               'correct-final-buffer': ['None', '1'],
+            },
+          },
+          {
+            'arguments': {
+              'uri': [
+                'file:///usr/share/samplemedia/VC1/big_buck_bunny_1080p_VC1_WMA3_25fps_8600K.WMV',
+              ],
+              'instance-name': ['stream2.from_near_end'],
+            },
+            'results': {
+              'correct-final-buffer': ['0'],
             },
           },
         ],
