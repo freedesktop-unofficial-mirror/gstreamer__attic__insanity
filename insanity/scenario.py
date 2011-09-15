@@ -191,6 +191,15 @@ class Scenario(Test):
                 res[key] = self.arguments[key]
         return res
 
+    def getCheckList(self):
+        checklist = dict(super(Scenario, self).getCheckList())
+        for sub in self.tests:
+            n_u_failures = \
+                dict(sub.getCheckList()).get("no-unexpected-failures")
+            if n_u_failures == 0:
+                checklist["no-unexpected-failures"] = 0
+        return checklist.items()
+
     def addMonitor(self, monitor, monitorargs=None):
         # the subtests will do the check for validity
         self._monitors.append((monitor, monitorargs))

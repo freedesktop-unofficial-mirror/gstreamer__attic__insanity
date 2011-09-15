@@ -106,6 +106,7 @@ class Test(gobject.GObject):
     __test_checklist__ = {
         "test-started": "The test started",
         "no-timeout": "The test didn't timeout",
+        "no-unexpected-failures": "All failed checks were expected.",
         }
     """
     Dictionnary of check items this test will validate.
@@ -579,6 +580,7 @@ class Test(gobject.GObject):
            That value can be one of: SKIPPED, SUCCESS, FAILURE, EXPECTED_FAILURE
         """
         allk = self.getFullCheckList().keys()
+        unexpected_failures = []
 
         def to_enum(key, val):
             if val:
@@ -586,15 +588,24 @@ class Test(gobject.GObject):
             elif self._expected_failures.get(key, False):
                 return self.EXPECTED_FAILURE
             else:
+                unexpected_failures.append(key)
                 return self.FAILURE
 
         d = dict((k, to_enum(k, v)) for k, v in self._checklist)
+        d["no-unexpected-failures"] = 1
+
         for k in allk:
             if k not in d:
                 if self.isExpectedResult(k, self.SKIPPED, self._extrainfo):
                     d[k] = self.EXPECTED_FAILURE
                 else:
+                    unexpected_failures.append(k)
                     d[k] = self.SKIPPED
+
+        if unexpected_failures:
+            warning("The following tests failed unexpectedly: %s",
+                    unexpected_failures)
+            d["no-unexpected-failures"] = 0
 
         return d.items()
 
