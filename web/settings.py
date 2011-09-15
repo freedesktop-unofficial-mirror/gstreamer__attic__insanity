@@ -161,6 +161,17 @@ if os.path.exists(SAMPLEMEDIA_ROOT):
           {
             'arguments': {
               'uri': [
+                'file://{SAMPLEMEDIA_ROOT}/Audio/big_buck_bunny_AC3_2Channel_48k_384K.AC3',
+              ],
+              'instance-name': ['stream1.from_near_end']
+            },
+            'results': {
+              'correct-final-buffer': ['0'],
+            },
+          },
+          {
+            'arguments': {
+              'uri': [
                 'file://{SAMPLEMEDIA_ROOT}/Audio/big_buck_bunny_FLAC_2Channel_48k_561K.FLAC',
               ],
             },
