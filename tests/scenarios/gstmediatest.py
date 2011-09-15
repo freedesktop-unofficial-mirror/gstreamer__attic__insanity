@@ -65,7 +65,7 @@ class GstMediaTestScenario(Scenario):
             return False
         self.addSubTest(subtest, self.arguments,
                         [(GstDebugLogMonitor, {"debug-level": debuglevel})
-                         ])
+                         ], instance_name=subtest.__test_name__)
         return True
 
     def subTestDone(self, test):
@@ -82,7 +82,7 @@ class GstMediaTestScenario(Scenario):
             debuglevel = self.arguments.get("debug-level-2", "*:5")
             self.addSubTest(subtest, self.arguments,
                             [(GstDebugLogMonitor, {"debug-level": debuglevel})
-                             ])
+                             ], instance_name="rerun." + subtest.__test_name__ )
         else:
             self.validateStep("similar-results")
         return True
