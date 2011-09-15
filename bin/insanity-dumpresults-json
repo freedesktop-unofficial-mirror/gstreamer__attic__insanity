@@ -70,6 +70,9 @@ def getTestName(db, testid):
 
     if parentid:
         parent_name = getTestName(db, parentid)
+        # strip the rerun mechanism from results names.
+        if "GstMediaTestScenario" in parent_name:
+            parent_name = ""
     else:
         parent_name = ""
 
@@ -99,11 +102,17 @@ def getTestInfo(db, testid):
 
     if resperc == 100:
         data["result"] = "pass"
+    elif dict(checks).get("no-unexpected-failures", 0):
+        data["result"] = "expected-failure"
     else:
         data["result"] = "fail"
 
     data["test_case_id"] = getTestName(db, testid)
 
+    # strip the rerun mechanism from results unless something is wrong.
+    if ttype == "GstMediaTestScenario" and \
+            dict(checks)["similar-results"]:
+        return {}
 
     monitors = getMonitorsInfo(db, testid)
 
@@ -140,11 +149,30 @@ def getTestRun(db, testrunid, failedonly=False, hidescenarios=False):
                                   failedonly=failedonly)
 
     test_results = []
+    tests_by_name = {}
     for testid in tests:
         data = getTestInfo(db, testid)
         if not data:
             continue
+        name = data["test_case_id"]
+        tests_by_name[name] = data
         test_results.append(data)
+
+    for name, data in tests_by_name.items():
+        if "rerun." in name:
+            canonical_name = name.replace("rerun.", "")
+            if canonical_name in tests_by_name:
+                if tests_by_name[canonical_name]["attributes"]["success-percentage"] == \
+                        data["attributes"]["success-percentage"]:
+                    test_results.remove(tests_by_name[canonical_name])
+                    data["test_case_id"] = canonical_name
+                    tests_by_name[canonical_name] = data
+                else:
+                    warning("%s and %s have different results. " \
+                            "Leaving both in report.", canonical_name, name)
+            else:
+                warning("%s is a rerun, but %s doesn't exist",
+                        name, canonical_name)
 
 
     test_results.sort(key=lambda r: r["test_case_id"])
