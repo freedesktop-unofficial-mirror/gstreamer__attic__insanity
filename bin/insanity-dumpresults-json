@@ -50,6 +50,19 @@ def printTestRunInfo(db, testrunid, verbose=False):
                                                                            softname,
                                                                            clientname,
                                                                            clientuser)
+def getMonitorsInfo(db, testid):
+    # Return the union of all info about monitors for this test.
+    ret = {"args": {}, "results": {}, "extras": {}, "outputfiles": {}}
+    monitors = db.getMonitorsIDForTest(testid)
+
+    for mid in monitors or []:
+        tid,mtyp,args,results,resperc,extras,outputfiles = db.getFullMonitorInfo(mid)
+        ret["args"].update(args)
+        ret["results"].update(results)
+        ret["extras"].update(extras)
+        ret["outputfiles"].update(outputfiles)
+    return ret
+
 def getTestName(db, testid):
     _trid, ttype, args, _checks, _resperc, _extras, _outputfiles, parentid, \
             ismon, isscen = db.getFullTestInfo(testid)
@@ -92,6 +105,12 @@ def getTestInfo(db, testid):
     data["test_case_id"] = getTestName(db, testid)
 
 
+    monitors = getMonitorsInfo(db, testid)
+
+    logfile = monitors["outputfiles"].get("gst-log-file", "")
+    if logfile:
+        data["log_filename"] = logfile
+
     data["duration"] = "0d 0s %u000us" % dict(extras)["test-total-duration"]
 
     # Flatten extra information into the attributes dict for debugging.
@@ -105,6 +124,9 @@ def getTestInfo(db, testid):
         attributes[("extra." + k)[:MAX_ATTR_LEN]] = str(v)
     for k, v in outputfiles.items():
         attributes[("out." + k)[:MAX_ATTR_LEN]] = str(v)
+    for k1, subdict in monitors.items():
+        for k2, v in subdict.items():
+            attributes[("monitor.%s.%s" % (k1, k2))[:MAX_ATTR_LEN]] = str(v)
     data["attributes"] = attributes
 
     return data
