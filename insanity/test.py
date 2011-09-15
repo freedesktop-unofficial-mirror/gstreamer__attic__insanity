@@ -475,7 +475,8 @@ class Test(gobject.GObject):
 
             if checkitem not in pattern["results"]:
                 continue
-            elif str(result) not in pattern["results"][checkitem]:
+
+            if str(result) not in pattern["results"][checkitem]:
                 if "None" in pattern["results"][checkitem]:
                     debug("This rule only matches skipped checks.")
                 elif "0" in pattern["results"][checkitem]:
