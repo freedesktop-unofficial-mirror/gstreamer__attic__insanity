@@ -164,15 +164,15 @@ class Scenario(Test):
 
     # implement Test methods
 
-    def _getFullArgumentList(self):
+    def _getRecursiveArgumentList(self):
         """
         Like Test.getFullArgumentsList(), but takes subtests into account,
-        which would nit be possible with a classmethod.
+        which would not be possible with a classmethod.
         """
         validkeys = self.getFullArgumentList()
         for sub in self.tests:
             if isinstance(sub, Scenario):
-                validkeys.update(sub._getFullArgumentList())
+                validkeys.update(sub._getRecursiveArgumentList())
             else:
                 validkeys.update(sub.getFullArgumentList())
 
@@ -182,7 +182,7 @@ class Scenario(Test):
         """
         Returns the list of valid arguments for this scenario.
         """
-        validkeys = self._getFullArgumentList()
+        validkeys = self._getRecursiveArgumentList()
         # Hide expected-failures from the storage backend.
         validkeys.pop("expected-failures", [])
         res = {}
