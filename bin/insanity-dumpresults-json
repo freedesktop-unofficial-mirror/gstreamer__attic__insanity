@@ -174,6 +174,19 @@ def getTestRun(db, testrunid, failedonly=False, hidescenarios=False):
                 warning("%s is a rerun, but %s doesn't exist",
                         name, canonical_name)
 
+    for name, data in tests_by_name.items():
+        attributes = data.get("attributes", {})
+        if "extra.subtest-names" in attributes:
+            subtest_names = simplejson.loads(
+                    attributes["extra.subtest-names"].replace("'", '"'))
+            for subtest_name in subtest_names:
+                fullname = "%s.%s" % (name, subtest_name)
+                if fullname not in tests_by_name:
+                    # It didn't make it into the database. Treat it as
+                    # skipped.
+                    fake_data = {"test_case_id": fullname, "result": "skip"}
+                    tests_by_name[fullname] = fake_data
+                    test_results.append(data)
 
     test_results.sort(key=lambda r: r["test_case_id"])
     return test_results

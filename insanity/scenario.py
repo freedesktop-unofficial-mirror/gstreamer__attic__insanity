@@ -33,6 +33,8 @@ class Scenario(Test):
     __test_name__ = "scenario"
     __test_description__ = """Base class for scenarios"""
     __test_timeout__ = 600 # 10 minutes because the subtests will handle themselves
+    __test_extra_infos__ = {"subtest-names":
+            "The instance-name argument for all subtests started."}
 
     # TODO :
     #  auto-aggregation of arguments, checklists and extra-info
@@ -52,7 +54,7 @@ class Scenario(Test):
             return False
         self._tests = [] # list of (test, args, monitors)
         self.tests = [] # executed tests
-        self._n_tests = 0
+        self._subtest_names = []
 
         # FIXME : asynchronous starts ???
         return True
@@ -63,6 +65,7 @@ class Scenario(Test):
 
     def tearDown(self):
         # FIXME : implement this for the case where we are aborted !
+        self.extraInfo("subtest-names", repr(self._subtest_names))
         pass
 
     def test(self):
@@ -132,9 +135,8 @@ class Scenario(Test):
 
         This method can be called several times in a row at any moment.
         """
-        self._n_tests += 1
         if instance_name is None:
-            instance_name = "%u.%s" % (self._n_tests,
+            instance_name = "%u.%s" % (len(self._subtest_names),
                                        testclass.__test_name__)
         # filter out unused arguments in arguments for non-scenarios
         if not issubclass(testclass, Scenario):
@@ -151,6 +153,7 @@ class Scenario(Test):
         else:
             self._tests.insert(position,
                                 (testclass, args, monitors, instance_name))
+        self._subtest_names.append(instance_name)
 
     def subTestDone(self, subtest):
         """
