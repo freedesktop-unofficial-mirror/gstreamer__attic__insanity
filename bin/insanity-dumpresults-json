@@ -2,9 +2,11 @@
 
 # GStreamer QA system
 #
-#       dumpresults.py
+#       insanity-dumpresults-json
+#        - Output vaguely lava-dashboard compatible json.
 #
 # Copyright (c) 2008, Edward Hervey <bilboed@bilboed.com>
+# Copyright (c) 2011, Collabora Ltd. <david.laban@collabora.co.uk>
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -28,7 +30,12 @@ Dumps the results of a test results DB
 import sys
 import time
 from optparse import OptionParser
-from insanity.log import initLogging
+from insanity.log import initLogging, warning
+import simplejson
+
+# Since the dashboard model puts a limit on the length of attribute keys,
+# we may need to truncate them.
+MAX_ATTR_LEN = 32
 
 def printTestRunInfo(db, testrunid, verbose=False):
     # id , date, nbtests, client
@@ -43,83 +50,97 @@ def printTestRunInfo(db, testrunid, verbose=False):
                                                                            softname,
                                                                            clientname,
                                                                            clientuser)
+def getTestName(db, testid):
+    _trid, ttype, args, _checks, _resperc, _extras, _outputfiles, parentid, \
+            ismon, isscen = db.getFullTestInfo(testid)
+    assert not ismon, "Monitors do not have well defined names."
 
-def printTestInfo(db, testid):
-    trid, ttype, args, checks, resperc, extras, outputfiles, parentid, ismon, isscen = db.getFullTestInfo(testid)
-    if resperc == None:
-        # test didn't end in the database
-        return
-    # test number + name
-    print "Test #% 3d (%s) Success : %0.1f%%" % (testid, ttype, resperc)
-    # arguments
-    print "Arguments :", args
-    for key,val in args.iteritems():
-        print "\t% -30s:\t%s" % (key, val)
-    # results
-    print "Results :"
-    for key,val in checks:
-        print "\t% -30s:\t%s" % (key, val)
-    if extras:
-        print "Extra Information:"
-        for k, v in extras:
-            print "\t% -30s:\t%s" % (k, v)
-    if outputfiles:
-        print "Output files:"
-        for key,val in outputfiles.iteritems():
-            print "\t% -30s:\t%s" % (key,val)
-    # monitors
-    monitors = db.getMonitorsIDForTest(testid)
-    if monitors:
-        print "Applied Monitors:"
-        for mid in monitors:
-            tid,mtyp,args,results,resperc,extras,outputfiles = db.getFullMonitorInfo(mid)
-            print "\tMonitor #% 3d (%s) Success : %0.1f%%" % (mid, mtyp, resperc)
-            if args:
-                print "\t\tArguments :"
-                for k,v in args.iteritems():
-                    print "\t\t\t% -30s:\t%s" % (k,v)
-            if results:
-                print "\t\tResults :"
-                for k,v in results.iteritems():
-                    print "\t\t\t% -30s:\t%s" % (k,v)
-            if extras:
-                print "\t\tExtra Information :"
-                for k,v in extras.iteritems():
-                    print "\t\t\t% -30s:\t%s" % (k,v)
-            if outputfiles:
-                print "\t\tOutput Files :"
-                for k,v in outputfiles.iteritems():
-                    print "\t\t\t% -30s:\t%s" % (k,v)
-    print ""
+    if parentid:
+        parent_name = getTestName(db, parentid)
+    else:
+        parent_name = ""
 
-def printEnvironment(d):
-    print "Environment"
-    keys = d.keys()
-    keys.sort()
-    for key in keys:
-        val = d[key]
-        if isinstance(val, dict):
-            print "\t% -30s:" % (key)
-            for dk,dv in val.iteritems():
-                print "\t\t% -30s:\t%s" % (dk,dv)
-        else:
-            print "\t% -30s:\t%s" % (key,val)
-    print ""
+    if "instance-name" in args:
+        name = args["instance-name"]
+    else:
+        name = ttype
 
-def printTestRun(db, testrunid, failedonly=False, hidescenarios=False):
+    # Top level tests get the media filename prepended.
+    media_name = args.get("uri", "").rpartition("/")[-1]
+    if media_name and media_name not in parent_name:
+        name = "%s.%s" % (media_name, name)
+
+    if parent_name:
+        return "%s.%s" % (parent_name, name)
+    else:
+        return name
+
+def getTestInfo(db, testid):
+    data = {}
+    trid, ttype, args, checks, resperc, extras, outputfiles, parentid, \
+            ismon, isscen = db.getFullTestInfo(testid)
+
+    if resperc is None:
+        # test didn't end up in the database
+        return {}
+
+    if resperc == 100:
+        data["result"] = "pass"
+    else:
+        data["result"] = "fail"
+
+    data["test_case_id"] = getTestName(db, testid)
+
+
+    data["duration"] = "0d 0s %u000us" % dict(extras)["test-total-duration"]
+
+    # Flatten extra information into the attributes dict for debugging.
+    attributes = {}
+    attributes["success-percentage"] = "%0.1f" % resperc
+    for k, v in args.items():
+        attributes[("arg." + k)[:MAX_ATTR_LEN]] = str(v)
+    for k, v in checks:
+        attributes[("check." + k)[:MAX_ATTR_LEN]] = str(v)
+    for k, v in extras:
+        attributes[("extra." + k)[:MAX_ATTR_LEN]] = str(v)
+    for k, v in outputfiles.items():
+        attributes[("out." + k)[:MAX_ATTR_LEN]] = str(v)
+    data["attributes"] = attributes
+
+    return data
+
+def getTestRun(db, testrunid, failedonly=False, hidescenarios=False):
     # let's output everything !
     cid, starttime, stoptime = db.getTestRun(testrunid)
     softname, clientname, clientuser = db.getClientInfoForTestRun(testrunid)
     environ = db.getEnvironmentForTestRun(testrunid)
     tests = db.getTestsForTestRun(testrunid, withscenarios=not hidescenarios,
                                   failedonly=failedonly)
-    print "TestRun #% 3d:" % testrunid
-    print "Started:%s\nStopped:%s" % (time.ctime(starttime), time.ctime(stoptime))
-    if environ:
-        printEnvironment(environ)
-    print "Number of tests:", len(tests)
+
+    test_results = []
     for testid in tests:
-        printTestInfo(db, testid)
+        data = getTestInfo(db, testid)
+        if not data:
+            continue
+        test_results.append(data)
+
+
+    test_results.sort(key=lambda r: r["test_case_id"])
+    return test_results
+
+def printTestRuns(db, testrunids, failedonly=False, hidescenarios=False,
+                  indent=None):
+    output = {}
+    test_results = []
+
+    for testrunid in testrunids:
+        result = getTestRun(db, testrunid, failedonly, hidescenarios)
+        test_results.extend(result)
+
+    output["test_results"] = test_results
+
+    simplejson.dump(output, sys.stdout, indent=indent, sort_keys=True)
+    print # Newline at end of file.
 
 if __name__ == "__main__":
     usage = "usage: %prog database [options]"
@@ -128,10 +149,19 @@ if __name__ == "__main__":
                       help="List the available test runs with summary",
                       action="store_true",
                       default=False)
+    parser.add_option("-a", "--all", dest="all",
+                      help="Dump all testruns.",
+                      action="store_true",
+                      default=False)
     parser.add_option("-t", "--testrun", dest="testrun",
                       help="Specify a testrun id",
                       type=int,
                       default=-1)
+    parser.add_option("-i", "--indent", dest="indent",
+                      help="Indentation for pretty-printed json. "
+                           "Default is to use a compact representation.",
+                      type=int,
+                      default=None)
     parser.add_option("-f", "--failed", dest="failed",
                       help="Only show failed tests",
                       action="store_true", default=False)
@@ -143,9 +173,9 @@ if __name__ == "__main__":
                       help="Connect to a MySQL database for storage")
     (options, args) = parser.parse_args(sys.argv[1:])
     if not options.usemysql and len(args) != 1:
-        print "You need to specify a database file !"
+        print >> sys.stderr, "You need to specify a database file !"
         parser.print_help()
-        sys.exit()
+        sys.exit(1)
     initLogging()
     if options.usemysql:
         from insanity.storage.mysql import MySQLStorage
@@ -165,13 +195,17 @@ if __name__ == "__main__":
             printTestRunInfo(db, runid)
     else:
         testruns = db.listTestRuns()
-        if options.testrun:
+        if options.testrun and not options.all:
             if not options.testrun in testruns:
-                print "Specified testrunid not available !"
+                print >> sys.stderr, "Specified testrunid not available !"
                 parser.print_help()
-                sys.exit()
-            printTestRun(db, options.testrun, options.failed, options.hidescenarios)
+                sys.exit(1)
+            printTestRuns(db, [options.testrun], options.failed,
+                          options.hidescenarios, options.indent)
         else:
-            for runid in testruns:
-                printTestRun(db,runid,options.failed, options.hidescenarios)
+            if not testruns:
+                print >> sys.stderr, "This file contains no test runs."
+                sys.exit(1)
+            printTestRuns(db, testruns, options.failed,
+                          options.hidescenarios, options.indent)
 
