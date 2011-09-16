@@ -135,6 +135,7 @@ scripts = [
     "bin/gst-media-test",
     "bin/insanity-compare",
     "bin/insanity-dumpresults",
+    "bin/insanity-dumpresults-json",
     "bin/insanity-grouper",
     "bin/insanity-gtk",
     "bin/insanity-run",
