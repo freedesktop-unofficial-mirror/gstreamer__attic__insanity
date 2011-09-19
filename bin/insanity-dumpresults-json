@@ -102,7 +102,7 @@ def getTestInfo(db, testid):
 
     if resperc == 100:
         data["result"] = "pass"
-    elif dict(checks).get("no-unexpected-failures", 0):
+    elif str(dict(checks).get("no-unexpected-failures")) == "1":
         data["result"] = "expected-failure"
     else:
         data["result"] = "fail"
