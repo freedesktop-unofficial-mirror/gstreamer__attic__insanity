@@ -395,6 +395,82 @@ if os.path.exists(SAMPLEMEDIA_ROOT):
               'correct-final-buffer': ['0'],
             },
           },
+          {
+            'arguments': {
+              'uri': [
+                'file://{SAMPLEMEDIA_ROOT}/VC1/big_buck_bunny_480p_VC1_WMA3_25fps_2100K_short.WMV',
+              ],
+              'instance-name': ['stream1.from_near_end'],
+            },
+            'results': {
+              'correct-final-buffer': ['0'],
+              'correct-initial-buffer': ['0'],
+            },
+          },
+          {
+            'arguments': {
+              'uri': [
+                'file://{SAMPLEMEDIA_ROOT}/MPEG2/big_buck_bunny_720p_MPEG2_MP2_25fps_3600K_short.MPG',
+              ],
+              'instance-name': ['stream1.from_middle'],
+            },
+            'results': {
+              'correct-newsegment-position': ['0'],
+              'correct-newsegment-start': ['0'],
+            },
+          },
+          {
+            'arguments': {
+              'uri': [
+                'file://{SAMPLEMEDIA_ROOT}/VP8/big_buck_bunny_1080p_VP8_VORBIS_25fps_7800K_short.WebM',
+              ],
+              'instance-name': ['stream1.from_start'],
+            },
+            'results': {
+              'correct-final-buffer': ['0'],
+            },
+          },
+          {
+            'arguments': {
+              'uri': [
+                'file://{SAMPLEMEDIA_ROOT}/VC1/big_buck_bunny_720p_VC1_WMA3_25fps_4200K_short.WMV',
+                'file://{SAMPLEMEDIA_ROOT}/VC1/big_buck_bunny_1080p_VC1_WMA3_25fps_8600K_short.WMV',
+              ],
+              'instance-name': ['stream2.from_middle'],
+            },
+            'results': {
+              'correct-final-buffer': ['0'],
+            },
+          },
+          {
+            'arguments': {
+              'uri': [
+                'file://{SAMPLEMEDIA_ROOT}/MPEG2/big_buck_bunny_1080p_MPEG2_MP2_25fps_6600K_short.MPG',
+              ],
+              'instance-name': ['stream1.from_middle'],
+            },
+            'results': {
+              'correct-newsegment-position': ['0'],
+              'correct-newsegment-start': ['0'],
+            },
+          },
+          {
+            'arguments': {
+              'uri': [
+                'file://{SAMPLEMEDIA_ROOT}/VC1/big_buck_bunny_1080p_VC1_WMA3_25fps_8600K_short.WMV',
+              ],
+              'instance-name': ['stream1.from_near_end', 'stream2.from_near_end'],
+            },
+            'results': {
+              'correct-final-buffer': ['None'],
+              'correct-initial-buffer': ['None'],
+              'correct-newsegment-format': ['None'],
+              'correct-newsegment-position': ['None'],
+              'correct-newsegment-start': ['None'],
+              'correct-newsegment-stop': ['None'],
+              'first-buffer-after-newsegment': ['None'],
+            },
+          },
         ],
       },
     }
@@ -405,6 +481,8 @@ if os.path.exists(SAMPLEMEDIA_ROOT):
                 assert isinstance(values[i], (str, unicode)), \
                         "%s is not a string" % v
                 values[i] = values[i].format(**locals())
+                if 'K.' in values[i]:
+                    values.append(values[i].replace('K.', 'K_short.'))
         for values in pattern.get('arguments', {}).values():
             for v in values:
                 assert isinstance(v, (str, unicode)), \
