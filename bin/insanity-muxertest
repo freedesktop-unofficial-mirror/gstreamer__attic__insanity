@@ -6,7 +6,7 @@ from insanity.client import CommandLineTesterClient
 from insanity.generators.elements import EncoderMuxerGenerator
 from insanity.testrun import TestRun
 from insanity.monitor import GstDebugLogMonitor
-from tests.encoder import EncoderMuxerTest
+from insanity.tests.encoder import EncoderMuxerTest
 
 class EncoderMuxerClient(CommandLineTesterClient):
 

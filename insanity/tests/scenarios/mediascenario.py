@@ -24,7 +24,7 @@ Simple media-based scenarios
 """
 
 from insanity.scenario import ListScenario
-from tests.ismedia import IsMediaTest
+from insanity.tests.ismedia import IsMediaTest
 
 class MediaBarrierScenario(ListScenario):
 

@@ -125,12 +125,12 @@ def scan_directory_for_tests(directory):
 
 def scan_for_tests():
 
-    import tests
-    __import__("tests", fromlist=tests.__all__,
+    import insanity.tests
+    __import__("insanity.tests", fromlist=insanity.tests.__all__,
                globals=globals(), locals=locals())
 
-    import tests.scenarios
-    __import__("tests.scenarios", fromlist=tests.scenarios.__all__,
+    import insanity.tests.scenarios
+    __import__("insanity.tests.scenarios", fromlist=insanity.tests.scenarios.__all__,
                globals=globals(), locals=locals())
 
 def get_test_class(testname):

@@ -127,8 +127,8 @@ packages = [
     "insanity",
     "insanity.generators",
     "insanity.storage",
-    "tests",
-    "tests.scenarios",
+    "insanity.tests",
+    "insanity.tests.scenarios",
     ]
 
 scripts = [

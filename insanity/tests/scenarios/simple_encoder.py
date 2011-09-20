@@ -3,7 +3,7 @@ import os.path
 from insanity.scenario import Scenario
 from insanity.monitor import GstDebugLogMonitor
 
-from tests.simple_encoder import SimpleEncoderTest
+from insanity.tests.simple_encoder import SimpleEncoderTest
 
 class SimpleEncoderScenario(Scenario):
 

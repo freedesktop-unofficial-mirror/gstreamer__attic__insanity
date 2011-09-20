@@ -24,8 +24,8 @@ Full gnonlin scenario
 """
 
 from insanity.scenario import Scenario
-from tests.gnltest import GnlFileSourceTest, GnlFullFileSourceTest
-from tests.typefind import TypeFindTest
+from insanity.tests.gnltest import GnlFileSourceTest, GnlFullFileSourceTest
+from insanity.tests.typefind import TypeFindTest
 import gst
 
 class FullGnlFileSourceScenario(Scenario):

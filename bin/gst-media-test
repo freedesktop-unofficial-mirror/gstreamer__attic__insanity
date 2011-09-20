@@ -44,7 +44,7 @@ from insanity.generators.playlist import PlaylistGenerator
 from insanity.monitor import GstDebugLogMonitor, ValgrindMemCheckMonitor, GDBMonitor
 from insanity.testrun import TestRun
 import insanity.utils as utils
-from tests.scenarios.gstmediatest import GstMediaTestScenario
+from insanity.tests.scenarios.gstmediatest import GstMediaTestScenario
 
 class GstMediaTestClient(CommandLineTesterClient):
 
