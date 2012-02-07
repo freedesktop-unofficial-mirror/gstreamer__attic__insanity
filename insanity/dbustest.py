@@ -456,11 +456,6 @@ class DBusTest(Test, dbus.service.Object):
         info("%s", self.uuid)
 
     @dbus.service.signal(dbus_interface="net.gstreamer.Insanity.Test",
-                         signature='')
-    def remoteStartSignal(self):
-        info("%s", self.uuid)
-
-    @dbus.service.signal(dbus_interface="net.gstreamer.Insanity.Test",
                          signature='sb')
     def remoteValidateStepSignal(self, step, validate):
         info("%s %s %s", self.uuid, step, validate)

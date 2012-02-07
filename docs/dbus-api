@@ -13,7 +13,6 @@ interface net.gstreamer.Insanity.Test:
   signals:
     remoteReadySignal
     remoteStopSignal
-    remoteStartSignal      <-- unused ?
     remoteValidateStepSignal
     remoteExtraInfoSignal
 
