@@ -1,0 +1,19 @@
+This is the DBus API found in insanity/dbustest.py.
+
+interface net.gstreamer.Insanity.RemovePythonRunner:
+  methods:
+    createTestInstance
+
+interface net.gstreamer.Insanity.Test:
+  methods:
+    remoteTest
+    remoteSetUp
+    remoteStop
+    remoteTearDown
+  signals:
+    remoteReadySignal
+    remoteStopSignal
+    remoteStartSignal      <-- unused ?
+    remoteValidateStepSignal
+    remoteExtraInfoSignal
+
