@@ -46,7 +46,7 @@ information, run extra analysis, etc...
 import os
 import os.path
 import subprocess
-from insanity.test import Test, DBusTest, GStreamerTest
+from insanity.test import Test, DBusTest
 from insanity.log import warning, debug, info, exception
 from insanity.utils import compress_file
 
@@ -269,59 +269,6 @@ class Monitor(object):
                 break
         return d
 
-
-class GstDebugLogMonitor(Monitor):
-    """
-    Activates GStreamer debug logging and stores it in a file
-    """
-    __monitor_name__ = "gst-debug-log-monitor"
-    __monitor_description__ = "Logs GStreamer debug activity"
-    __monitor_arguments__ = {
-        "debug-level" : "GST_DEBUG value (defaults to '*:2')",
-        "compress-logs" : "Whether the resulting log should be compressed (default:True)"
-        }
-    __monitor_output_files__ = {
-        "gst-log-file" : "file containing the GST_DEBUG log"
-        }
-    __applies_on__ = GStreamerTest
-
-    # needs to redirect stderr to a file
-    def setUp(self):
-        Monitor.setUp(self)
-        if self.test._stderr:
-            warning("stderr is already being used, can't setUp monitor")
-            return False
-        # set gst_debug to requested level
-        loglevel = self.arguments.get("debug-level", "*:2")
-        self.test._environ["GST_DEBUG"] = loglevel
-        if loglevel.endswith("5"):
-            # multiply timeout by 2
-            if not self.test.setTimeout(self.test.getTimeout() * 2):
-                warning("Couldn't change the timeout !")
-                return False
-        # get file for redirection
-        self._logfile, self._logfilepath = self.testrun.get_temp_file(nameid="gst-debug-log")
-        debug("Got temporary file %s", self._logfilepath)
-        self.test._stderr = self._logfile
-        return True
-
-    def tearDown(self):
-        Monitor.tearDown(self)
-        if self._logfile:
-            os.close(self._logfile)
-        if not os.path.getsize(self._logfilepath):
-            # if log file is empty remove it
-            debug("log file is empty, removing it")
-            os.remove(self._logfilepath)
-        else:
-            if self.arguments.get("compress-logs", True):
-                res = self._logfilepath + ".gz"
-                debug("compressing debug log to %s", res)
-                compress_file(self._logfilepath, res)
-                os.remove(self._logfilepath)
-                self._logfilepath = res
-            # else report it
-            self.setOutputFile("gst-log-file", self._logfilepath)
 
 class ValgrindMemCheckMonitor(Monitor):
     """

@@ -70,7 +70,8 @@ class Scenario(Test):
 
     def test(self):
         # get the first test to run
-        self._startNextSubTest()
+        if len(self._tests) > 0:
+            self._startNextSubTest()
 
     def getSuccessPercentage(self):
         if not self.tests:
@@ -233,7 +234,8 @@ class ListScenario(Scenario):
         if not Scenario.setUp(self):
             return False
         # add the tests
-        for subtest in self.arguments["subtest-list"]:
+        if self.arguments and "subtest-list" in self.arguments:
+          for subtest in self.arguments["subtest-list"]:
             self.addSubTest(subtest,
                             self.arguments,
                             [])

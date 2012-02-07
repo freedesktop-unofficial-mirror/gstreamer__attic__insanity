@@ -25,8 +25,6 @@ Provided tools
   insanity module in your python path.
     Ex : PYTHONPATH=/full/path/to/top/directory:$PYTHONPATH
 
- * gst-media-test : simulates the same behaviour as the historical
-                    GStreamer media-test
  * dumpresults.py : provides visualisation of the database contents
  * compare.py : Compares two test runs
  * grouper.py : Groups the results of a testrun for easier reporting.

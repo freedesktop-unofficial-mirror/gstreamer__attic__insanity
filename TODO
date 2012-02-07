@@ -6,9 +6,6 @@ Milestone 1
 -----------
 Goal : Compatible behaviour as gst-media-test, but using the new API.
 
-* bin/gst-media-test
- * document the usage
-
 * testrun
  * Add possibility to modify the environment
 
@@ -81,8 +78,7 @@ Non-milestone-specific / Bonus features
  * Fix issue in a 'asv' when one of the values is a list, we currently avoid this
    by removing all values of type 'list'
 
-* Regression testing of GStreamer modules
- * Currently we use the old gst-media-test system (with all its inconveniences).
+* Regression testing
  * Create an easy script to test regressions
 
 

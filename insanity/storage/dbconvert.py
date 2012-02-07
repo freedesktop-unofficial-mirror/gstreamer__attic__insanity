@@ -65,16 +65,6 @@ def testrun_env_2to3(storage):
         elif name == "env-variables" and blobvalue != None:
             drop = True
             add = [(k, None, v) for k,v in loads(blobvalue).iteritems()]
-        elif name == "gst-registry" and blobvalue != None:
-            drop = True
-            d = loads(blobvalue)
-            add = []
-            for k in d.keys():
-                filename, date, version, features = d[k]
-                add.append(("gst-registry.%s.filename"%k, None, filename))
-                add.append(("gst-registry.%s.date"%k, None, date))
-                add.append(("gst-registry.%s.version"%k, None, version))
-                add.append(("gst-registry.%s.features"%k, None, ','.join(features)))
         if update == True:
             storage._ExecuteCommit("""UPDATE testrun_environment_dict SET intvalue=?,txtvalue=? WHERE id=?""",
                                    (intvalue, txtvalue, eid))

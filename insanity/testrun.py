@@ -211,9 +211,6 @@ class TestRun(gobject.GObject):
         """
         Collect the environment settings, parameters, variables,...
         """
-        # we specify our own registry
-        path = self.get_temp_file(nameid="registry", category="testrun")[1]
-        self._env["GST_REGISTRY"] = path
         environment.collectEnvironment(self._env, self._gotEnvironment)
 
     def _gotEnvironment(self, resdict):

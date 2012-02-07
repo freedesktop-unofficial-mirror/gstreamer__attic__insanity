@@ -238,7 +238,7 @@ def group_tests(db, trid):
     tests = {}
 
     for test in testsid:
-        trid, ttype, args, checks, perc, extr, outp = db.getFullTestInfo(test)
+        trid, ttype, args, checks, perc, extr, outp, parentid, ismon, isscen = db.getFullTestInfo(test)
         if not ttype in tests:
             tests[ttype] = {}
             # initialize it with all possible checkitems

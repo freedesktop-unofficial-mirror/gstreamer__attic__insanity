@@ -68,14 +68,14 @@ def list_available_tests():
     * the test description
     * the test class
     """
-    from insanity.test import Test, DBusTest, PythonDBusTest, GStreamerTest, CmdLineTest
+    from insanity.test import Test, DBusTest, PythonDBusTest, CmdLineTest
     from insanity.scenario import Scenario
 
     def get_valid_subclasses(cls):
         res = []
         if cls == Scenario:
             return res
-        if not cls in [Test, DBusTest, PythonDBusTest, GStreamerTest, CmdLineTest]:
+        if not cls in [Test, DBusTest, PythonDBusTest, CmdLineTest]:
             res.append((cls.__test_name__.strip(), cls.__test_description__.strip(), cls))
         for i in cls.__subclasses__():
             res.extend(get_valid_subclasses(i))
@@ -89,7 +89,7 @@ def list_available_scenarios():
     * the scenario description
     * the scenario class
     """
-    from insanity.test import Test, DBusTest, PythonDBusTest, GStreamerTest, CmdLineTest
+    from insanity.test import Test, DBusTest, PythonDBusTest, CmdLineTest
     from insanity.scenario import Scenario
 
     def get_valid_subclasses(cls):

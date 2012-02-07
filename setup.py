@@ -132,7 +132,6 @@ packages = [
     ]
 
 scripts = [
-    "bin/gst-media-test",
     "bin/insanity-compare",
     "bin/insanity-dumpresults",
     "bin/insanity-dumpresults-json",
@@ -143,7 +142,6 @@ scripts = [
 
 add_data_file("share/applications", "insanity-gtk.desktop")
 add_data_file("share/insanity", "bin/gdb.instructions")
-add_data_file("share/insanity", "bin/gst.supp")
 add_data_file("share/insanity/libexec", "bin/insanity-pythondbusrunner")
 add_data_files("share/insanity", "web", ['.py', '.html', '.css', '.js'])
 
@@ -159,4 +157,4 @@ setup (cmdclass = cmdclass,
        license = "GNU GPL",
        author = "Edward Hervey",
        author_email = "bilboed@bilboed.com",
-       url = "http://git.collabora.co.uk/?p=user/edward/gst-qa-system;a=summary")
+       url = "http://git.collabora.co.uk/?p=user/vincent/insanity;a=summary")

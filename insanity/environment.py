@@ -33,14 +33,12 @@ import sys
 import imp
 import gobject
 gobject.threads_init()
-import gst
 from insanity.log import debug, exception
 
 # TODO : methods/classes to retrieve/process environment
 #
 # examples:
 #   env variablse
-#   gstreamer versions
 #   pluggable env retrievers
 #   Application should be able to add information of its own
 def _pollSubProcess(process, resfile, callback):
@@ -92,65 +90,9 @@ def collectEnvironment(environ, callback):
     else:
         gobject.timeout_add(500, _pollSubProcess, proc, respath, callback)
 
-##
-## SUBPROCESS METHODS/FUNCTIONS
-##
-
-def _tupletostr(atup):
-    return ".".join([str(x) for x in atup])
-
-def _getGStreamerRegistry():
-    import stat
-    # returns a dictionnary with the contents of the registry:
-    # key : plugin-name
-    # value : (version, filename, date, [features])
-    #   [features] is a list of the names of the pluginfeatures
-    reg = gst.registry_get_default()
-    d = {}
-    for p in reg.get_plugin_list():
-        name = p.get_name()
-        filename = p.get_filename()
-        if filename:
-            date = os.stat(filename)[stat.ST_MTIME]
-        else:
-            date = 0
-        version = p.get_version()
-        features = [x.get_name() for x in reg.get_feature_list_by_plugin(name)]
-        d["gst-registry.%s.filename"%name] = filename
-        d["gst-registry.%s.date"%name] = date
-        d["gst-registry.%s.version"%name] = version
-        d["gst-registry.%s.features"%name] = ','.join(features)
-    return d
-
-def _getGStreamerEnvironment():
-    # returns a dictionnary with the GStreamer specific details
-    d = {}
-    d["pygst-version"] = _tupletostr(gst.get_pygst_version())
-    d["pygst-path"] = gst.__path__[0]
-    d["pygst-file"] = gst.__file__
-    d["gst-version"] = _tupletostr(gst.get_gst_version())
-    d.update(_getGStreamerRegistry())
-    return d
-
-def _getGObjectEnvironment():
-    d = {}
-    d["pygobject-path"] = gobject.__path__[0]
-    d["pygobject-file"] = gobject.__file__
-    d["glib-version"] = _tupletostr(gobject.glib_version)
-    d["pygobject-version"] = _tupletostr(gobject.pygobject_version)
-    d["pygtk-version"] = _tupletostr(gobject.pygtk_version)
-    return d
-
 def _privateCollectEnvironment():
-    """
-    Method called from the subprocess to collect environment
-    """
-    # we first get the system environment variables
-    res = os.environ.copy()
-    res["uname"] = ' '.join(os.uname())
-    res.update(_getGObjectEnvironment())
-    res.update(_getGStreamerEnvironment())
-    return res
+    d = {}
+    return d
 
 if __name__ == "__main__":
     # args : <outputfile>

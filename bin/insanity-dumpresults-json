@@ -70,9 +70,6 @@ def getTestName(db, testid):
 
     if parentid:
         parent_name = getTestName(db, parentid)
-        # strip the rerun mechanism from results names.
-        if "GstMediaTestScenario" in parent_name:
-            parent_name = ""
     else:
         parent_name = ""
 
@@ -109,14 +106,10 @@ def getTestInfo(db, testid):
 
     data["test_case_id"] = getTestName(db, testid)
 
-    # strip the rerun mechanism from results unless something is wrong.
-    if ttype == "GstMediaTestScenario" and \
-            dict(checks)["similar-results"]:
-        return {}
-
     monitors = getMonitorsInfo(db, testid)
 
-    logfile = monitors["outputfiles"].get("gst-log-file", "")
+    # we could gather a log file if there's a known name one
+    logfile = None
     if logfile:
         data["log_filename"] = logfile
 

@@ -41,8 +41,6 @@ import gobject
 #      |
 #      +--- PythonDBusTest
 #           |
-#           +--- GStreamerTest
-#           |
 #           +--- CmdLineTest
 
 class Test(gobject.GObject):
@@ -723,4 +721,3 @@ class Test(gobject.GObject):
 
 # For compatibility:
 from insanity.dbustest import DBusTest, PythonDBusTest, CmdLineTest
-from insanity.gstreamertest import GStreamerTestBase as GStreamerTest

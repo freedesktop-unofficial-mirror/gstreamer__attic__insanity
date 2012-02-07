@@ -125,15 +125,6 @@ class TestExtraInfoValueNode(template.Node):
 
             return switch_dict(d)
 
-        def newsegment_tuple(tup):
-            update,rate,format,start,stop,pos = tup
-            return "<br>".join(["Update : %d" % update,
-                                "Rate : %f" % rate,
-                                "GstFormat : %d" % format,
-                                "start : %s" % time_to_string(start),
-                                "stop : %s" % time_to_string(stop),
-                                "pos : %s" % time_to_string(pos)])
-
         # render based on the type
         extrainfo = context[self._extrainfo_name]
         # insert custom extrainfo value handling here
