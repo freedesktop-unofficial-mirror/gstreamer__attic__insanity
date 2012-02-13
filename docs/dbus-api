@@ -1,18 +1,22 @@
 This is the DBus API found in insanity/dbustest.py.
 
-interface net.gstreamer.Insanity.RemovePythonRunner:
-  methods:
-    createTestInstance
-
 interface net.gstreamer.Insanity.Test:
   methods:
+#    remoteInfo
+#      Request for metadata (test name, parms, etc)    <-- not done yet
     remoteTest
+      The program should start run the test
     remoteSetUp
+      Create pipeline, etc.
     remoteStop
-    remoteTearDown
+      The program should stop and exit normally
+#    remoteTearDown
+#      Destroy pipeline, etc
   signals:
     remoteReadySignal
+      Sent when the program is ready to accept commands
     remoteStopSignal
+      Sent when a test has finished running
     remoteValidateStepSignal
     remoteExtraInfoSignal
 
