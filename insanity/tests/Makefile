@@ -1,16 +1,16 @@
 # handmade, needs autofoo I guess (would that work in Windows though ?)
 
-C_TESTS=blankc
+C_TESTS=blankc blankc-glib
 
-pcfiles=dbus-1
+pcfiles=glib-2.0 gobject-2.0 dbus-1
 
 CFLAGS=-Wall -W $(shell pkg-config --cflags $(pcfiles))
 LDFLAGS=$(shell pkg-config --libs $(pcfiles))
 
 all: $(C_TESTS)
 
-%: %.c insanity.a
-	gcc $(CFLAGS) $(LDFLAGS) -o $@ $< insanity.a
+%: %.c insanity.a insanity_glib.a
+	gcc $(CFLAGS) $(LDFLAGS) -o $@ $< insanity_glib.a insanity.a
 
 insanity.a: insanity.o
 	ar cru $@ $<
@@ -18,6 +18,17 @@ insanity.a: insanity.o
 
 insanity.o: insanity.c
 	gcc -c -o $@ $(CFLAGS) $<
+
+insanity_glib.a: insanity_glib.o
+	ar cru $@ $<
+	ranlib $@
+
+insanity_glib.o: insanity_glib.c
+	gcc -c -o $@ $(CFLAGS) $<
+
+.PHONY: clean
+clean:
+	rm -f *.o *.a
 
 #%.so: %.c
 #	gcc -shared -c -o $@ $<

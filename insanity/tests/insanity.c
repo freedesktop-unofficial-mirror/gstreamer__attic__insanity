@@ -22,27 +22,45 @@ struct InsanityTestData {
   DBusMessage *args;
   int cpu_load;
 
-  int (*insanity_user_setup)(InsanityTestData *data);
-  int (*insanity_user_test)(InsanityTestData *data);
-  int (*insanity_user_stop)(InsanityTestData *data);
+  intptr_t setup_hook_user;
+  int (*insanity_user_setup)(InsanityTestData *data, intptr_t user);
+  intptr_t test_hook_user;
+  int (*insanity_user_test)(InsanityTestData *data, intptr_t user);
+  intptr_t stop_hook_user;
+  int (*insanity_user_stop)(InsanityTestData *data, intptr_t user);
 };
 
-static int default_insanity_user_setup(InsanityTestData *data)
+static int default_insanity_user_setup(InsanityTestData *data, intptr_t user)
 {
   (void)data;
+  (void)user;
   return 0;
 }
 
-static int default_insanity_user_test(InsanityTestData *data)
+static int default_insanity_user_test(InsanityTestData *data, intptr_t user)
 {
+  (void)user;
   insanity_lib_done(data);
   return 0;
 }
 
-static int default_insanity_user_stop(InsanityTestData *data)
+static int default_insanity_user_stop(InsanityTestData *data, intptr_t user)
 {
   (void)data;
+  (void)user;
   return 0;
+}
+
+void insanity_lib_init_data (InsanityTestData *data)
+{
+  data->conn = NULL;
+  strcpy (data->name, "");
+  data->args = NULL;
+
+  data->setup_hook_user = data->test_hook_user = data->stop_hook_user = 0;
+  data->insanity_user_setup = &default_insanity_user_setup;
+  data->insanity_user_test = &default_insanity_user_test;
+  data->insanity_user_stop = &default_insanity_user_stop;
 }
 
 InsanityTestData *insanity_lib_new_data (void)
@@ -50,23 +68,21 @@ InsanityTestData *insanity_lib_new_data (void)
   InsanityTestData *data = malloc(sizeof (InsanityTestData));
   if (!data)
     return NULL;
-  data->conn = NULL;
-  strcpy (data->name, "");
-  data->args = NULL;
-
-  data->insanity_user_setup = &default_insanity_user_setup;
-  data->insanity_user_test = &default_insanity_user_test;
-  data->insanity_user_stop = &default_insanity_user_stop;
-
+  insanity_lib_init_data (data);
   return data;
 }
 
-void insanity_lib_free_data (InsanityTestData *data)
+void insanity_lib_clear_data (InsanityTestData *data)
 {
   if (data->args)
     dbus_message_unref(data->args);
   if (data->conn)
     dbus_connection_unref(data->conn);
+}
+
+void insanity_lib_free_data (InsanityTestData *data)
+{
+  insanity_lib_clear_data (data);
   free(data);
 }
 
@@ -78,18 +94,21 @@ static void insanity_lib_connect (InsanityTestData *data, DBusConnection *conn, 
   snprintf(data->name, sizeof(data->name), "/net/gstreamer/Insanity/Test/Test%s", uuid);
 }
 
-void insanity_lib_set_user_setup_hook (InsanityTestData *data, int (*hook)(InsanityTestData *))
+void insanity_lib_set_user_setup_hook (InsanityTestData *data, int (*hook)(InsanityTestData *, intptr_t), intptr_t user)
 {
+  data->setup_hook_user = user;
   data->insanity_user_setup = hook ? hook : default_insanity_user_setup;
 }
 
-void insanity_lib_set_user_test_hook (InsanityTestData *data, int (*hook)(InsanityTestData *))
+void insanity_lib_set_user_test_hook (InsanityTestData *data, int (*hook)(InsanityTestData *, intptr_t), intptr_t user)
 {
+  data->test_hook_user = user;
   data->insanity_user_test = hook ? hook : default_insanity_user_test;
 }
 
-void insanity_lib_set_user_stop_hook (InsanityTestData *data, int (*hook)(InsanityTestData *))
+void insanity_lib_set_user_stop_hook (InsanityTestData *data, int (*hook)(InsanityTestData *, intptr_t), intptr_t user)
 {
+  data->stop_hook_user = user;
   data->insanity_user_stop = hook ? hook : default_insanity_user_stop;
 }
 
@@ -212,7 +231,7 @@ void insanity_lib_done(InsanityTestData *data)
 
 static int on_setup(InsanityTestData *data)
 {
-  int ret = (*data->insanity_user_setup)(data);
+  int ret = (*data->insanity_user_setup)(data, data->setup_hook_user);
   if (ret < 0) {
     send_signal (data->conn, "remoteStopSignal", data->name, DBUS_TYPE_INVALID);
   }
@@ -225,14 +244,14 @@ static int on_setup(InsanityTestData *data)
 static int on_test(InsanityTestData *data)
 {
   insanity_lib_record_start_time(data);
-  return (*data->insanity_user_test)(data);
+  return (*data->insanity_user_test)(data, data->test_hook_user);
 }
 
 static int on_stop(InsanityTestData *data)
 {
   int ret;
 
-  ret=(*data->insanity_user_stop)(data);
+  ret=(*data->insanity_user_stop)(data, data->stop_hook_user);
   if (ret<0)
     return ret;
 

@@ -10,9 +10,10 @@
 #include "insanity.h"
 
 /* Return 0 if success, < 0 if failure */
-static int blank_setup(InsanityTestData *data)
+static int blank_setup(InsanityTestData *data, intptr_t user)
 {
   (void)data;
+  (void)user;
   printf("blank_setup callback\n");
 
   /*
@@ -26,9 +27,10 @@ static int blank_setup(InsanityTestData *data)
   return 0;
 }
 
-static int blank_test(InsanityTestData *data)
+static int blank_test(InsanityTestData *data, intptr_t user)
 {
   (void)data;
+  (void)user;
   printf("blank_test callback\n");
 #if 0
   /* random stuff that takes some cpu */
@@ -48,9 +50,10 @@ static int blank_test(InsanityTestData *data)
   return 0;
 }
 
-static int blank_stop(InsanityTestData *data)
+static int blank_stop(InsanityTestData *data, intptr_t user)
 {
   (void)data;
+  (void)user;
   printf("blank_stop callback\n");
   return 0;
 }
@@ -60,9 +63,9 @@ int main(int argc, const char **argv)
   InsanityTestData *data = insanity_lib_new_data ();
   int ret;
 
-  insanity_lib_set_user_setup_hook(data, &blank_setup);
-  insanity_lib_set_user_test_hook(data, &blank_test);
-  insanity_lib_set_user_stop_hook(data, &blank_stop);
+  insanity_lib_set_user_setup_hook(data, &blank_setup, 0);
+  insanity_lib_set_user_test_hook(data, &blank_test, 0);
+  insanity_lib_set_user_stop_hook(data, &blank_stop, 0);
 
   ret = insanity_lib_run(data, argc, argv);
 
