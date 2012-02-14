@@ -1,3 +1,4 @@
+#include <glib.h>
 #include <dbus/dbus.h>
 #include <unistd.h>
 #include <stdio.h>
@@ -6,6 +7,7 @@
 #include <stdarg.h>
 #include <sys/time.h>
 #include <sys/resource.h>
+#include <stdint.h>
 
 /* getrusage is Unix API */
 #define USE_CPU_LOAD
@@ -17,6 +19,7 @@ typedef struct InsanityTestData {
   struct rusage rusage;
 #endif
   char name[128];
+  DBusMessage *args;
 } InsanityTestData;
 
 static const char *introspect_response_template=" \
@@ -26,6 +29,11 @@ static const char *introspect_response_template=" \
     <interface name=\"org.freedesktop.DBus.Introspectable\"> \
       <method name=\"Introspect\"> \
         <arg direction=\"out\" type=\"s\" /> \
+      </method> \
+    </interface> \
+    <interface name=\"net.gstreamer.Insanity.Test\"> \
+      <method name=\"remoteSetUp\"> \
+        <arg direction=\"in\" type=\"a{sv}\" /> \
       </method> \
     </interface> \
   </node> \
@@ -139,6 +147,115 @@ static int on_stop(InsanityTestData *data)
   gather_end_of_test_info(data);
 
   return ret;
+}
+
+int foreach_dbus_args (InsanityTestData *data, int (*f)(const char *key, int type, void *value, uintptr_t userdata), uintptr_t userdata)
+{
+  DBusMessageIter iter, subiter, subsubiter, subsubsubiter;
+  char *key;
+  char *string_value;
+  dbus_uint32_t uint32_value;
+  dbus_int32_t int32_value;
+  int type;
+  int ret;
+  void *ptr;
+
+  dbus_message_iter_init (data->args, &iter);
+  type = dbus_message_iter_get_arg_type (&iter);
+  if (type != DBUS_TYPE_ARRAY) {
+    fprintf(stderr, "Expected array, got %c\n", type);
+    exit(1);
+  }
+  dbus_message_iter_recurse (&iter, &subiter);
+  do {
+    type = dbus_message_iter_get_arg_type (&subiter);
+    if (type != DBUS_TYPE_DICT_ENTRY) {
+      fprintf(stderr, "Expected dict entry, got %c\n", type);
+      exit(1);
+    }
+    dbus_message_iter_recurse (&subiter, &subsubiter);
+
+    type = dbus_message_iter_get_arg_type (&subsubiter);
+    if (type != DBUS_TYPE_STRING) {
+      fprintf(stderr, "Expected string, got %c\n", type);
+      exit(1);
+    }
+    dbus_message_iter_get_basic (&subsubiter,&key);
+    printf("Found key: %s\n", key);
+    if (!dbus_message_iter_next (&subsubiter)) {
+      fprintf(stderr, "Value not present\n");
+      exit(1);
+    }
+    type = dbus_message_iter_get_arg_type (&subsubiter);
+    if (type != DBUS_TYPE_VARIANT) {
+      fprintf(stderr, "Expected variant, got %c\n", type);
+      exit(1);
+    }
+    dbus_message_iter_recurse (&subsubiter, &subsubsubiter);
+
+    type = dbus_message_iter_get_arg_type (&subsubsubiter);
+
+    switch (type) {
+      case DBUS_TYPE_STRING:
+        dbus_message_iter_get_basic (&subsubsubiter,&string_value);
+        printf("Found string value: %s\n", string_value);
+        ptr = &string_value;
+        break;
+      case DBUS_TYPE_INT32:
+        dbus_message_iter_get_basic (&subsubsubiter,&int32_value);
+        printf("Found int32 value: %u\n", int32_value);
+        ptr = &int32_value;
+        break;
+      case DBUS_TYPE_UINT32:
+        dbus_message_iter_get_basic (&subsubsubiter,&uint32_value);
+        printf("Found uint32 value: %u\n", uint32_value);
+        ptr = &uint32_value;
+        break;
+      default:
+        fprintf(stderr, "Unsupported type: %c\n", type);
+        exit(1);
+        break;
+    }
+
+    /* < 0 -> error, 0 -> continue, > 0 -> stop */
+    ret = (*f)(key, type, ptr, userdata);
+    if (ret)
+      return ret;
+
+  } while (dbus_message_iter_next (&subiter));
+
+  return 0;
+}
+
+struct finder_data {
+  const char *key;
+  int type;
+  void *value;
+};
+
+static int typed_finder(const char *key, int type, void *value, uintptr_t userdata)
+{
+  struct finder_data *fd = (struct finder_data *)userdata;
+  if (strcmp (key, fd->key))
+    return 0;
+  if (type != fd->type) {
+    fprintf(stderr, "Key '%s' was found, but not of the expected type (was %c, expected %c)\n", key, type, fd->type);
+    return -1;
+  }
+  fd->value = value;
+  return 1;
+}
+
+static const char *get_arg_string(InsanityTestData *data, const char *key)
+{
+  struct finder_data fd;
+  int ret;
+
+  fd.key = key;
+  fd.type = DBUS_TYPE_STRING;
+  fd.value = NULL;
+  ret = foreach_dbus_args(data, &typed_finder, (uintptr_t)&fd);
+  return fd.value ? * (const char **)fd.value : NULL;
 }
 
 void listen(const char *bus_address,const char *uuid)
@@ -260,6 +377,7 @@ void listen(const char *bus_address,const char *uuid)
         dbus_connection_flush(conn);
         dbus_message_unref(reply);
 
+        insanity_test_data.args = dbus_message_ref (msg);
         on_setup(&insanity_test_data);
       }
 #if 0
@@ -312,6 +430,8 @@ void listen(const char *bus_address,const char *uuid)
       dbus_message_unref(msg);
    }
 
+   dbus_message_unref(insanity_test_data.args);
+
    dbus_connection_unref(conn);
 }
 
@@ -345,6 +465,11 @@ int main(int argc, const char **argv)
 static int insanity_setup(InsanityTestData *data)
 {
   printf("TEST CALLBACK: insanity_setup\n");
+
+  printf("Example args:\n");
+  printf("uri: %s\n", get_arg_string (data, "uri"));
+  printf("uuid: %s\n", get_arg_string (data, "uuid"));
+  printf("foo: %s\n", get_arg_string (data, "foo"));
   return 0;
 }
 

@@ -275,11 +275,12 @@ class DBusTest(Test, dbus.service.Object):
         self._remoteinstance.remoteTest(reply_handler=self._voidRemoteCallBackHandler,
                                         error_handler=self._voidRemoteTestErrBackHandler)
 
-    def callRemoteSetUp(self):
+    def callRemoteSetUp(self, args):
         # call remote instance "remoteSetUp()"
         if not self._remoteinstance:
             return
-        self._remoteinstance.remoteSetUp(reply_handler=self._voidRemoteCallBackHandler,
+        self._remoteinstance.remoteSetUp(args,
+                                         reply_handler=self._voidRemoteCallBackHandler,
                                          error_handler=self._voidRemoteSetUpErrBackHandler)
 
     def callRemoteStop(self):
@@ -396,7 +397,7 @@ class DBusTest(Test, dbus.service.Object):
                                                    self._remoteValidateStepCb)
             self._remoteinstance.connect_to_signal("remoteExtraInfoSignal",
                                                    self._remoteExtraInfoCb)
-            self.callRemoteSetUp()
+            self.callRemoteSetUp(args)
         except:
             exception("Exception raised when creating remote instance !")
             self.stop()
