@@ -39,9 +39,9 @@ static const char *introspect_response_template=" \
   </node> \
 ";
 
-static int insanity_setup(InsanityTestData *data);
-static int insanity_test(InsanityTestData *data);
-static int insanity_stop(InsanityTestData *data);
+static int insanity_user_setup(InsanityTestData *data);
+static int insanity_user_test(InsanityTestData *data);
+static int insanity_user_stop(InsanityTestData *data);
 
 static void send_signal(DBusConnection *conn, const char *signal_name, const char *path_name, int type,...)
 {
@@ -86,10 +86,19 @@ static long tv_us_diff(const struct timeval *t0, const struct timeval *t1)
 }
 #endif
 
+static void insanity_lib_validate(InsanityTestData *data, const char *name, int success)
+{
+  send_signal (data->conn,"remoteValidateStepSignal",data->name,DBUS_TYPE_STRING,&name,DBUS_TYPE_BOOLEAN,&success,DBUS_TYPE_INVALID);
+}
+
+static void insanity_lib_extra_info(InsanityTestData *data, const char *name, int type, void *dataptr)
+{
+  send_signal (data->conn,"remoteExtraInfoSignal",data->name,DBUS_TYPE_STRING,&name,type,dataptr,DBUS_TYPE_INVALID);
+}
+
 static void gather_end_of_test_info(InsanityTestData *data)
 {
 #ifdef USE_CPU_LOAD
-  static const char *cpu_load_name = "cpu-load";
   struct rusage rusage;
   struct timeval end;
   unsigned long us;
@@ -100,16 +109,11 @@ static void gather_end_of_test_info(InsanityTestData *data)
   us = tv_us_diff(&data->rusage.ru_utime, &rusage.ru_utime)
      + tv_us_diff(&data->rusage.ru_stime, &rusage.ru_stime);
   cpu_load = 100 * us / tv_us_diff (&data->start, &end);
-  send_signal (data->conn, "remoteExtraInfoSignal", data->name, DBUS_TYPE_STRING, &cpu_load_name, DBUS_TYPE_UINT32, &cpu_load, DBUS_TYPE_INVALID);
+  insanity_lib_extra_info (data, "cpu-load", DBUS_TYPE_UINT32, &cpu_load);
 #endif
 }
 
-static void insanity_validate(InsanityTestData *data, const char *name, int success)
-{
-  send_signal (data->conn,"remoteValidateStepSignal",data->name,DBUS_TYPE_STRING,&name,DBUS_TYPE_BOOLEAN,&success,DBUS_TYPE_INVALID);
-}
-
-static void insanity_done(InsanityTestData *data)
+static void insanity_lib_done(InsanityTestData *data)
 {
   gather_end_of_test_info(data);
   send_signal (data->conn, "remoteStopSignal", data->name, DBUS_TYPE_INVALID);
@@ -117,7 +121,7 @@ static void insanity_done(InsanityTestData *data)
 
 static int on_setup(InsanityTestData *data)
 {
-  int ret = insanity_setup(data);
+  int ret = insanity_user_setup(data);
   if (ret < 0) {
     send_signal (data->conn, "remoteStopSignal", data->name, DBUS_TYPE_INVALID);
   }
@@ -133,14 +137,14 @@ static int on_test(InsanityTestData *data)
   gettimeofday(&data->start,NULL);
   getrusage(RUSAGE_SELF, &data->rusage);
 #endif
-  return insanity_test(data);
+  return insanity_user_test(data);
 }
 
 static int on_stop(InsanityTestData *data)
 {
   int ret;
 
-  ret=insanity_stop(data);
+  ret=insanity_user_stop(data);
   if (ret<0)
     return ret;
 
@@ -246,7 +250,7 @@ static int typed_finder(const char *key, int type, void *value, uintptr_t userda
   return 1;
 }
 
-static const char *get_arg_string(InsanityTestData *data, const char *key)
+static const char *insanity_lib_get_arg_string(InsanityTestData *data, const char *key)
 {
   struct finder_data fd;
   int ret;
@@ -462,24 +466,24 @@ int main(int argc, const char **argv)
 /* From here, user defined stuff - above is library */
 
 /* Return 0 if success, < 0 if failure */
-static int insanity_setup(InsanityTestData *data)
+static int insanity_user_setup(InsanityTestData *data)
 {
-  printf("TEST CALLBACK: insanity_setup\n");
+  printf("TEST CALLBACK: insanity_user_setup\n");
 
   printf("Example args:\n");
-  printf("uri: %s\n", get_arg_string (data, "uri"));
-  printf("uuid: %s\n", get_arg_string (data, "uuid"));
-  printf("foo: %s\n", get_arg_string (data, "foo"));
+  printf("uri: %s\n", insanity_lib_get_arg_string (data, "uri"));
+  printf("uuid: %s\n", insanity_lib_get_arg_string (data, "uuid"));
+  printf("foo: %s\n", insanity_lib_get_arg_string (data, "foo"));
   return 0;
 }
 
-static int insanity_test(InsanityTestData *data)
+static int insanity_user_test(InsanityTestData *data)
 {
 #if 0
   /* random stuff that takes some cpu */
   int x,y,*z;
 #define LIMIT 4096
-  printf("TEST CALLBACK: insanity_test\n");
+  printf("TEST CALLBACK: insanity_user_test\n");
   z=malloc(sizeof(int)*LIMIT*LIMIT);
   for(x=0;x<LIMIT;++x) for (y=0;y<LIMIT;++y) {
     z[y*LIMIT+x]=x*74393/(y+1);
@@ -489,14 +493,14 @@ static int insanity_test(InsanityTestData *data)
   printf("%d\n",y);
   free(z);
 #endif
-  //insanity_validate(data, "random-event", 1);
-  insanity_done(data);
+  //insanity_lib_validate(data, "random-event", 1);
+  insanity_lib_done(data);
   return 0;
 }
 
-static int insanity_stop(InsanityTestData *data)
+static int insanity_user_stop(InsanityTestData *data)
 {
-  printf("TEST CALLBACK: insanity_stop\n");
+  printf("TEST CALLBACK: insanity_user_stop\n");
   return 0;
 }
 
