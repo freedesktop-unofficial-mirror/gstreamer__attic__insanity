@@ -153,24 +153,28 @@ static int on_stop(InsanityTestData *data)
   return ret;
 }
 
-int foreach_dbus_args (InsanityTestData *data, int (*f)(const char *key, int type, void *value, uintptr_t userdata), uintptr_t userdata)
+static int foreach_dbus_array (DBusMessageIter *iter, int (*f)(const char *key, int type, void *value, uintptr_t userdata), uintptr_t userdata)
 {
-  DBusMessageIter iter, subiter, subsubiter, subsubsubiter;
+  DBusMessageIter subiter, subsubiter, subsubsubiter;
   char *key;
   char *string_value;
   dbus_uint32_t uint32_value;
   dbus_int32_t int32_value;
+  int boolean_value;
+  dbus_uint64_t uint64_value;
+  dbus_int64_t int64_value;
+  double double_value;
+  DBusMessageIter array_value;
   int type;
   int ret;
   void *ptr;
 
-  dbus_message_iter_init (data->args, &iter);
-  type = dbus_message_iter_get_arg_type (&iter);
+  type = dbus_message_iter_get_arg_type (iter);
   if (type != DBUS_TYPE_ARRAY) {
     fprintf(stderr, "Expected array, got %c\n", type);
     exit(1);
   }
-  dbus_message_iter_recurse (&iter, &subiter);
+  dbus_message_iter_recurse (iter, &subiter);
   do {
     type = dbus_message_iter_get_arg_type (&subiter);
     if (type != DBUS_TYPE_DICT_ENTRY) {
@@ -191,34 +195,66 @@ int foreach_dbus_args (InsanityTestData *data, int (*f)(const char *key, int typ
       exit(1);
     }
     type = dbus_message_iter_get_arg_type (&subsubiter);
-    if (type != DBUS_TYPE_VARIANT) {
+    if (type == DBUS_TYPE_STRING) {
+      dbus_message_iter_get_basic (&subsubiter,&string_value);
+      printf("Found string value: %s\n", string_value);
+      ptr = &string_value;
+    }
+    else if (type == DBUS_TYPE_VARIANT) {
+      dbus_message_iter_recurse (&subsubiter, &subsubsubiter);
+
+      type = dbus_message_iter_get_arg_type (&subsubsubiter);
+
+      switch (type) {
+        case DBUS_TYPE_STRING:
+          dbus_message_iter_get_basic (&subsubsubiter,&string_value);
+          printf("Found string value: %s\n", string_value);
+          ptr = &string_value;
+          break;
+        case DBUS_TYPE_INT32:
+          dbus_message_iter_get_basic (&subsubsubiter,&int32_value);
+          printf("Found int32 value: %u\n", int32_value);
+          ptr = &int32_value;
+          break;
+        case DBUS_TYPE_UINT32:
+          dbus_message_iter_get_basic (&subsubsubiter,&uint32_value);
+          printf("Found uint32 value: %u\n", uint32_value);
+          ptr = &uint32_value;
+          break;
+        case DBUS_TYPE_INT64:
+          dbus_message_iter_get_basic (&subsubsubiter,&int64_value);
+          printf("Found int64 value: %ld\n", (long)int64_value);
+          ptr = &int64_value;
+          break;
+        case DBUS_TYPE_UINT64:
+          dbus_message_iter_get_basic (&subsubsubiter,&uint64_value);
+          printf("Found uint64 value: %lu\n", (unsigned long)uint64_value);
+          ptr = &uint64_value;
+          break;
+        case DBUS_TYPE_DOUBLE:
+          dbus_message_iter_get_basic (&subsubsubiter,&double_value);
+          printf("Found double value: %f\n", double_value);
+          ptr = &double_value;
+          break;
+        case DBUS_TYPE_BOOLEAN:
+          dbus_message_iter_get_basic (&subsubsubiter,&boolean_value);
+          printf("Found boolean value: %d\n", boolean_value);
+          ptr = &boolean_value;
+          break;
+        case DBUS_TYPE_ARRAY:
+          array_value = subsubsubiter;
+          printf("Found array value\n");
+          ptr = &array_value;
+          break;
+        default:
+          fprintf(stderr, "Unsupported type: %c\n", type);
+          exit(1);
+          break;
+      }
+    }
+    else {
       fprintf(stderr, "Expected variant, got %c\n", type);
       exit(1);
-    }
-    dbus_message_iter_recurse (&subsubiter, &subsubsubiter);
-
-    type = dbus_message_iter_get_arg_type (&subsubsubiter);
-
-    switch (type) {
-      case DBUS_TYPE_STRING:
-        dbus_message_iter_get_basic (&subsubsubiter,&string_value);
-        printf("Found string value: %s\n", string_value);
-        ptr = &string_value;
-        break;
-      case DBUS_TYPE_INT32:
-        dbus_message_iter_get_basic (&subsubsubiter,&int32_value);
-        printf("Found int32 value: %u\n", int32_value);
-        ptr = &int32_value;
-        break;
-      case DBUS_TYPE_UINT32:
-        dbus_message_iter_get_basic (&subsubsubiter,&uint32_value);
-        printf("Found uint32 value: %u\n", uint32_value);
-        ptr = &uint32_value;
-        break;
-      default:
-        fprintf(stderr, "Unsupported type: %c\n", type);
-        exit(1);
-        break;
     }
 
     /* < 0 -> error, 0 -> continue, > 0 -> stop */
@@ -229,6 +265,14 @@ int foreach_dbus_args (InsanityTestData *data, int (*f)(const char *key, int typ
   } while (dbus_message_iter_next (&subiter));
 
   return 0;
+}
+
+int foreach_dbus_args (InsanityTestData *data, int (*f)(const char *key, int type, void *value, uintptr_t userdata), uintptr_t userdata)
+{
+  DBusMessageIter iter;
+
+  dbus_message_iter_init (data->args, &iter);
+  return foreach_dbus_array (&iter, f, userdata);
 }
 
 struct finder_data {
@@ -259,7 +303,29 @@ static const char *insanity_lib_get_arg_string(InsanityTestData *data, const cha
   fd.type = DBUS_TYPE_STRING;
   fd.value = NULL;
   ret = foreach_dbus_args(data, &typed_finder, (uintptr_t)&fd);
-  return fd.value ? * (const char **)fd.value : NULL;
+  return (ret>0 && fd.value) ? * (const char **)fd.value : NULL;
+}
+
+static const char *insanity_lib_get_output_file(InsanityTestData *data, const char *key)
+{
+  struct finder_data fd;
+  int ret;
+  DBusMessageIter array;
+
+  fd.key = "outputfiles";
+  fd.type = DBUS_TYPE_ARRAY;
+  fd.value = NULL;
+  ret = foreach_dbus_args(data, &typed_finder, (uintptr_t)&fd);
+  if (ret <= 0)
+    return NULL;
+  printf("Got an array, yes\n");
+
+  array = *(DBusMessageIter*)fd.value;
+  fd.key = key;
+  fd.type = DBUS_TYPE_STRING;
+  fd.value = NULL;
+  ret = foreach_dbus_array (&array, &typed_finder, (uintptr_t)&fd);
+  return (ret>0 && fd.value) ? * (const char **)fd.value : NULL;
 }
 
 void listen(const char *bus_address,const char *uuid)
@@ -474,6 +540,8 @@ static int insanity_user_setup(InsanityTestData *data)
   printf("uri: %s\n", insanity_lib_get_arg_string (data, "uri"));
   printf("uuid: %s\n", insanity_lib_get_arg_string (data, "uuid"));
   printf("foo: %s\n", insanity_lib_get_arg_string (data, "foo"));
+  printf("output file 'foo': %s\n", insanity_lib_get_output_file (data, "foo"));
+  printf("output file 'dummy-output-file': %s\n", insanity_lib_get_output_file (data, "dummy-output-file"));
   return 0;
 }
 
