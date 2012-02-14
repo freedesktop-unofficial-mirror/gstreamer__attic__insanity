@@ -40,7 +40,7 @@ static const char *introspect_response_template=" \
 ";
 
 static int insanity_setup(InsanityTestData *data);
-static int insanity_start(InsanityTestData *data);
+static int insanity_test(InsanityTestData *data);
 static int insanity_stop(InsanityTestData *data);
 
 static void send_signal(DBusConnection *conn, const char *signal_name, const char *path_name, int type,...)
@@ -127,13 +127,13 @@ static int on_setup(InsanityTestData *data)
   return ret;
 }
 
-static int on_start(InsanityTestData *data)
+static int on_test(InsanityTestData *data)
 {
 #ifdef USE_CPU_LOAD
   gettimeofday(&data->start,NULL);
   getrusage(RUSAGE_SELF, &data->rusage);
 #endif
-  return insanity_start(data);
+  return insanity_test(data);
 }
 
 static int on_stop(InsanityTestData *data)
@@ -420,7 +420,7 @@ void listen(const char *bus_address,const char *uuid)
         dbus_connection_flush(conn);
         dbus_message_unref(reply);
 
-        on_start(&insanity_test_data);
+        on_test(&insanity_test_data);
       }
       else {
         printf("Got unhandled method call: interface %s, method %s\n", dbus_message_get_interface(msg), dbus_message_get_member(msg));
@@ -473,13 +473,13 @@ static int insanity_setup(InsanityTestData *data)
   return 0;
 }
 
-static int insanity_start(InsanityTestData *data)
+static int insanity_test(InsanityTestData *data)
 {
 #if 0
   /* random stuff that takes some cpu */
   int x,y,*z;
 #define LIMIT 4096
-  printf("TEST CALLBACK: insanity_start\n");
+  printf("TEST CALLBACK: insanity_test\n");
   z=malloc(sizeof(int)*LIMIT*LIMIT);
   for(x=0;x<LIMIT;++x) for (y=0;y<LIMIT;++y) {
     z[y*LIMIT+x]=x*74393/(y+1);
