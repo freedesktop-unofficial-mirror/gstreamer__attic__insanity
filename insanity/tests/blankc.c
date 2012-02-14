@@ -20,8 +20,72 @@ typedef struct InsanityTestData {
 #endif
   char name[128];
   DBusMessage *args;
+  int cpu_load;
 } InsanityTestData;
 
+InsanityTestData *insanity_lib_new_data (DBusConnection *conn, const char *uuid)
+{
+  InsanityTestData *data = malloc(sizeof (InsanityTestData));
+  if (!data)
+    return NULL;
+  data->conn = dbus_connection_ref (conn);
+  strcpy (data->name, "");
+  snprintf(data->name, sizeof(data->name), "/net/gstreamer/Insanity/Test/Test%s", uuid);
+  data->args = NULL;
+  return data;
+}
+
+void insanity_lib_free_data (InsanityTestData *data)
+{
+  if (data->args)
+    dbus_message_unref(data->args);
+  if (data->conn)
+    dbus_connection_unref(data->conn);
+  free(data);
+}
+
+static void insanity_lib_set_data_args (InsanityTestData *data, DBusMessage *msg)
+{
+  if (data->args) {
+    dbus_message_unref (data->args);
+    data->args = NULL;
+  }
+  if (msg) {
+    data->args = dbus_message_ref (msg);
+  }
+}
+
+static void insanity_lib_record_start_time (InsanityTestData *data)
+{
+#ifdef USE_CPU_LOAD
+  gettimeofday(&data->start,NULL);
+  getrusage(RUSAGE_SELF, &data->rusage);
+#endif
+}
+
+#ifdef USE_CPU_LOAD
+static long tv_us_diff(const struct timeval *t0, const struct timeval *t1)
+{
+  return (t1->tv_sec - t0->tv_sec) * 1000000 + t1->tv_usec - t0->tv_usec;
+}
+#endif
+
+static void insanity_lib_record_stop_time(InsanityTestData *data)
+{
+#ifdef USE_CPU_LOAD
+  struct rusage rusage;
+  struct timeval end;
+  unsigned long us;
+
+  getrusage(RUSAGE_SELF, &rusage);
+  gettimeofday(&end,NULL);
+  us = tv_us_diff(&data->rusage.ru_utime, &rusage.ru_utime)
+     + tv_us_diff(&data->rusage.ru_stime, &rusage.ru_stime);
+  data->cpu_load = 100 * us / tv_us_diff (&data->start, &end);
+#endif
+}
+
+#define INSANITY_TEST_INTERFACE "net.gstreamer.Insanity.Test"
 static const char *introspect_response_template=" \
   <!DOCTYPE node PUBLIC \"-//freedesktop//DTD D-BUS Object Introspection 1.0//EN\" \
   \"http://www.freedesktop.org/standards/dbus/1.0/introspect.dtd\"> \
@@ -31,7 +95,7 @@ static const char *introspect_response_template=" \
         <arg direction=\"out\" type=\"s\" /> \
       </method> \
     </interface> \
-    <interface name=\"net.gstreamer.Insanity.Test\"> \
+    <interface name=\""INSANITY_TEST_INTERFACE"\"> \
       <method name=\"remoteSetUp\"> \
         <arg direction=\"in\" type=\"a{sv}\" /> \
       </method> \
@@ -49,7 +113,7 @@ static void send_signal(DBusConnection *conn, const char *signal_name, const cha
    dbus_uint32_t serial = 0;
    va_list ap;
 
-   msg = dbus_message_new_signal(path_name, "net.gstreamer.Insanity.Test", signal_name);
+   msg = dbus_message_new_signal(path_name, INSANITY_TEST_INTERFACE, signal_name);
    if (NULL == msg) 
    { 
       fprintf(stderr, "Message Null\n"); 
@@ -79,13 +143,6 @@ static void send_signal(DBusConnection *conn, const char *signal_name, const cha
    dbus_message_unref(msg);
 }
 
-#ifdef USE_CPU_LOAD
-static long tv_us_diff(const struct timeval *t0, const struct timeval *t1)
-{
-  return (t1->tv_sec - t0->tv_sec) * 1000000 + t1->tv_usec - t0->tv_usec;
-}
-#endif
-
 static void insanity_lib_validate(InsanityTestData *data, const char *name, int success)
 {
   send_signal (data->conn,"remoteValidateStepSignal",data->name,DBUS_TYPE_STRING,&name,DBUS_TYPE_BOOLEAN,&success,DBUS_TYPE_INVALID);
@@ -98,19 +155,8 @@ static void insanity_lib_extra_info(InsanityTestData *data, const char *name, in
 
 static void gather_end_of_test_info(InsanityTestData *data)
 {
-#ifdef USE_CPU_LOAD
-  struct rusage rusage;
-  struct timeval end;
-  unsigned long us;
-  int cpu_load;
-
-  getrusage(RUSAGE_SELF, &rusage);
-  gettimeofday(&end,NULL);
-  us = tv_us_diff(&data->rusage.ru_utime, &rusage.ru_utime)
-     + tv_us_diff(&data->rusage.ru_stime, &rusage.ru_stime);
-  cpu_load = 100 * us / tv_us_diff (&data->start, &end);
-  insanity_lib_extra_info (data, "cpu-load", DBUS_TYPE_UINT32, &cpu_load);
-#endif
+  insanity_lib_record_stop_time(data);
+  insanity_lib_extra_info (data, "cpu-load", DBUS_TYPE_INT32, &data->cpu_load);
 }
 
 static void insanity_lib_done(InsanityTestData *data)
@@ -133,10 +179,7 @@ static int on_setup(InsanityTestData *data)
 
 static int on_test(InsanityTestData *data)
 {
-#ifdef USE_CPU_LOAD
-  gettimeofday(&data->start,NULL);
-  getrusage(RUSAGE_SELF, &data->rusage);
-#endif
+  insanity_lib_record_start_time(data);
   return insanity_user_test(data);
 }
 
@@ -328,15 +371,13 @@ void listen(const char *bus_address,const char *uuid)
    char object_name[128];
    dbus_uint32_t serial = 0;
    int done;
-
-   InsanityTestData insanity_test_data;
+   InsanityTestData *insanity_test_data;
 
    // initialise the error
    dbus_error_init(&err);
    
    // connect to the bus and check for errors
    conn = dbus_connection_open(bus_address, &err);
-   insanity_test_data.conn = conn;
    if (dbus_error_is_set(&err)) { 
       fprintf(stderr, "Connection Error (%s)\n", err.message); 
       dbus_error_free(&err); 
@@ -352,11 +393,9 @@ void listen(const char *bus_address,const char *uuid)
       dbus_error_free(&err); 
    }
 
-   snprintf(insanity_test_data.name, sizeof(insanity_test_data.name), "/net/gstreamer/Insanity/Test/Test%s", uuid);
-   snprintf(object_name, sizeof(object_name), "net.gstreamer.Insanity.Test.Test%s", uuid);
-   printf("Using object name %s\n",object_name);
-
    // request our name on the bus and check for errors
+   snprintf(object_name, sizeof(object_name), INSANITY_TEST_INTERFACE ".Test%s", uuid);
+   printf("Using object name %s\n",object_name);
    ret = dbus_bus_request_name(conn, object_name, DBUS_NAME_FLAG_REPLACE_EXISTING , &err);
    if (dbus_error_is_set(&err)) { 
       fprintf(stderr, "Name Error (%s)\n", err.message); 
@@ -366,6 +405,8 @@ void listen(const char *bus_address,const char *uuid)
       fprintf(stderr, "Not Primary Owner (%d)\n", ret);
       exit(1); 
    }
+
+   insanity_test_data = insanity_lib_new_data (conn, uuid);
 
    // loop, testing for new messages
    done=0;
@@ -413,7 +454,7 @@ void listen(const char *bus_address,const char *uuid)
         dbus_message_unref(reply);
       }
 #if 0
-      else if (dbus_message_is_method_call(msg, "net.gstreamer.Insanity.Test", "remoteInfo"))  {
+      else if (dbus_message_is_method_call(msg, INSANITY_TEST_INTERFACE, "remoteInfo"))  {
         static const char *info = "blankc-info";
         printf("Got remoteInfo\n");
         reply = dbus_message_new_method_return(msg);
@@ -426,7 +467,7 @@ void listen(const char *bus_address,const char *uuid)
         dbus_message_unref(reply);
       }
 #endif
-      else if (dbus_message_is_method_call(msg, "net.gstreamer.Insanity.Test", "remoteSetUp"))  {
+      else if (dbus_message_is_method_call(msg, INSANITY_TEST_INTERFACE, "remoteSetUp"))  {
         printf("Got remoteSetUp\n");
         reply = dbus_message_new_method_return(msg);
         if (!dbus_connection_send(conn, reply, &serial)) {
@@ -436,11 +477,11 @@ void listen(const char *bus_address,const char *uuid)
         dbus_connection_flush(conn);
         dbus_message_unref(reply);
 
-        insanity_test_data.args = dbus_message_ref (msg);
-        on_setup(&insanity_test_data);
+        insanity_lib_set_data_args (insanity_test_data, msg);
+        on_setup(insanity_test_data);
       }
 #if 0
-      else if (dbus_message_is_method_call(msg, "net.gstreamer.Insanity.Test", "remoteTearDown"))  {
+      else if (dbus_message_is_method_call(msg, INSANITY_TEST_INTERFACE, "remoteTearDown"))  {
         printf("Got remoteTearDown\n");
 
         on_tear_down(&insanity_test_data);
@@ -456,7 +497,7 @@ void listen(const char *bus_address,const char *uuid)
         done=1;
       }
 #endif
-      else if (dbus_message_is_method_call(msg, "net.gstreamer.Insanity.Test", "remoteStop"))  {
+      else if (dbus_message_is_method_call(msg, INSANITY_TEST_INTERFACE, "remoteStop"))  {
         printf("Got remoteStop\n");
         reply = dbus_message_new_method_return(msg);
         if (!dbus_connection_send(conn, reply, &serial)) {
@@ -466,10 +507,10 @@ void listen(const char *bus_address,const char *uuid)
         dbus_connection_flush(conn);
         dbus_message_unref(reply);
 
-        on_stop(&insanity_test_data);
+        on_stop(insanity_test_data);
         done=1;
       }
-      else if (dbus_message_is_method_call(msg, "net.gstreamer.Insanity.Test", "remoteTest"))  {
+      else if (dbus_message_is_method_call(msg, INSANITY_TEST_INTERFACE, "remoteTest"))  {
         printf("Got remoteTest\n");
         reply = dbus_message_new_method_return(msg);
         if (!dbus_connection_send(conn, reply, &serial)) {
@@ -479,7 +520,7 @@ void listen(const char *bus_address,const char *uuid)
         dbus_connection_flush(conn);
         dbus_message_unref(reply);
 
-        on_test(&insanity_test_data);
+        on_test(insanity_test_data);
       }
       else {
         printf("Got unhandled method call: interface %s, method %s\n", dbus_message_get_interface(msg), dbus_message_get_member(msg));
@@ -489,9 +530,8 @@ void listen(const char *bus_address,const char *uuid)
       dbus_message_unref(msg);
    }
 
-   dbus_message_unref(insanity_test_data.args);
-
-   dbus_connection_unref(conn);
+   insanity_lib_free_data (insanity_test_data);
+   dbus_connection_unref (conn);
 }
 
 int main(int argc, const char **argv)
