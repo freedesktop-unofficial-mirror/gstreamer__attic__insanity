@@ -189,7 +189,6 @@ static int foreach_dbus_array (DBusMessageIter *iter, int (*f)(const char *key, 
       exit(1);
     }
     dbus_message_iter_get_basic (&subsubiter,&key);
-    printf("Found key: %s\n", key);
     if (!dbus_message_iter_next (&subsubiter)) {
       fprintf(stderr, "Value not present\n");
       exit(1);
@@ -197,7 +196,6 @@ static int foreach_dbus_array (DBusMessageIter *iter, int (*f)(const char *key, 
     type = dbus_message_iter_get_arg_type (&subsubiter);
     if (type == DBUS_TYPE_STRING) {
       dbus_message_iter_get_basic (&subsubiter,&string_value);
-      printf("Found string value: %s\n", string_value);
       ptr = &string_value;
     }
     else if (type == DBUS_TYPE_VARIANT) {
@@ -208,42 +206,34 @@ static int foreach_dbus_array (DBusMessageIter *iter, int (*f)(const char *key, 
       switch (type) {
         case DBUS_TYPE_STRING:
           dbus_message_iter_get_basic (&subsubsubiter,&string_value);
-          printf("Found string value: %s\n", string_value);
           ptr = &string_value;
           break;
         case DBUS_TYPE_INT32:
           dbus_message_iter_get_basic (&subsubsubiter,&int32_value);
-          printf("Found int32 value: %u\n", int32_value);
           ptr = &int32_value;
           break;
         case DBUS_TYPE_UINT32:
           dbus_message_iter_get_basic (&subsubsubiter,&uint32_value);
-          printf("Found uint32 value: %u\n", uint32_value);
           ptr = &uint32_value;
           break;
         case DBUS_TYPE_INT64:
           dbus_message_iter_get_basic (&subsubsubiter,&int64_value);
-          printf("Found int64 value: %ld\n", (long)int64_value);
           ptr = &int64_value;
           break;
         case DBUS_TYPE_UINT64:
           dbus_message_iter_get_basic (&subsubsubiter,&uint64_value);
-          printf("Found uint64 value: %lu\n", (unsigned long)uint64_value);
           ptr = &uint64_value;
           break;
         case DBUS_TYPE_DOUBLE:
           dbus_message_iter_get_basic (&subsubsubiter,&double_value);
-          printf("Found double value: %f\n", double_value);
           ptr = &double_value;
           break;
         case DBUS_TYPE_BOOLEAN:
           dbus_message_iter_get_basic (&subsubsubiter,&boolean_value);
-          printf("Found boolean value: %d\n", boolean_value);
           ptr = &boolean_value;
           break;
         case DBUS_TYPE_ARRAY:
           array_value = subsubsubiter;
-          printf("Found array value\n");
           ptr = &array_value;
           break;
         default:
@@ -318,7 +308,6 @@ static const char *insanity_lib_get_output_file(InsanityTestData *data, const ch
   ret = foreach_dbus_args(data, &typed_finder, (uintptr_t)&fd);
   if (ret <= 0)
     return NULL;
-  printf("Got an array, yes\n");
 
   array = *(DBusMessageIter*)fd.value;
   fd.key = key;
