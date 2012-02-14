@@ -18,5 +18,7 @@ interface net.gstreamer.Insanity.Test:
     remoteStopSignal
       Sent when a test has finished running
     remoteValidateStepSignal
+      Sent to notify insanity which test steps failed/suceceded
     remoteExtraInfoSignal
+      Sent to record any further information the tests wants recorded
 
