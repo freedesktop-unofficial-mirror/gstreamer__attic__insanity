@@ -156,8 +156,8 @@ static int on_stop(InsanityTestData *data)
 static int foreach_dbus_array (DBusMessageIter *iter, int (*f)(const char *key, int type, void *value, uintptr_t userdata), uintptr_t userdata)
 {
   DBusMessageIter subiter, subsubiter, subsubsubiter;
-  char *key;
-  char *string_value;
+  const char *key;
+  const char *string_value;
   dbus_uint32_t uint32_value;
   dbus_int32_t int32_value;
   int boolean_value;
