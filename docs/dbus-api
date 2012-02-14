@@ -6,19 +6,26 @@ interface net.gstreamer.Insanity.Test:
 #      Request for metadata (test name, parms, etc)    <-- not done yet
     remoteTest
       The program should start run the test
+        no arguments
     remoteSetUp
       Create pipeline, etc.
+        arguments: a dict keyed by strings
     remoteStop
       The program should stop and exit normally
+        no arguments
 #    remoteTearDown
 #      Destroy pipeline, etc
   signals:
     remoteReadySignal
       Sent when the program is ready to accept commands
+        no arguments
     remoteStopSignal
       Sent when a test has finished running
+        no arguments
     remoteValidateStepSignal
       Sent to notify insanity which test steps failed/suceceded
+        arguments: string (name of step), and boolean (success if true, failure if not)
     remoteExtraInfoSignal
       Sent to record any further information the tests wants recorded
+        arguments: string (name of info), and whatever type is appropriate (the data)
 
