@@ -3,25 +3,25 @@
 
 #include <stdint.h>
 
-struct InsanityTestData;
-typedef struct InsanityTestData InsanityTestData;
+struct InsanityTest;
+typedef struct InsanityTest InsanityTest;
 
-InsanityTestData *insanity_lib_new_data (void);
-void insanity_lib_init_data (InsanityTestData *data);
-void insanity_lib_clear_data (InsanityTestData *data);
-void insanity_lib_free_data (InsanityTestData *data);
+InsanityTest *insanity_test_create (void);
+void insanity_test_init (InsanityTest *test);
+void insanity_test_clear (InsanityTest *test);
+void insanity_test_free (InsanityTest *test);
 
-const char *insanity_lib_get_arg_string(InsanityTestData *data, const char *key);
-const char *insanity_lib_get_output_file(InsanityTestData *data, const char *key);
-void insanity_lib_done(InsanityTestData *data);
-void insanity_lib_validate(InsanityTestData *data, const char *name, int success);
-void insanity_lib_extra_info(InsanityTestData *data, const char *name, int type, void *dataptr);
+const char *insanity_test_get_arg_string(InsanityTest *test, const char *key);
+const char *insanity_test_get_output_file(InsanityTest *test, const char *key);
+void insanity_test_done(InsanityTest *test);
+void insanity_test_validate(InsanityTest *test, const char *name, int success);
+void insanity_test_extra_info(InsanityTest *test, const char *name, int type, void *dataptr);
 
-void insanity_lib_set_user_setup_hook (InsanityTestData *data, int (*hook)(InsanityTestData *, intptr_t), intptr_t user);
-void insanity_lib_set_user_test_hook (InsanityTestData *data, int (*hook)(InsanityTestData *, intptr_t), intptr_t user);
-void insanity_lib_set_user_stop_hook (InsanityTestData *data, int (*hook)(InsanityTestData *, intptr_t), intptr_t user);
+void insanity_test_set_user_setup_hook (InsanityTest *test, int (*hook)(InsanityTest *, intptr_t), intptr_t user);
+void insanity_test_set_user_test_hook (InsanityTest *test, int (*hook)(InsanityTest *, intptr_t), intptr_t user);
+void insanity_test_set_user_stop_hook (InsanityTest *test, int (*hook)(InsanityTest *, intptr_t), intptr_t user);
 
-int insanity_lib_run(InsanityTestData *data, int argc, const char **argv);
+int insanity_test_run(InsanityTest *test, int argc, const char **argv);
 
 #endif
 

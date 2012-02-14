@@ -3,41 +3,41 @@
 
 #include "insanity.h"
 
-struct InsanityGlibTestData {
+struct InsanityGlibTest {
   GObject parent;
 
-  InsanityTestData *data;
+  InsanityTest *test;
 };
-typedef struct InsanityGlibTestData InsanityGlibTestData;
+typedef struct InsanityGlibTest InsanityGlibTest;
 
-struct InsanityGlibTestDataClass
+struct InsanityGlibTestClass
 {
   GObjectClass parent_class;
 
-  int (*setup) (InsanityGlibTestData *data);
-  int (*test) (InsanityGlibTestData *data);
-  int (*stop) (InsanityGlibTestData *data);
+  int (*setup) (InsanityGlibTest *test);
+  int (*test) (InsanityGlibTest *test);
+  int (*stop) (InsanityGlibTest *test);
 };
-typedef struct InsanityGlibTestDataClass InsanityGlibTestDataClass;
+typedef struct InsanityGlibTestClass InsanityGlibTestClass;
 
 
 /* Handy macros */
-#define INSANITY_GLIB_TEST_DATA_TYPE                (insanity_glib_test_data_get_type ())
-#define INSANITY_GLIB_TEST_DATA(obj)                (G_TYPE_CHECK_INSTANCE_CAST ((obj), INSANITY_GLIB_TEST_DATA_TYPE, InsanityGlibTestData))
-#define INSANITY_GLIB_TEST_DATA_CLASS(c)            (G_TYPE_CHECK_CLASS_CAST ((c), INSANITY_GLIB_TEST_DATA_TYPE, InsanityGlibTestDataClass))
-#define IS_INSANITY_GLIB_TEST_DATA(obj)             (G_TYPE_CHECK_TYPE ((obj), INSANITY_GLIB_TEST_DATA_TYPE))
-#define IS_INSANITY_GLIB_TEST_DATA_CLASS(c)         (G_TYPE_CHECK_CLASS_TYPE ((c), INSANITY_GLIB_TEST_DATA_TYPE))
-#define INSANITY_GLIB_TEST_DATA_GET_CLASS(obj)      (G_TYPE_INSTANCE_GET_CLASS ((obj), INSANITY_GLIB_TEST_DATA_TYPE, InsanityGlibTestDataClass))
+#define INSANITY_GLIB_TEST_TYPE                (insanity_glib_test_get_type ())
+#define INSANITY_GLIB_TEST(obj)                (G_TYPE_CHECK_INSTANCE_CAST ((obj), INSANITY_GLIB_TEST_TYPE, InsanityGlibTest))
+#define INSANITY_GLIB_TEST_CLASS(c)            (G_TYPE_CHECK_CLASS_CAST ((c), INSANITY_GLIB_TEST_TYPE, InsanityGlibTestClass))
+#define IS_INSANITY_GLIB_TEST(obj)             (G_TYPE_CHECK_TYPE ((obj), INSANITY_GLIB_TEST_TYPE))
+#define IS_INSANITY_GLIB_TEST_CLASS(c)         (G_TYPE_CHECK_CLASS_TYPE ((c), INSANITY_GLIB_TEST_TYPE))
+#define INSANITY_GLIB_TEST_GET_CLASS(obj)      (G_TYPE_INSTANCE_GET_CLASS ((obj), INSANITY_GLIB_TEST_TYPE, InsanityGlibTestClass))
 
-GType insanity_glib_test_data_get_type (void);
+GType insanity_glib_test_get_type (void);
 
-const char *insanity_glib_get_arg_string(InsanityGlibTestData *data, const char *key);
-const char *insanity_glib_get_output_file(InsanityGlibTestData *data, const char *key);
-void insanity_glib_test_data_done (InsanityGlibTestData *data);
-void insanity_glib_validate(InsanityGlibTestData *data, const char *name, int success);
-void insanity_glib_extra_info(InsanityGlibTestData *data, const char *name, int type, void *dataptr);
+const char *insanity_glib_get_arg_string(InsanityGlibTest *test, const char *key);
+const char *insanity_glib_get_output_file(InsanityGlibTest *test, const char *key);
+void insanity_glib_test_done (InsanityGlibTest *test);
+void insanity_glib_test_validate(InsanityGlibTest *test, const char *name, int success);
+void insanity_glib_test_extra_info(InsanityGlibTest *test, const char *name, int type, void *dataptr);
 
-int insanity_glib_run(InsanityGlibTestData *data, int argc, const char **argv);
+int insanity_glib_test_run(InsanityGlibTest *test, int argc, const char **argv);
 
 #endif
 

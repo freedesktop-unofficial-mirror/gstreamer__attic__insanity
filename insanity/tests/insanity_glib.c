@@ -3,103 +3,103 @@
 #include "insanity.h"
 #include "insanity_glib.h"
 
-static int insanity_glib_test_data_setup_impl (InsanityGlibTestData *data)
+static int insanity_glib_test_setup_impl (InsanityGlibTest *test)
 {
-  (void)data;
+  (void)test;
   return 0;
 }
 
-static int insanity_glib_test_data_test_impl (InsanityGlibTestData *data)
+static int insanity_glib_test_test_impl (InsanityGlibTest *test)
 {
-  insanity_glib_test_data_done (data);
+  insanity_glib_test_done (test);
   return 0;
 }
 
-static int insanity_glib_test_data_stop_impl (InsanityGlibTestData *data)
+static int insanity_glib_test_stop_impl (InsanityGlibTest *test)
 {
-  (void)data;
+  (void)test;
   return 0;
 }
 
-static int insanity_glib_test_data_setup (InsanityTestData *data, intptr_t user)
+static int insanity_glib_test_setup (InsanityTest *test, intptr_t user)
 {
-  InsanityGlibTestData *gdata = INSANITY_GLIB_TEST_DATA (user);
-  (void)data;
-  return INSANITY_GLIB_TEST_DATA_GET_CLASS (gdata)->setup (gdata);
+  InsanityGlibTest *gtest = INSANITY_GLIB_TEST (user);
+  (void)test;
+  return INSANITY_GLIB_TEST_GET_CLASS (gtest)->setup (gtest);
 }
 
-static int insanity_glib_test_data_test (InsanityTestData *data, intptr_t user)
+static int insanity_glib_test_test (InsanityTest *test, intptr_t user)
 {
-  InsanityGlibTestData *gdata = INSANITY_GLIB_TEST_DATA (user);
-  (void)data;
-  return INSANITY_GLIB_TEST_DATA_GET_CLASS (gdata)->test (gdata);
+  InsanityGlibTest *gtest = INSANITY_GLIB_TEST (user);
+  (void)test;
+  return INSANITY_GLIB_TEST_GET_CLASS (gtest)->test (gtest);
 }
 
-static int insanity_glib_test_data_stop (InsanityTestData *data, intptr_t user)
+static int insanity_glib_test_stop (InsanityTest *test, intptr_t user)
 {
-  InsanityGlibTestData *gdata = INSANITY_GLIB_TEST_DATA (user);
-  (void)data;
-  return INSANITY_GLIB_TEST_DATA_GET_CLASS (gdata)->stop (gdata);
+  InsanityGlibTest *gtest = INSANITY_GLIB_TEST (user);
+  (void)test;
+  return INSANITY_GLIB_TEST_GET_CLASS (gtest)->stop (gtest);
 }
 
 
 
-G_DEFINE_TYPE (InsanityGlibTestData, insanity_glib_test_data, G_TYPE_OBJECT);
+G_DEFINE_TYPE (InsanityGlibTest, insanity_glib_test, G_TYPE_OBJECT);
 
-static void insanity_glib_test_data_finalize (GObject *gobject)
+static void insanity_glib_test_finalize (GObject *gobject)
 {
-  InsanityGlibTestData *data = (InsanityGlibTestData *)gobject;
-  insanity_lib_free_data (data->data);
-  G_OBJECT_CLASS (insanity_glib_test_data_parent_class)->finalize (gobject);
+  InsanityGlibTest *test = (InsanityGlibTest *)gobject;
+  insanity_test_free (test->test);
+  G_OBJECT_CLASS (insanity_glib_test_parent_class)->finalize (gobject);
 }
 
-static void insanity_glib_test_data_init (InsanityGlibTestData *data)
+static void insanity_glib_test_init (InsanityGlibTest *test)
 {
-  data->data = insanity_lib_new_data ();
+  test->test = insanity_test_create ();
 
-  insanity_lib_set_user_setup_hook (data->data, &insanity_glib_test_data_setup, (intptr_t)data);
-  insanity_lib_set_user_test_hook (data->data, &insanity_glib_test_data_test, (intptr_t)data);
-  insanity_lib_set_user_stop_hook (data->data, &insanity_glib_test_data_stop, (intptr_t)data);
+  insanity_test_set_user_setup_hook (test->test, &insanity_glib_test_setup, (intptr_t)test);
+  insanity_test_set_user_test_hook (test->test, &insanity_glib_test_test, (intptr_t)test);
+  insanity_test_set_user_stop_hook (test->test, &insanity_glib_test_stop, (intptr_t)test);
 }
 
-static void insanity_glib_test_data_class_init (InsanityGlibTestDataClass *klass)
+static void insanity_glib_test_class_init (InsanityGlibTestClass *klass)
 {
   GObjectClass *gobject_class = G_OBJECT_CLASS (klass);
 
-  gobject_class->finalize = insanity_glib_test_data_finalize;
+  gobject_class->finalize = insanity_glib_test_finalize;
 
-  klass->setup = &insanity_glib_test_data_setup_impl;
-  klass->test = &insanity_glib_test_data_test_impl;
-  klass->stop = &insanity_glib_test_data_stop_impl;
+  klass->setup = &insanity_glib_test_setup_impl;
+  klass->test = &insanity_glib_test_test_impl;
+  klass->stop = &insanity_glib_test_stop_impl;
 }
 
-const char *insanity_glib_get_arg_string(InsanityGlibTestData *data, const char *key)
+const char *insanity_glib_get_arg_string(InsanityGlibTest *test, const char *key)
 {
-  return insanity_lib_get_arg_string (data->data, key);
+  return insanity_test_get_arg_string (test->test, key);
 }
 
-const char *insanity_glib_get_output_file(InsanityGlibTestData *data, const char *key)
+const char *insanity_glib_get_output_file(InsanityGlibTest *test, const char *key)
 {
-  return insanity_lib_get_output_file (data->data, key);
+  return insanity_test_get_output_file (test->test, key);
 }
 
-void insanity_glib_test_data_done (InsanityGlibTestData *data)
+void insanity_glib_test_done (InsanityGlibTest *test)
 {
-  insanity_lib_done (data->data);
+  insanity_test_done (test->test);
 }
 
-void insanity_glib_validate(InsanityGlibTestData *data, const char *name, int success)
+void insanity_glib_test_validate(InsanityGlibTest *test, const char *name, int success)
 {
-  insanity_lib_validate (data->data, name, success);
+  insanity_test_validate (test->test, name, success);
 }
 
-void insanity_glib_extra_info(InsanityGlibTestData *data, const char *name, int type, void *dataptr)
+void insanity_glib_test_extra_info(InsanityGlibTest *test, const char *name, int type, void *dataptr)
 {
-  insanity_lib_extra_info (data->data, name, type, dataptr);
+  insanity_test_extra_info (test->test, name, type, dataptr);
 }
 
-int insanity_glib_run(InsanityGlibTestData *data, int argc, const char **argv)
+int insanity_glib_test_run(InsanityGlibTest *test, int argc, const char **argv)
 {
-  return insanity_lib_run (data->data, argc, argv);
+  return insanity_test_run (test->test, argc, argv);
 }
 
