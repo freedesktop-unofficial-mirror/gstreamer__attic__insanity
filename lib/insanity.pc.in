@@ -1,0 +1,14 @@
+# This is the pkg-config file for libinsanity
+prefix=@prefix@
+exec_prefix=@exec_prefix@
+libdir=@libdir@
+includedir=@includedir@
+
+Name: libinsanity
+Description: libinsanity is a library to help write tests
+Version: @VERSION@
+Requires: 
+Conflicts: 
+Libs: -linsanity
+Libs.private: @GLIB_LIBS@ @DBUS_LIBS@
+Cflags: -I${includedir}

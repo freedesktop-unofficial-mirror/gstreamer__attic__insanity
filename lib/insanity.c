@@ -1,3 +1,5 @@
+#include "config.h"
+
 #include <dbus/dbus.h>
 #include <unistd.h>
 #include <stdio.h>
