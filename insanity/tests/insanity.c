@@ -23,6 +23,7 @@ struct InsanityTestPrivateData {
   char name[128];
   DBusMessage *args;
   int cpu_load;
+  gboolean done;
 };
 
 static void
@@ -267,6 +268,7 @@ static gboolean on_stop(InsanityTest *test)
     return ret;
 
   gather_end_of_test_info(test);
+  test->priv->done = TRUE;
 
   return ret;
 }
@@ -435,6 +437,57 @@ const char *insanity_test_get_output_file(InsanityTest *test, const char *key)
   return (ret>0 && fd.value) ? * (const char **)fd.value : NULL;
 }
 
+static void insanity_test_dbus_handler_remoteSetup(InsanityTest *test, DBusMessage *msg)
+{
+  insanity_test_set_args (test, msg);
+  on_setup(test);
+}
+
+static void insanity_test_dbus_handler_remoteStart(InsanityTest *test, DBusMessage *msg)
+{
+  (void)msg;
+  on_start(test);
+}
+
+static void insanity_test_dbus_handler_remoteStop(InsanityTest *test, DBusMessage *msg)
+{
+  (void)msg;
+  on_stop(test);
+}
+
+static const struct {
+  const char *method;
+  void (*handler)(InsanityTest*, DBusMessage*);
+} dbus_test_handlers[] = {
+  {"remoteSetUp", &insanity_test_dbus_handler_remoteSetup},
+  {"remoteStart", &insanity_test_dbus_handler_remoteStart},
+  {"remoteStop", &insanity_test_dbus_handler_remoteStop},
+  {"remoteInfo", NULL},
+};
+
+static gboolean insanity_call_interface (InsanityTest *test, DBusMessage *msg)
+{
+  size_t n;
+  const char *method = dbus_message_get_member (msg);
+  for (n=0; n<sizeof(dbus_test_handlers)/sizeof(dbus_test_handlers[0]); ++n) {
+    if (!strcmp (method, dbus_test_handlers[n].method)) {
+      dbus_uint32_t serial = 0;
+      DBusMessage *reply = dbus_message_new_method_return(msg);
+      if (!dbus_connection_send(test->priv->conn, reply, &serial)) {
+         fprintf(stderr, "Out Of Memory!\n"); 
+         exit(1);
+      }
+      dbus_connection_flush(test->priv->conn);
+      dbus_message_unref(reply);
+
+      if (dbus_test_handlers[n].handler)
+        (*dbus_test_handlers[n].handler)(test, msg);
+      return TRUE;
+    }
+  }
+  return FALSE;
+}
+
 static gboolean listen(InsanityTest *test, const char *bus_address,const char *uuid)
 {
    DBusMessage* msg;
@@ -445,7 +498,6 @@ static gboolean listen(InsanityTest *test, const char *bus_address,const char *u
    int ret;
    char object_name[128];
    dbus_uint32_t serial = 0;
-   int done;
 
    // initialise the error
    dbus_error_init(&err);
@@ -483,12 +535,12 @@ static gboolean listen(InsanityTest *test, const char *bus_address,const char *u
    insanity_test_connect (test, conn, uuid);
 
    // loop, testing for new messages
-   done=0;
+   test->priv->done = FALSE;
    while (1) {
       // barely blocking update of dbus
       dbus_connection_read_write(conn, 100);
 
-      if (done)
+      if (test->priv->done)
         break;
 
       // see if we have a message to handle
@@ -527,74 +579,8 @@ static gboolean listen(InsanityTest *test, const char *bus_address,const char *u
         dbus_connection_flush(conn);
         dbus_message_unref(reply);
       }
-#if 0
-      else if (dbus_message_is_method_call(msg, INSANITY_TEST_INTERFACE, "remoteInfo"))  {
-        static const char *info = "blankc-info";
-        printf("Got remoteInfo\n");
-        reply = dbus_message_new_method_return(msg);
-        dbus_message_append_args (reply, DBUS_TYPE_STRING, &info, DBUS_TYPE_INVALID);
-        if (!dbus_connection_send(conn, reply, &serial)) {
-           fprintf(stderr, "Out Of Memory!\n"); 
-           exit(1);
-        }
-        dbus_connection_flush(conn);
-        dbus_message_unref(reply);
-      }
-#endif
-      else if (dbus_message_is_method_call(msg, INSANITY_TEST_INTERFACE, "remoteSetUp"))  {
-        //printf("Got remoteSetUp\n");
-        reply = dbus_message_new_method_return(msg);
-        if (!dbus_connection_send(conn, reply, &serial)) {
-           fprintf(stderr, "Out Of Memory!\n"); 
-           exit(1);
-        }
-        dbus_connection_flush(conn);
-        dbus_message_unref(reply);
-
-        insanity_test_set_args (test, msg);
-        on_setup(test);
-      }
-#if 0
-      else if (dbus_message_is_method_call(msg, INSANITY_TEST_INTERFACE, "remoteTearDown"))  {
-        printf("Got remoteTearDown\n");
-
-        on_tear_down(&insanity_test);
-
-        reply = dbus_message_new_method_return(msg);
-        if (!dbus_connection_send(conn, reply, &serial)) {
-           fprintf(stderr, "Out Of Memory!\n"); 
-           exit(1);
-        }
-        dbus_connection_flush(conn);
-        dbus_message_unref(reply);
-
-        done=1;
-      }
-#endif
-      else if (dbus_message_is_method_call(msg, INSANITY_TEST_INTERFACE, "remoteStop"))  {
-        //printf("Got remoteStop\n");
-        reply = dbus_message_new_method_return(msg);
-        if (!dbus_connection_send(conn, reply, &serial)) {
-           fprintf(stderr, "Out Of Memory!\n"); 
-           exit(1);
-        }
-        dbus_connection_flush(conn);
-        dbus_message_unref(reply);
-
-        on_stop(test);
-        done=1;
-      }
-      else if (dbus_message_is_method_call(msg, INSANITY_TEST_INTERFACE, "remoteStart"))  {
-        //printf("Got remoteStart\n");
-        reply = dbus_message_new_method_return(msg);
-        if (!dbus_connection_send(conn, reply, &serial)) {
-           fprintf(stderr, "Out Of Memory!\n"); 
-           exit(1);
-        }
-        dbus_connection_flush(conn);
-        dbus_message_unref(reply);
-
-        on_start(test);
+      else if (!strcmp (dbus_message_get_interface (msg), INSANITY_TEST_INTERFACE)) {
+        insanity_call_interface (test, msg);
       }
       else {
         //printf("Got unhandled method call: interface %s, method %s\n", dbus_message_get_interface(msg), dbus_message_get_member(msg));
@@ -655,6 +641,7 @@ static void insanity_test_init (InsanityTest *test)
   priv->conn = NULL;
   strcpy (priv->name, "");
   priv->args = NULL;
+  priv->done = FALSE;
 
   /* Connect default handlers that just do nothing, succesfully */
   g_signal_connect (test, "setup", G_CALLBACK (&insanity_default_signal_handler), 0);
