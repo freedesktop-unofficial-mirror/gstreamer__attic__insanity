@@ -78,11 +78,10 @@ static gboolean default_insanity_user_start(InsanityTest *test)
   return TRUE;
 }
 
-static gboolean default_insanity_user_stop(InsanityTest *test)
+static void default_insanity_user_stop(InsanityTest *test)
 {
   (void)test;
   printf("insanity_stop\n");
-  return TRUE;
 }
 
 static void insanity_test_connect (InsanityTest *test, DBusConnection *conn, const char *uuid)
@@ -232,18 +231,13 @@ static gboolean on_start(InsanityTest *test)
   return ret;
 }
 
-static gboolean on_stop(InsanityTest *test)
+static void on_stop(InsanityTest *test)
 {
   gboolean ret = TRUE;
   g_signal_emit (test, stop_signal, 0, &ret);
 
-  if (!ret)
-    return ret;
-
   gather_end_of_test_info(test);
   test->priv->done = TRUE;
-
-  return ret;
 }
 
 static int foreach_dbus_array (DBusMessageIter *iter, int (*f)(const char *key, int type, void *value, guintptr userdata), guintptr userdata)
@@ -631,20 +625,6 @@ static gboolean insanity_signal_stop_accumulator (GSignalInvocationHint *ihint,
   return v;
 }
 
-static gboolean insanity_signal_and_accumulator (GSignalInvocationHint *ihint,
-                                                 GValue *return_accu,
-                                                 const GValue *handler_return,
-                                                 gpointer data)
-{
-  gboolean v;
-
-  (void)ihint;
-  (void)data;
-  v = g_value_get_boolean (handler_return) && g_value_get_boolean (return_accu);
-  g_value_set_boolean (return_accu, v);
-  return TRUE;
-}
-
 static void insanity_test_class_init (InsanityTestClass *klass)
 {
   GObjectClass *gobject_class = G_OBJECT_CLASS (klass);
@@ -677,8 +657,8 @@ static void insanity_test_class_init (InsanityTestClass *klass)
                  G_TYPE_FROM_CLASS (gobject_class),
                  G_SIGNAL_RUN_LAST | G_SIGNAL_NO_RECURSE | G_SIGNAL_NO_HOOKS,
                  G_STRUCT_OFFSET (InsanityTestClass, stop),
-                 &insanity_signal_and_accumulator, NULL,
-                 insanity_cclosure_marshal_BOOLEAN__VOID,
+                 NULL, NULL,
+                 g_cclosure_marshal_VOID__VOID,
                  G_TYPE_BOOLEAN /* return_type */,
                  0, NULL);
 }

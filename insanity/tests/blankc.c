@@ -17,11 +17,10 @@ static gboolean blank_test_start(InsanityTest *test)
   return TRUE;
 }
 
-static gboolean blank_test_stop(InsanityTest *test)
+static void blank_test_stop(InsanityTest *test)
 {
   (void)test;
   printf("blank_test_stop\n");
-  return TRUE;
 }
 
 int main(int argc, const char **argv)

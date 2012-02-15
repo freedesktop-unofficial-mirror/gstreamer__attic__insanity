@@ -22,7 +22,7 @@ struct InsanityTestClass
 
   gboolean (*setup) (InsanityTest *test);
   gboolean (*start) (InsanityTest *test);
-  gboolean (*stop) (InsanityTest *test);
+  void (*stop) (InsanityTest *test);
 };
 typedef struct InsanityTestClass InsanityTestClass;
 
