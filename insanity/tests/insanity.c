@@ -14,6 +14,11 @@
 #include <sys/resource.h>
 #endif
 
+/* if global vars are good enough for gstreamer, it's good enough for insanity */
+static guint setup_signal;
+static guint start_signal;
+static guint stop_signal;
+
 struct InsanityTestPrivateData {
   DBusConnection *conn;
 #ifdef USE_CPU_LOAD
@@ -232,7 +237,7 @@ static gboolean on_setup(InsanityTest *test)
 {
   gboolean ret = insanity_test_setup (test);
   if (ret) {
-    g_signal_emit (test, INSANITY_TEST_GET_CLASS (test)->setup_signal, 0, &ret);
+    g_signal_emit (test, setup_signal, 0, &ret);
   }
   if (!ret) {
     send_signal (test->priv->conn, "remoteStopSignal", test->priv->name, DBUS_TYPE_INVALID);
@@ -249,7 +254,7 @@ static gboolean on_start(InsanityTest *test)
   insanity_test_record_start_time(test);
   ret = insanity_test_start (test);
   if (ret) {
-    g_signal_emit (test, INSANITY_TEST_GET_CLASS (test)->start_signal, 0, &ret);
+    g_signal_emit (test, start_signal, 0, &ret);
   }
   return ret;
 }
@@ -259,7 +264,7 @@ static gboolean on_stop(InsanityTest *test)
   gboolean ret;
 
   ret = TRUE;
-  g_signal_emit (test, INSANITY_TEST_GET_CLASS (test)->stop_signal, 0, &ret);
+  g_signal_emit (test, stop_signal, 0, &ret);
   if (ret) {
     ret = insanity_test_stop (test);
   }
@@ -675,21 +680,21 @@ static void insanity_test_class_init (InsanityTestClass *klass)
 
   g_type_class_add_private (klass, sizeof (InsanityTestPrivateData));
 
-  klass->setup_signal = g_signal_newv ("setup",
+  setup_signal = g_signal_newv ("setup",
                  G_TYPE_FROM_CLASS (gobject_class),
                  G_SIGNAL_RUN_LAST | G_SIGNAL_NO_RECURSE | G_SIGNAL_NO_HOOKS,
                  NULL, &insanity_signal_accumulator, NULL,
                  insanity_cclosure_marshal_BOOLEAN__VOID,
                  G_TYPE_BOOLEAN /* return_type */,
                  0, NULL);
-  klass->start_signal = g_signal_newv ("start",
+  start_signal = g_signal_newv ("start",
                  G_TYPE_FROM_CLASS (gobject_class),
                  G_SIGNAL_RUN_LAST | G_SIGNAL_NO_RECURSE | G_SIGNAL_NO_HOOKS,
                  NULL, &insanity_signal_accumulator, NULL,
                  insanity_cclosure_marshal_BOOLEAN__VOID,
                  G_TYPE_BOOLEAN /* return_type */,
                  0, NULL);
-  klass->stop_signal = g_signal_newv ("stop",
+  stop_signal = g_signal_newv ("stop",
                  G_TYPE_FROM_CLASS (gobject_class),
                  G_SIGNAL_RUN_LAST | G_SIGNAL_NO_RECURSE | G_SIGNAL_NO_HOOKS,
                  NULL, &insanity_signal_accumulator, NULL,
