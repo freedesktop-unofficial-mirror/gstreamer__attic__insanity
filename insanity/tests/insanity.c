@@ -643,13 +643,14 @@ static void insanity_test_finalize (GObject *gobject)
     dbus_message_unref(priv->args);
   if (priv->conn)
     dbus_connection_unref(priv->conn);
-  free(priv);
   G_OBJECT_CLASS (insanity_test_parent_class)->finalize (gobject);
 }
 
 static void insanity_test_init (InsanityTest *test)
 {
-  InsanityTestPrivateData *priv = malloc (sizeof (InsanityTestPrivateData));
+  InsanityTestPrivateData *priv = G_TYPE_INSTANCE_GET_PRIVATE (test,
+      INSANITY_TEST_TYPE, InsanityTestPrivateData);
+
   test->priv = priv;
   priv->conn = NULL;
   strcpy (priv->name, "");
@@ -684,6 +685,8 @@ static void insanity_test_class_init (InsanityTestClass *klass)
   klass->setup = &default_insanity_user_setup;
   klass->start = &default_insanity_user_start;
   klass->stop = &default_insanity_user_stop;
+
+  g_type_class_add_private (klass, sizeof (InsanityTestPrivateData));
 
   klass->setup_signal = g_signal_newv ("setup",
                  G_TYPE_FROM_CLASS (gobject_class),
