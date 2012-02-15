@@ -4,9 +4,26 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdarg.h>
+#include "insanity.h"
+
+/* getrusage is Unix API */
+#define USE_CPU_LOAD
+
+#ifdef USE_CPU_LOAD
 #include <sys/time.h>
 #include <sys/resource.h>
-#include "insanity.h"
+#endif
+
+struct InsanityTestPrivateData {
+  DBusConnection *conn;
+#ifdef USE_CPU_LOAD
+  struct timeval start;
+  struct rusage rusage;
+#endif
+  char name[128];
+  DBusMessage *args;
+  int cpu_load;
+};
 
 static gboolean default_insanity_user_setup(InsanityTest *test)
 {
@@ -28,28 +45,28 @@ static gboolean default_insanity_user_stop(InsanityTest *test)
 
 static void insanity_test_connect (InsanityTest *test, DBusConnection *conn, const char *uuid)
 {
-  if (test->conn)
-    dbus_connection_unref (test->conn);
-  test->conn = dbus_connection_ref (conn);
-  snprintf(test->name, sizeof(test->name), "/net/gstreamer/Insanity/Test/Test%s", uuid);
+  if (test->priv->conn)
+    dbus_connection_unref (test->priv->conn);
+  test->priv->conn = dbus_connection_ref (conn);
+  snprintf(test->priv->name, sizeof(test->priv->name), "/net/gstreamer/Insanity/Test/Test%s", uuid);
 }
 
 static void insanity_test_set_args (InsanityTest *test, DBusMessage *msg)
 {
-  if (test->args) {
-    dbus_message_unref (test->args);
-    test->args = NULL;
+  if (test->priv->args) {
+    dbus_message_unref (test->priv->args);
+    test->priv->args = NULL;
   }
   if (msg) {
-    test->args = dbus_message_ref (msg);
+    test->priv->args = dbus_message_ref (msg);
   }
 }
 
 static void insanity_test_record_start_time (InsanityTest *test)
 {
 #ifdef USE_CPU_LOAD
-  gettimeofday(&test->start,NULL);
-  getrusage(RUSAGE_SELF, &test->rusage);
+  gettimeofday(&test->priv->start,NULL);
+  getrusage(RUSAGE_SELF, &test->priv->rusage);
 #endif
 }
 
@@ -69,9 +86,9 @@ static void insanity_test_record_stop_time(InsanityTest *test)
 
   getrusage(RUSAGE_SELF, &rusage);
   gettimeofday(&end,NULL);
-  us = tv_us_diff(&test->rusage.ru_utime, &rusage.ru_utime)
-     + tv_us_diff(&test->rusage.ru_stime, &rusage.ru_stime);
-  test->cpu_load = 100 * us / tv_us_diff (&test->start, &end);
+  us = tv_us_diff(&test->priv->rusage.ru_utime, &rusage.ru_utime)
+     + tv_us_diff(&test->priv->rusage.ru_stime, &rusage.ru_stime);
+  test->priv->cpu_load = 100 * us / tv_us_diff (&test->priv->start, &end);
 #endif
 }
 
@@ -132,24 +149,24 @@ static void send_signal(DBusConnection *conn, const char *signal_name, const cha
 
 void insanity_test_validate(InsanityTest *test, const char *name, int success)
 {
-  send_signal (test->conn,"remoteValidateStepSignal",test->name,DBUS_TYPE_STRING,&name,DBUS_TYPE_BOOLEAN,&success,DBUS_TYPE_INVALID);
+  send_signal (test->priv->conn,"remoteValidateStepSignal",test->priv->name,DBUS_TYPE_STRING,&name,DBUS_TYPE_BOOLEAN,&success,DBUS_TYPE_INVALID);
 }
 
 void insanity_test_extra_info(InsanityTest *test, const char *name, int type, void *dataptr)
 {
-  send_signal (test->conn,"remoteExtraInfoSignal",test->name,DBUS_TYPE_STRING,&name,type,dataptr,DBUS_TYPE_INVALID);
+  send_signal (test->priv->conn,"remoteExtraInfoSignal",test->priv->name,DBUS_TYPE_STRING,&name,type,dataptr,DBUS_TYPE_INVALID);
 }
 
 static void gather_end_of_test_info(InsanityTest *test)
 {
   insanity_test_record_stop_time(test);
-  insanity_test_extra_info (test, "cpu-load", DBUS_TYPE_INT32, &test->cpu_load);
+  insanity_test_extra_info (test, "cpu-load", DBUS_TYPE_INT32, &test->priv->cpu_load);
 }
 
 void insanity_test_done(InsanityTest *test)
 {
   gather_end_of_test_info(test);
-  send_signal (test->conn, "remoteStopSignal", test->name, DBUS_TYPE_INVALID);
+  send_signal (test->priv->conn, "remoteStopSignal", test->priv->name, DBUS_TYPE_INVALID);
 }
 
 static gboolean insanity_test_setup (InsanityTest *test)
@@ -171,10 +188,10 @@ static gboolean on_setup(InsanityTest *test)
 {
   gboolean ret = insanity_test_setup (test);
   if (!ret) {
-    send_signal (test->conn, "remoteStopSignal", test->name, DBUS_TYPE_INVALID);
+    send_signal (test->priv->conn, "remoteStopSignal", test->priv->name, DBUS_TYPE_INVALID);
   }
   else {
-    send_signal (test->conn, "remoteReadySignal", test->name, DBUS_TYPE_INVALID);
+    send_signal (test->priv->conn, "remoteReadySignal", test->priv->name, DBUS_TYPE_INVALID);
   }
   return ret;
 }
@@ -306,7 +323,7 @@ int foreach_dbus_args (InsanityTest *test, int (*f)(const char *key, int type, v
 {
   DBusMessageIter iter;
 
-  dbus_message_iter_init (test->args, &iter);
+  dbus_message_iter_init (test->priv->args, &iter);
   return foreach_dbus_array (&iter, f, userdata);
 }
 
@@ -565,18 +582,22 @@ G_DEFINE_TYPE (InsanityTest, insanity_test, G_TYPE_OBJECT);
 static void insanity_test_finalize (GObject *gobject)
 {
   InsanityTest *test = (InsanityTest *)gobject;
-  if (test->args)
-    dbus_message_unref(test->args);
-  if (test->conn)
-    dbus_connection_unref(test->conn);
+  InsanityTestPrivateData *priv = test->priv;
+  if (priv->args)
+    dbus_message_unref(priv->args);
+  if (priv->conn)
+    dbus_connection_unref(priv->conn);
+  free(priv);
   G_OBJECT_CLASS (insanity_test_parent_class)->finalize (gobject);
 }
 
 static void insanity_test_init (InsanityTest *test)
 {
-  test->conn = NULL;
-  strcpy (test->name, "");
-  test->args = NULL;
+  InsanityTestPrivateData *priv = malloc (sizeof (InsanityTestPrivateData));
+  test->priv = priv;
+  priv->conn = NULL;
+  strcpy (priv->name, "");
+  priv->args = NULL;
 }
 
 static void insanity_test_class_init (InsanityTestClass *klass)

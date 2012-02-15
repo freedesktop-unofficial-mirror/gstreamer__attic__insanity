@@ -3,31 +3,17 @@
 
 #include <glib.h>
 #include <glib-object.h>
-#include <dbus/dbus.h>
 
-#include <stdint.h>
+struct InsanityTestPrivateData;
+typedef struct InsanityTestPrivateData InsanityTestPrivateData;
 
-#include <unistd.h>
-#include <sys/time.h>
-#include <sys/resource.h>
-
-/* getrusage is Unix API */
-#define USE_CPU_LOAD
-
-// FIXME: move this to a private struct
 struct InsanityTest;
 typedef struct InsanityTest InsanityTest;
+
 struct InsanityTest {
   GObject parent;
 
-  DBusConnection *conn;
-#ifdef USE_CPU_LOAD
-  struct timeval start;
-  struct rusage rusage;
-#endif
-  char name[128];
-  DBusMessage *args;
-  int cpu_load;
+  InsanityTestPrivateData *priv;
 };
 
 struct InsanityTestClass
