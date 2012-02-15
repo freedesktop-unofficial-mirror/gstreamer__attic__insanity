@@ -23,6 +23,10 @@ struct InsanityTestClass
   gboolean (*setup) (InsanityTest *test);
   gboolean (*start) (InsanityTest *test);
   gboolean (*stop) (InsanityTest *test);
+
+  guint setup_signal;
+  guint start_signal;
+  guint stop_signal;
 };
 typedef struct InsanityTestClass InsanityTestClass;
 

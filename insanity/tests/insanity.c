@@ -25,21 +25,64 @@ struct InsanityTestPrivateData {
   int cpu_load;
 };
 
+static void
+insanity_cclosure_marshal_BOOLEAN__VOID (GClosure     *closure,
+                                   GValue       *return_value G_GNUC_UNUSED,
+                                   guint         n_param_values,
+                                   const GValue *param_values,
+                                   gpointer      invocation_hint G_GNUC_UNUSED,
+                                   gpointer      marshal_data)
+{
+  typedef gboolean (*GMarshalFunc_BOOLEAN__VOID) (gpointer     data1,
+                                                  gpointer     data2);
+  register GMarshalFunc_BOOLEAN__VOID callback;
+  register GCClosure *cc = (GCClosure*) closure;
+  register gpointer data1, data2;
+  gboolean v_return;
+
+  g_return_if_fail (return_value != NULL);
+  g_return_if_fail (n_param_values == 1);
+
+  if (G_CCLOSURE_SWAP_DATA (closure)) {
+    data1 = closure->data;
+    data2 = g_value_peek_pointer (param_values + 0);
+  }
+  else {
+    data1 = g_value_peek_pointer (param_values + 0);
+    data2 = closure->data;
+  }
+  callback = (GMarshalFunc_BOOLEAN__VOID) (marshal_data ? marshal_data : cc->callback);
+
+  v_return = callback (data1, data2);
+
+  g_value_set_boolean (return_value, v_return);
+}
+
+static gboolean insanity_default_signal_handler (InsanityTest *test)
+{
+  (void)test;
+  printf("insanity_default_signal_handler\n");
+  return TRUE;
+}
+
 static gboolean default_insanity_user_setup(InsanityTest *test)
 {
   (void)test;
+  printf("insanity_setup\n");
   return TRUE;
 }
 
 static gboolean default_insanity_user_start(InsanityTest *test)
 {
-  insanity_test_done(test);
+  (void)test;
+  printf("insanity_start\n");
   return TRUE;
 }
 
 static gboolean default_insanity_user_stop(InsanityTest *test)
 {
   (void)test;
+  printf("insanity_stop\n");
   return TRUE;
 }
 
@@ -187,6 +230,9 @@ static gboolean insanity_test_stop (InsanityTest *test)
 static gboolean on_setup(InsanityTest *test)
 {
   gboolean ret = insanity_test_setup (test);
+  if (ret) {
+    g_signal_emit (test, INSANITY_TEST_GET_CLASS (test)->setup_signal, 0, &ret);
+  }
   if (!ret) {
     send_signal (test->priv->conn, "remoteStopSignal", test->priv->name, DBUS_TYPE_INVALID);
   }
@@ -198,15 +244,25 @@ static gboolean on_setup(InsanityTest *test)
 
 static gboolean on_start(InsanityTest *test)
 {
+  gboolean ret;
   insanity_test_record_start_time(test);
-  return insanity_test_start (test);
+  ret = insanity_test_start (test);
+  if (ret) {
+    g_signal_emit (test, INSANITY_TEST_GET_CLASS (test)->start_signal, 0, &ret);
+  }
+  return ret;
 }
 
 static gboolean on_stop(InsanityTest *test)
 {
   gboolean ret;
 
-  ret = insanity_test_stop (test);
+  ret = TRUE;
+  g_signal_emit (test, INSANITY_TEST_GET_CLASS (test)->stop_signal, 0, &ret);
+  if (ret) {
+    ret = insanity_test_stop (test);
+  }
+
   if (!ret)
     return ret;
 
@@ -598,6 +654,25 @@ static void insanity_test_init (InsanityTest *test)
   priv->conn = NULL;
   strcpy (priv->name, "");
   priv->args = NULL;
+
+  /* Connect default handlers that just do nothing, succesfully */
+  g_signal_connect (test, "setup", G_CALLBACK (&insanity_default_signal_handler), 0);
+  g_signal_connect (test, "start", G_CALLBACK (&insanity_default_signal_handler), 0);
+  g_signal_connect (test, "stop", G_CALLBACK (&insanity_default_signal_handler), 0);
+}
+
+static gboolean insanity_signal_accumulator (GSignalInvocationHint *ihint,
+                                             GValue *return_accu,
+                                             const GValue *handler_return,
+                                             gpointer data)
+{
+  gboolean v;
+
+  (void)ihint;
+  (void)data;
+  v = g_value_get_boolean (handler_return);
+  g_value_set_boolean (return_accu, v);
+  return v;
 }
 
 static void insanity_test_class_init (InsanityTestClass *klass)
@@ -609,5 +684,27 @@ static void insanity_test_class_init (InsanityTestClass *klass)
   klass->setup = &default_insanity_user_setup;
   klass->start = &default_insanity_user_start;
   klass->stop = &default_insanity_user_stop;
+
+  klass->setup_signal = g_signal_newv ("setup",
+                 G_TYPE_FROM_CLASS (gobject_class),
+                 G_SIGNAL_RUN_LAST | G_SIGNAL_NO_RECURSE | G_SIGNAL_NO_HOOKS,
+                 NULL, &insanity_signal_accumulator, NULL,
+                 insanity_cclosure_marshal_BOOLEAN__VOID,
+                 G_TYPE_BOOLEAN /* return_type */,
+                 0, NULL);
+  klass->start_signal = g_signal_newv ("start",
+                 G_TYPE_FROM_CLASS (gobject_class),
+                 G_SIGNAL_RUN_LAST | G_SIGNAL_NO_RECURSE | G_SIGNAL_NO_HOOKS,
+                 NULL, &insanity_signal_accumulator, NULL,
+                 insanity_cclosure_marshal_BOOLEAN__VOID,
+                 G_TYPE_BOOLEAN /* return_type */,
+                 0, NULL);
+  klass->stop_signal = g_signal_newv ("stop",
+                 G_TYPE_FROM_CLASS (gobject_class),
+                 G_SIGNAL_RUN_LAST | G_SIGNAL_NO_RECURSE | G_SIGNAL_NO_HOOKS,
+                 NULL, &insanity_signal_accumulator, NULL,
+                 insanity_cclosure_marshal_BOOLEAN__VOID,
+                 G_TYPE_BOOLEAN /* return_type */,
+                 0, NULL);
 }
 
