@@ -1,75 +1,71 @@
-#include <dbus/dbus.h>
-#include <unistd.h>
 #include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <stdarg.h>
-#include <sys/time.h>
-#include <sys/resource.h>
-#include <stdint.h>
+#include <glib.h>
+#include <glib-object.h>
 #include "insanity.h"
 
-/* Return 0 if success, < 0 if failure */
-static int blank_setup(InsanityTest *test, intptr_t user)
-{
-  (void)test;
-  (void)user;
-  printf("blank_setup callback\n");
+struct BlankTest {
+  InsanityTest parent;
+};
+typedef struct BlankTest BlankTest;
 
-  /*
-  printf("Example args:\n");
-  printf("uri: %s\n", insanity_lib_get_arg_string (test, "uri"));
-  printf("uuid: %s\n", insanity_lib_get_arg_string (test, "uuid"));
-  printf("foo: %s\n", insanity_lib_get_arg_string (test, "foo"));
-  printf("output file 'foo': %s\n", insanity_lib_get_output_file (test, "foo"));
-  printf("output file 'dummy-output-file': %s\n", insanity_lib_get_output_file (test, "dummy-output-file"));
-  */
-  return 0;
+struct BlankTestClass {
+  InsanityTestClass parent_class;
+};
+typedef struct BlankTestClass BlankTestClass;
+
+#define BLANK_TEST_TYPE                (blank_test_get_type ())
+#define BLANK_TEST(obj)                (G_TYPE_CHECK_INSTANCE_CAST ((obj), BLANK_TEST_TYPE, BlankTest))
+#define BLANK_TEST_CLASS(c)            (G_TYPE_CHECK_CLASS_CAST ((c), BLANK_TEST_TYPE, BlankTestClass))
+#define IS_BLANK_TEST(obj)             (G_TYPE_CHECK_TYPE ((obj), BLANK_TEST_TYPE))
+#define IS_BLANK_TEST_CLASS(c)         (G_TYPE_CHECK_CLASS_TYPE ((c), BLANK_TEST_TYPE))
+#define BLANK_TEST_GET_CLASS(obj)      (G_TYPE_INSTANCE_GET_CLASS ((obj), BLANK_TEST_TYPE, BlankTestClass))
+
+G_DEFINE_TYPE (BlankTest, blank_test, INSANITY_TEST_TYPE);
+
+static int blank_test_setup(InsanityTest *test)
+{
+  printf("blank_test_setup\n");
+  return INSANITY_TEST_CLASS (blank_test_parent_class)->setup(test);
 }
 
-static int blank_test(InsanityTest *test, intptr_t user)
+static int blank_test_test(InsanityTest *test)
 {
-  (void)test;
-  (void)user;
-  printf("blank_test callback\n");
-#if 0
-  /* random stuff that takes some cpu */
-  int x,y,*z;
-#define LIMIT 4096
-  z=malloc(sizeof(int)*LIMIT*LIMIT);
-  for(x=0;x<LIMIT;++x) for (y=0;y<LIMIT;++y) {
-    z[y*LIMIT+x]=x*74393/(y+1);
-  }
-  y=0;
-  for(x=0;x<LIMIT*LIMIT;++x) y+=z[x];
-  printf("%d\n",y);
-  free(z);
-#endif
-  //insanity_test_validate(test, "random-event", 1);
-  insanity_test_done(test);
-  return 0;
+  printf("blank_test_test\n");
+  return INSANITY_TEST_CLASS (blank_test_parent_class)->test(test);
 }
 
-static int blank_stop(InsanityTest *test, intptr_t user)
+static int blank_test_stop(InsanityTest *test)
+{
+  printf("blank_test_stop\n");
+  return INSANITY_TEST_CLASS (blank_test_parent_class)->stop(test);
+}
+
+static void blank_test_class_init (BlankTestClass *klass)
+{
+  InsanityTestClass *base_class = INSANITY_TEST_CLASS (klass);
+
+  base_class->setup = &blank_test_setup;
+  base_class->test = &blank_test_test;
+  base_class->stop = &blank_test_stop;
+}
+
+static void blank_test_init (BlankTest *test)
 {
   (void)test;
-  (void)user;
-  printf("blank_stop callback\n");
-  return 0;
 }
 
 int main(int argc, const char **argv)
 {
-  InsanityTest *test = insanity_test_create ();
+  BlankTest *test;
   int ret;
 
-  insanity_test_set_user_setup_hook(test, &blank_setup, 0);
-  insanity_test_set_user_test_hook(test, &blank_test, 0);
-  insanity_test_set_user_stop_hook(test, &blank_stop, 0);
+  g_type_init ();
 
-  ret = insanity_test_run(test, argc, argv);
+  test = BLANK_TEST (g_type_create_instance (blank_test_get_type()));
 
-  insanity_test_free (test);
+  ret = insanity_test_run (INSANITY_TEST (test), argc, argv);
+
+  g_object_unref (test);
 
   return ret;
 }

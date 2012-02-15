@@ -6,84 +6,24 @@
 #include <stdarg.h>
 #include <sys/time.h>
 #include <sys/resource.h>
-#include <stdint.h>
 #include "insanity.h"
 
-/* getrusage is Unix API */
-#define USE_CPU_LOAD
-
-struct InsanityTest {
-  DBusConnection *conn;
-#ifdef USE_CPU_LOAD
-  struct timeval start;
-  struct rusage rusage;
-#endif
-  char name[128];
-  DBusMessage *args;
-  int cpu_load;
-
-  intptr_t setup_hook_user;
-  int (*insanity_user_setup)(InsanityTest *test, intptr_t user);
-  intptr_t test_hook_user;
-  int (*insanity_user_test)(InsanityTest *test, intptr_t user);
-  intptr_t stop_hook_user;
-  int (*insanity_user_stop)(InsanityTest *test, intptr_t user);
-};
-
-static int default_insanity_user_setup(InsanityTest *test, intptr_t user)
+static gboolean default_insanity_user_setup(InsanityTest *test)
 {
   (void)test;
-  (void)user;
-  return 0;
+  return TRUE;
 }
 
-static int default_insanity_user_test(InsanityTest *test, intptr_t user)
+static gboolean default_insanity_user_test(InsanityTest *test)
 {
-  (void)user;
   insanity_test_done(test);
-  return 0;
+  return TRUE;
 }
 
-static int default_insanity_user_stop(InsanityTest *test, intptr_t user)
+static gboolean default_insanity_user_stop(InsanityTest *test)
 {
   (void)test;
-  (void)user;
-  return 0;
-}
-
-void insanity_test_init (InsanityTest *test)
-{
-  test->conn = NULL;
-  strcpy (test->name, "");
-  test->args = NULL;
-
-  test->setup_hook_user = test->test_hook_user = test->stop_hook_user = 0;
-  test->insanity_user_setup = &default_insanity_user_setup;
-  test->insanity_user_test = &default_insanity_user_test;
-  test->insanity_user_stop = &default_insanity_user_stop;
-}
-
-InsanityTest *insanity_test_create (void)
-{
-  InsanityTest *test = malloc(sizeof (InsanityTest));
-  if (!test)
-    return NULL;
-  insanity_test_init (test);
-  return test;
-}
-
-void insanity_test_clear (InsanityTest *test)
-{
-  if (test->args)
-    dbus_message_unref(test->args);
-  if (test->conn)
-    dbus_connection_unref(test->conn);
-}
-
-void insanity_test_free (InsanityTest *test)
-{
-  insanity_test_clear (test);
-  free(test);
+  return TRUE;
 }
 
 static void insanity_test_connect (InsanityTest *test, DBusConnection *conn, const char *uuid)
@@ -92,24 +32,6 @@ static void insanity_test_connect (InsanityTest *test, DBusConnection *conn, con
     dbus_connection_unref (test->conn);
   test->conn = dbus_connection_ref (conn);
   snprintf(test->name, sizeof(test->name), "/net/gstreamer/Insanity/Test/Test%s", uuid);
-}
-
-void insanity_test_set_user_setup_hook (InsanityTest *test, int (*hook)(InsanityTest *, intptr_t), intptr_t user)
-{
-  test->setup_hook_user = user;
-  test->insanity_user_setup = hook ? hook : default_insanity_user_setup;
-}
-
-void insanity_test_set_user_test_hook (InsanityTest *test, int (*hook)(InsanityTest *, intptr_t), intptr_t user)
-{
-  test->test_hook_user = user;
-  test->insanity_user_test = hook ? hook : default_insanity_user_test;
-}
-
-void insanity_test_set_user_stop_hook (InsanityTest *test, int (*hook)(InsanityTest *, intptr_t), intptr_t user)
-{
-  test->stop_hook_user = user;
-  test->insanity_user_stop = hook ? hook : default_insanity_user_stop;
 }
 
 static void insanity_test_set_args (InsanityTest *test, DBusMessage *msg)
@@ -153,6 +75,7 @@ static void insanity_test_record_stop_time(InsanityTest *test)
 #endif
 }
 
+// TODO: add the full API
 #define INSANITY_TEST_INTERFACE "net.gstreamer.Insanity.Test"
 static const char *introspect_response_template=" \
   <!DOCTYPE node PUBLIC \"-//freedesktop//DTD D-BUS Object Introspection 1.0//EN\" \
@@ -229,10 +152,25 @@ void insanity_test_done(InsanityTest *test)
   send_signal (test->conn, "remoteStopSignal", test->name, DBUS_TYPE_INVALID);
 }
 
-static int on_setup(InsanityTest *test)
+static gboolean insanity_test_setup (InsanityTest *test)
 {
-  int ret = (*test->insanity_user_setup)(test, test->setup_hook_user);
-  if (ret < 0) {
+  return INSANITY_TEST_GET_CLASS (test)->setup (test);
+}
+
+static gboolean insanity_test_test (InsanityTest *test)
+{
+  return INSANITY_TEST_GET_CLASS (test)->test (test);
+}
+
+static gboolean insanity_test_stop (InsanityTest *test)
+{
+  return INSANITY_TEST_GET_CLASS (test)->stop (test);
+}
+
+static gboolean on_setup(InsanityTest *test)
+{
+  gboolean ret = insanity_test_setup (test);
+  if (!ret) {
     send_signal (test->conn, "remoteStopSignal", test->name, DBUS_TYPE_INVALID);
   }
   else {
@@ -241,18 +179,18 @@ static int on_setup(InsanityTest *test)
   return ret;
 }
 
-static int on_test(InsanityTest *test)
+static gboolean on_test(InsanityTest *test)
 {
   insanity_test_record_start_time(test);
-  return (*test->insanity_user_test)(test, test->test_hook_user);
+  return insanity_test_test (test);
 }
 
-static int on_stop(InsanityTest *test)
+static gboolean on_stop(InsanityTest *test)
 {
-  int ret;
+  gboolean ret;
 
-  ret=(*test->insanity_user_stop)(test, test->stop_hook_user);
-  if (ret<0)
+  ret = insanity_test_stop (test);
+  if (!ret)
     return ret;
 
   gather_end_of_test_info(test);
@@ -260,7 +198,7 @@ static int on_stop(InsanityTest *test)
   return ret;
 }
 
-static int foreach_dbus_array (DBusMessageIter *iter, int (*f)(const char *key, int type, void *value, uintptr_t userdata), uintptr_t userdata)
+static int foreach_dbus_array (DBusMessageIter *iter, int (*f)(const char *key, int type, void *value, guintptr userdata), guintptr userdata)
 {
   DBusMessageIter subiter, subsubiter, subsubsubiter;
   const char *key;
@@ -364,7 +302,7 @@ static int foreach_dbus_array (DBusMessageIter *iter, int (*f)(const char *key, 
   return 0;
 }
 
-int foreach_dbus_args (InsanityTest *test, int (*f)(const char *key, int type, void *value, uintptr_t userdata), uintptr_t userdata)
+int foreach_dbus_args (InsanityTest *test, int (*f)(const char *key, int type, void *value, guintptr userdata), guintptr userdata)
 {
   DBusMessageIter iter;
 
@@ -378,7 +316,7 @@ struct finder_data {
   void *value;
 };
 
-static int typed_finder(const char *key, int type, void *value, uintptr_t userdata)
+static int typed_finder(const char *key, int type, void *value, guintptr userdata)
 {
   struct finder_data *fd = (struct finder_data *)userdata;
   if (strcmp (key, fd->key))
@@ -399,7 +337,7 @@ const char *insanity_test_get_arg_string(InsanityTest *test, const char *key)
   fd.key = key;
   fd.type = DBUS_TYPE_STRING;
   fd.value = NULL;
-  ret = foreach_dbus_args(test, &typed_finder, (uintptr_t)&fd);
+  ret = foreach_dbus_args(test, &typed_finder, (guintptr)&fd);
   return (ret>0 && fd.value) ? * (const char **)fd.value : NULL;
 }
 
@@ -412,7 +350,7 @@ const char *insanity_test_get_output_file(InsanityTest *test, const char *key)
   fd.key = "outputfiles";
   fd.type = DBUS_TYPE_ARRAY;
   fd.value = NULL;
-  ret = foreach_dbus_args(test, &typed_finder, (uintptr_t)&fd);
+  ret = foreach_dbus_args(test, &typed_finder, (guintptr)&fd);
   if (ret <= 0)
     return NULL;
 
@@ -420,11 +358,11 @@ const char *insanity_test_get_output_file(InsanityTest *test, const char *key)
   fd.key = key;
   fd.type = DBUS_TYPE_STRING;
   fd.value = NULL;
-  ret = foreach_dbus_array (&array, &typed_finder, (uintptr_t)&fd);
+  ret = foreach_dbus_array (&array, &typed_finder, (guintptr)&fd);
   return (ret>0 && fd.value) ? * (const char **)fd.value : NULL;
 }
 
-static int listen(InsanityTest *test, const char *bus_address,const char *uuid)
+static gboolean listen(InsanityTest *test, const char *bus_address,const char *uuid)
 {
    DBusMessage* msg;
    DBusMessage* reply;
@@ -595,28 +533,60 @@ static int listen(InsanityTest *test, const char *bus_address,const char *uuid)
 
    dbus_connection_unref (conn);
 
-  return 0;
+  return TRUE;
 }
 
-int insanity_test_run(InsanityTest *test, int argc, const char **argv)
+gboolean insanity_test_run(InsanityTest *test, int argc, const char **argv)
 {
   const char *private_dbus_address;
   const char *uuid;
 
   if (argc < 2) {
     fprintf(stderr, "Usage: %s <uuid>\n", argv[0]);
-    return 1;
+    return FALSE;
   }
   uuid = argv[1];
   private_dbus_address = getenv("PRIVATE_DBUS_ADDRESS");
   if (!private_dbus_address || !private_dbus_address[0]) {
     fprintf(stderr, "The PRIVATE_DBUS_ADDRESS environment variable must be set\n");
-    return 1;
+    return FALSE;
   }
 #if 0
   printf("uuid: %s\n", uuid);
   printf("PRIVATE_DBUS_ADDRESS: %s\n",private_dbus_address);
 #endif
   return listen(test, private_dbus_address, uuid);
+}
+
+
+
+G_DEFINE_TYPE (InsanityTest, insanity_test, G_TYPE_OBJECT);
+
+static void insanity_test_finalize (GObject *gobject)
+{
+  InsanityTest *test = (InsanityTest *)gobject;
+  if (test->args)
+    dbus_message_unref(test->args);
+  if (test->conn)
+    dbus_connection_unref(test->conn);
+  G_OBJECT_CLASS (insanity_test_parent_class)->finalize (gobject);
+}
+
+static void insanity_test_init (InsanityTest *test)
+{
+  test->conn = NULL;
+  strcpy (test->name, "");
+  test->args = NULL;
+}
+
+static void insanity_test_class_init (InsanityTestClass *klass)
+{
+  GObjectClass *gobject_class = G_OBJECT_CLASS (klass);
+
+  gobject_class->finalize = insanity_test_finalize;
+
+  klass->setup = &default_insanity_user_setup;
+  klass->test = &default_insanity_user_test;
+  klass->stop = &default_insanity_user_stop;
 }
 
