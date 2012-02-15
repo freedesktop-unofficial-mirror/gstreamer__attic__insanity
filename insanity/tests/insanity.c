@@ -14,7 +14,7 @@ static gboolean default_insanity_user_setup(InsanityTest *test)
   return TRUE;
 }
 
-static gboolean default_insanity_user_test(InsanityTest *test)
+static gboolean default_insanity_user_start(InsanityTest *test)
 {
   insanity_test_done(test);
   return TRUE;
@@ -157,9 +157,9 @@ static gboolean insanity_test_setup (InsanityTest *test)
   return INSANITY_TEST_GET_CLASS (test)->setup (test);
 }
 
-static gboolean insanity_test_test (InsanityTest *test)
+static gboolean insanity_test_start (InsanityTest *test)
 {
-  return INSANITY_TEST_GET_CLASS (test)->test (test);
+  return INSANITY_TEST_GET_CLASS (test)->start (test);
 }
 
 static gboolean insanity_test_stop (InsanityTest *test)
@@ -179,10 +179,10 @@ static gboolean on_setup(InsanityTest *test)
   return ret;
 }
 
-static gboolean on_test(InsanityTest *test)
+static gboolean on_start(InsanityTest *test)
 {
   insanity_test_record_start_time(test);
-  return insanity_test_test (test);
+  return insanity_test_start (test);
 }
 
 static gboolean on_stop(InsanityTest *test)
@@ -511,8 +511,8 @@ static gboolean listen(InsanityTest *test, const char *bus_address,const char *u
         on_stop(test);
         done=1;
       }
-      else if (dbus_message_is_method_call(msg, INSANITY_TEST_INTERFACE, "remoteTest"))  {
-        //printf("Got remoteTest\n");
+      else if (dbus_message_is_method_call(msg, INSANITY_TEST_INTERFACE, "remoteStart"))  {
+        //printf("Got remoteStart\n");
         reply = dbus_message_new_method_return(msg);
         if (!dbus_connection_send(conn, reply, &serial)) {
            fprintf(stderr, "Out Of Memory!\n"); 
@@ -521,7 +521,7 @@ static gboolean listen(InsanityTest *test, const char *bus_address,const char *u
         dbus_connection_flush(conn);
         dbus_message_unref(reply);
 
-        on_test(test);
+        on_start(test);
       }
       else {
         //printf("Got unhandled method call: interface %s, method %s\n", dbus_message_get_interface(msg), dbus_message_get_member(msg));
@@ -586,7 +586,7 @@ static void insanity_test_class_init (InsanityTestClass *klass)
   gobject_class->finalize = insanity_test_finalize;
 
   klass->setup = &default_insanity_user_setup;
-  klass->test = &default_insanity_user_test;
+  klass->start = &default_insanity_user_start;
   klass->stop = &default_insanity_user_stop;
 }
 

@@ -35,7 +35,7 @@ struct InsanityTestClass
   GObjectClass parent_class;
 
   gboolean (*setup) (InsanityTest *test);
-  gboolean (*test) (InsanityTest *test);
+  gboolean (*start) (InsanityTest *test);
   gboolean (*stop) (InsanityTest *test);
 };
 typedef struct InsanityTestClass InsanityTestClass;

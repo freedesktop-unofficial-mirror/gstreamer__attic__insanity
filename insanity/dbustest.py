@@ -272,7 +272,7 @@ class DBusTest(Test, dbus.service.Object):
         # call remote instance "remoteTest()"
         if not self._remoteinstance:
             return
-        self._remoteinstance.remoteTest(reply_handler=self._voidRemoteCallBackHandler,
+        self._remoteinstance.remoteStart(reply_handler=self._voidRemoteCallBackHandler,
                                         error_handler=self._voidRemoteTestErrBackHandler)
 
     def callRemoteSetUp(self, args):

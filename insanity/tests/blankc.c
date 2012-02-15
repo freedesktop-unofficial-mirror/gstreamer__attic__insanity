@@ -28,10 +28,10 @@ static int blank_test_setup(InsanityTest *test)
   return INSANITY_TEST_CLASS (blank_test_parent_class)->setup(test);
 }
 
-static int blank_test_test(InsanityTest *test)
+static int blank_test_start(InsanityTest *test)
 {
-  printf("blank_test_test\n");
-  return INSANITY_TEST_CLASS (blank_test_parent_class)->test(test);
+  printf("blank_test_start\n");
+  return INSANITY_TEST_CLASS (blank_test_parent_class)->start(test);
 }
 
 static int blank_test_stop(InsanityTest *test)
@@ -45,7 +45,7 @@ static void blank_test_class_init (BlankTestClass *klass)
   InsanityTestClass *base_class = INSANITY_TEST_CLASS (klass);
 
   base_class->setup = &blank_test_setup;
-  base_class->test = &blank_test_test;
+  base_class->start = &blank_test_start;
   base_class->stop = &blank_test_stop;
 }
 
