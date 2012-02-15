@@ -64,13 +64,6 @@ insanity_cclosure_marshal_BOOLEAN__VOID (GClosure     *closure,
   g_value_set_boolean (return_value, v_return);
 }
 
-static gboolean insanity_default_signal_handler (InsanityTest *test)
-{
-  (void)test;
-  printf("insanity_default_signal_handler\n");
-  return TRUE;
-}
-
 static gboolean default_insanity_user_setup(InsanityTest *test)
 {
   (void)test;
@@ -624,6 +617,34 @@ static void insanity_test_init (InsanityTest *test)
   priv->done = FALSE;
 }
 
+static gboolean insanity_signal_stop_accumulator (GSignalInvocationHint *ihint,
+                                                  GValue *return_accu,
+                                                  const GValue *handler_return,
+                                                  gpointer data)
+{
+  gboolean v;
+
+  (void)ihint;
+  (void)data;
+  v = g_value_get_boolean (handler_return);
+  g_value_set_boolean (return_accu, v);
+  return v;
+}
+
+static gboolean insanity_signal_and_accumulator (GSignalInvocationHint *ihint,
+                                                 GValue *return_accu,
+                                                 const GValue *handler_return,
+                                                 gpointer data)
+{
+  gboolean v;
+
+  (void)ihint;
+  (void)data;
+  v = g_value_get_boolean (handler_return) && g_value_get_boolean (return_accu);
+  g_value_set_boolean (return_accu, v);
+  return TRUE;
+}
+
 static void insanity_test_class_init (InsanityTestClass *klass)
 {
   GObjectClass *gobject_class = G_OBJECT_CLASS (klass);
@@ -640,7 +661,7 @@ static void insanity_test_class_init (InsanityTestClass *klass)
                  G_TYPE_FROM_CLASS (gobject_class),
                  G_SIGNAL_RUN_LAST | G_SIGNAL_NO_RECURSE | G_SIGNAL_NO_HOOKS,
                  G_STRUCT_OFFSET (InsanityTestClass, setup),
-                 NULL, NULL,
+                 &insanity_signal_stop_accumulator, NULL,
                  insanity_cclosure_marshal_BOOLEAN__VOID,
                  G_TYPE_BOOLEAN /* return_type */,
                  0, NULL);
@@ -648,7 +669,7 @@ static void insanity_test_class_init (InsanityTestClass *klass)
                  G_TYPE_FROM_CLASS (gobject_class),
                  G_SIGNAL_RUN_LAST | G_SIGNAL_NO_RECURSE | G_SIGNAL_NO_HOOKS,
                  G_STRUCT_OFFSET (InsanityTestClass, start),
-                 NULL, NULL,
+                 &insanity_signal_stop_accumulator, NULL,
                  insanity_cclosure_marshal_BOOLEAN__VOID,
                  G_TYPE_BOOLEAN /* return_type */,
                  0, NULL);
@@ -656,7 +677,7 @@ static void insanity_test_class_init (InsanityTestClass *klass)
                  G_TYPE_FROM_CLASS (gobject_class),
                  G_SIGNAL_RUN_LAST | G_SIGNAL_NO_RECURSE | G_SIGNAL_NO_HOOKS,
                  G_STRUCT_OFFSET (InsanityTestClass, stop),
-                 NULL, NULL,
+                 &insanity_signal_and_accumulator, NULL,
                  insanity_cclosure_marshal_BOOLEAN__VOID,
                  G_TYPE_BOOLEAN /* return_type */,
                  0, NULL);
