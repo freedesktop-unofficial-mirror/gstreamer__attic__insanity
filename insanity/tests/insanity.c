@@ -218,27 +218,10 @@ void insanity_test_done(InsanityTest *test)
   send_signal (test->priv->conn, "remoteStopSignal", test->priv->name, DBUS_TYPE_INVALID);
 }
 
-static gboolean insanity_test_setup (InsanityTest *test)
-{
-  return INSANITY_TEST_GET_CLASS (test)->setup (test);
-}
-
-static gboolean insanity_test_start (InsanityTest *test)
-{
-  return INSANITY_TEST_GET_CLASS (test)->start (test);
-}
-
-static gboolean insanity_test_stop (InsanityTest *test)
-{
-  return INSANITY_TEST_GET_CLASS (test)->stop (test);
-}
-
 static gboolean on_setup(InsanityTest *test)
 {
-  gboolean ret = insanity_test_setup (test);
-  if (ret) {
-    g_signal_emit (test, setup_signal, 0, &ret);
-  }
+  gboolean ret = TRUE;
+  g_signal_emit (test, setup_signal, 0, &ret);
   if (!ret) {
     send_signal (test->priv->conn, "remoteStopSignal", test->priv->name, DBUS_TYPE_INVALID);
   }
@@ -250,24 +233,16 @@ static gboolean on_setup(InsanityTest *test)
 
 static gboolean on_start(InsanityTest *test)
 {
-  gboolean ret;
+  gboolean ret = TRUE;
   insanity_test_record_start_time(test);
-  ret = insanity_test_start (test);
-  if (ret) {
-    g_signal_emit (test, start_signal, 0, &ret);
-  }
+  g_signal_emit (test, start_signal, 0, &ret);
   return ret;
 }
 
 static gboolean on_stop(InsanityTest *test)
 {
-  gboolean ret;
-
-  ret = TRUE;
+  gboolean ret = TRUE;
   g_signal_emit (test, stop_signal, 0, &ret);
-  if (ret) {
-    ret = insanity_test_stop (test);
-  }
 
   if (!ret)
     return ret;
@@ -647,25 +622,6 @@ static void insanity_test_init (InsanityTest *test)
   strcpy (priv->name, "");
   priv->args = NULL;
   priv->done = FALSE;
-
-  /* Connect default handlers that just do nothing, succesfully */
-  g_signal_connect (test, "setup", G_CALLBACK (&insanity_default_signal_handler), 0);
-  g_signal_connect (test, "start", G_CALLBACK (&insanity_default_signal_handler), 0);
-  g_signal_connect (test, "stop", G_CALLBACK (&insanity_default_signal_handler), 0);
-}
-
-static gboolean insanity_signal_accumulator (GSignalInvocationHint *ihint,
-                                             GValue *return_accu,
-                                             const GValue *handler_return,
-                                             gpointer data)
-{
-  gboolean v;
-
-  (void)ihint;
-  (void)data;
-  v = g_value_get_boolean (handler_return);
-  g_value_set_boolean (return_accu, v);
-  return v;
 }
 
 static void insanity_test_class_init (InsanityTestClass *klass)
@@ -680,24 +636,27 @@ static void insanity_test_class_init (InsanityTestClass *klass)
 
   g_type_class_add_private (klass, sizeof (InsanityTestPrivateData));
 
-  setup_signal = g_signal_newv ("setup",
+  setup_signal = g_signal_new ("setup",
                  G_TYPE_FROM_CLASS (gobject_class),
                  G_SIGNAL_RUN_LAST | G_SIGNAL_NO_RECURSE | G_SIGNAL_NO_HOOKS,
-                 NULL, &insanity_signal_accumulator, NULL,
+                 G_STRUCT_OFFSET (InsanityTestClass, setup),
+                 NULL, NULL,
                  insanity_cclosure_marshal_BOOLEAN__VOID,
                  G_TYPE_BOOLEAN /* return_type */,
                  0, NULL);
-  start_signal = g_signal_newv ("start",
+  start_signal = g_signal_new ("start",
                  G_TYPE_FROM_CLASS (gobject_class),
                  G_SIGNAL_RUN_LAST | G_SIGNAL_NO_RECURSE | G_SIGNAL_NO_HOOKS,
-                 NULL, &insanity_signal_accumulator, NULL,
+                 G_STRUCT_OFFSET (InsanityTestClass, start),
+                 NULL, NULL,
                  insanity_cclosure_marshal_BOOLEAN__VOID,
                  G_TYPE_BOOLEAN /* return_type */,
                  0, NULL);
-  stop_signal = g_signal_newv ("stop",
+   stop_signal = g_signal_new ("stop",
                  G_TYPE_FROM_CLASS (gobject_class),
                  G_SIGNAL_RUN_LAST | G_SIGNAL_NO_RECURSE | G_SIGNAL_NO_HOOKS,
-                 NULL, &insanity_signal_accumulator, NULL,
+                 G_STRUCT_OFFSET (InsanityTestClass, stop),
+                 NULL, NULL,
                  insanity_cclosure_marshal_BOOLEAN__VOID,
                  G_TYPE_BOOLEAN /* return_type */,
                  0, NULL);

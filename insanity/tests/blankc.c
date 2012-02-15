@@ -33,8 +33,8 @@ int main(int argc, const char **argv)
 
   test = INSANITY_TEST (g_type_create_instance (insanity_test_get_type()));
 
-  g_signal_connect (test, "setup", G_CALLBACK (&blank_test_setup), 0);
-  g_signal_connect (test, "start", G_CALLBACK (&blank_test_start), 0);
+  g_signal_connect_after (test, "setup", G_CALLBACK (&blank_test_setup), 0);
+  g_signal_connect_after (test, "start", G_CALLBACK (&blank_test_start), 0);
   g_signal_connect (test, "stop", G_CALLBACK (&blank_test_stop), 0);
 
   ret = insanity_test_run (test, argc, argv);
