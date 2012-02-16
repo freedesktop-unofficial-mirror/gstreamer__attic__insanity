@@ -1,4 +1,0 @@
-include MANIFEST.in README
-include bin/insanity-pythondbusrunner.py
-include insanity-gtk.desktop
-recursive-include web *.py *.html *.css *.js

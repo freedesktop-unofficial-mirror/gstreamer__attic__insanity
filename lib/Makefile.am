@@ -16,7 +16,6 @@ insanityinc_HEADERS=\
 insanitypc_DATA=insanity.pc
 noinst_DATA=insanity-uninstalled.pc
 
-libinsanity_la_LIBADD=@GLIB_LIBS@ @GOBJECT_LIBS@ @DBUS_LIBS@
-libinsanity_la_CFLAGS=@GLIB_CFLAGS@ @GOBJECT_CFLAGS@ @DBUS_CFLAGS@
-#libinsanity_la_LDFLAGS=@GLIB_LDFLAGS@ @DBUS_LDFLAGS@
+libinsanity_la_LIBADD=$(GLIB_LIBS) $(GOBJECT_LIBS) $(DBUS_LIBS)
+libinsanity_la_CFLAGS=$(GLIB_CFLAGS) $(GOBJECT_CFLAGS) $(DBUS_CFLAGS)
 

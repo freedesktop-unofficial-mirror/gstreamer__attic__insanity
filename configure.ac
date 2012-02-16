@@ -1,4 +1,4 @@
-AC_INIT([libinsanity],[0.0.1])
+AC_INIT([insanity],[0.0.1])
 
 AC_CONFIG_SRCDIR([insanity/dbustest.py])
 
@@ -31,6 +31,8 @@ AC_PROG_GREP
 
 AC_C_CONST
 
+AM_PATH_PYTHON(,HAVE_PYTHON=yes, HAVE_PYTHON=no)
+AM_CONDITIONAL(HAVE_PYTHON,test "${HAVE_PYTHON}" = "yes")
 
 # headers
 
@@ -48,6 +50,8 @@ PKG_CHECK_MODULES(DBUS, dbus-1)
 AC_CONFIG_FILES(
   [Makefile]
   [lib/Makefile]
+  [insanity/Makefile]
+  [web/Makefile]
   [insanity/tests/Makefile]
   [lib/insanity.pc]
   [lib/insanity-uninstalled.pc]
