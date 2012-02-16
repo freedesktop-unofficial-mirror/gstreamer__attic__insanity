@@ -287,7 +287,7 @@ static void on_stop(InsanityTest *test)
   test->priv->done = TRUE;
 }
 
-static int foreach_dbus_array (DBusMessageIter *iter, int (*f)(const char *key, int type, void *value, guintptr userdata), guintptr userdata)
+static int foreach_dbus_array (DBusMessageIter *iter, int (*f)(const char *key, const GValue *value, guintptr userdata), guintptr userdata)
 {
   DBusMessageIter subiter, subsubiter, subsubsubiter;
   const char *key;
@@ -298,6 +298,7 @@ static int foreach_dbus_array (DBusMessageIter *iter, int (*f)(const char *key, 
   dbus_uint64_t uint64_value;
   dbus_int64_t int64_value;
   double double_value;
+  GValue value = {0};
   DBusMessageIter array_value;
   int type;
   int ret;
@@ -330,7 +331,8 @@ static int foreach_dbus_array (DBusMessageIter *iter, int (*f)(const char *key, 
     type = dbus_message_iter_get_arg_type (&subsubiter);
     if (type == DBUS_TYPE_STRING) {
       dbus_message_iter_get_basic (&subsubiter,&string_value);
-      ptr = &string_value;
+      g_value_init (&value, G_TYPE_STRING);
+      g_value_set_string (&value, string_value);
     }
     else if (type == DBUS_TYPE_VARIANT) {
       dbus_message_iter_recurse (&subsubiter, &subsubsubiter);
@@ -340,35 +342,42 @@ static int foreach_dbus_array (DBusMessageIter *iter, int (*f)(const char *key, 
       switch (type) {
         case DBUS_TYPE_STRING:
           dbus_message_iter_get_basic (&subsubsubiter,&string_value);
-          ptr = &string_value;
+          g_value_init (&value, G_TYPE_STRING);
+          g_value_set_string (&value, string_value);
           break;
         case DBUS_TYPE_INT32:
           dbus_message_iter_get_basic (&subsubsubiter,&int32_value);
-          ptr = &int32_value;
+          g_value_init (&value, G_TYPE_INT);
+          g_value_set_int (&value, int32_value);
           break;
         case DBUS_TYPE_UINT32:
           dbus_message_iter_get_basic (&subsubsubiter,&uint32_value);
-          ptr = &uint32_value;
+          g_value_init (&value, G_TYPE_UINT);
+          g_value_set_uint (&value, uint32_value);
           break;
         case DBUS_TYPE_INT64:
           dbus_message_iter_get_basic (&subsubsubiter,&int64_value);
-          ptr = &int64_value;
+          g_value_init (&value, G_TYPE_INT64);
+          g_value_set_int64 (&value, int64_value);
           break;
         case DBUS_TYPE_UINT64:
           dbus_message_iter_get_basic (&subsubsubiter,&uint64_value);
-          ptr = &uint64_value;
+          g_value_init (&value, G_TYPE_UINT64);
+          g_value_set_uint64 (&value, uint64_value);
           break;
         case DBUS_TYPE_DOUBLE:
           dbus_message_iter_get_basic (&subsubsubiter,&double_value);
-          ptr = &double_value;
+          g_value_init (&value, G_TYPE_DOUBLE);
+          g_value_set_double (&value, double_value);
           break;
         case DBUS_TYPE_BOOLEAN:
           dbus_message_iter_get_basic (&subsubsubiter,&boolean_value);
-          ptr = &boolean_value;
+          g_value_init (&value, G_TYPE_BOOLEAN);
+          g_value_set_boolean (&value, boolean_value);
           break;
         case DBUS_TYPE_ARRAY:
-          array_value = subsubsubiter;
-          ptr = &array_value;
+          g_value_init (&value, G_TYPE_POINTER);
+          g_value_set_pointer (&value, &subsubsubiter);
           break;
         default:
           fprintf(stderr, "Unsupported type: %c\n", type);
@@ -382,7 +391,8 @@ static int foreach_dbus_array (DBusMessageIter *iter, int (*f)(const char *key, 
     }
 
     /* < 0 -> error, 0 -> continue, > 0 -> stop */
-    ret = (*f)(key, type, ptr, userdata);
+    ret = (*f)(key, &value, userdata);
+    g_value_unset (&value);
     if (ret)
       return ret;
 
@@ -391,7 +401,7 @@ static int foreach_dbus_array (DBusMessageIter *iter, int (*f)(const char *key, 
   return 0;
 }
 
-int foreach_dbus_args (InsanityTest *test, int (*f)(const char *key, int type, void *value, guintptr userdata), guintptr userdata)
+int foreach_dbus_args (InsanityTest *test, int (*f)(const char *key, const GValue *value, guintptr userdata), guintptr userdata)
 {
   DBusMessageIter iter;
 
@@ -401,54 +411,88 @@ int foreach_dbus_args (InsanityTest *test, int (*f)(const char *key, int type, v
 
 struct finder_data {
   const char *key;
-  int type;
-  void *value;
+  GValue value;
+  void *userdata;
 };
 
-static int typed_finder(const char *key, int type, void *value, guintptr userdata)
+static int typed_finder(const char *key, const GValue *value, guintptr userdata)
 {
   struct finder_data *fd = (struct finder_data *)userdata;
   if (strcmp (key, fd->key))
     return 0;
-  if (type != fd->type) {
-    fprintf(stderr, "Key '%s' was found, but not of the expected type (was %c, expected %c)\n", key, type, fd->type);
-    return -1;
-  }
-  fd->value = value;
+  g_value_init (&fd->value, G_VALUE_TYPE (value));
+  g_value_copy (value, &fd->value); // src is first parm
   return 1;
 }
 
-const char *insanity_test_get_string_argument(InsanityTest *test, const char *key)
+gboolean insanity_test_get_argument(InsanityTest *test, const char *key, GValue *value)
 {
   struct finder_data fd;
   int ret;
+  GValue zero_value = {0};
 
   fd.key = key;
-  fd.type = DBUS_TYPE_STRING;
-  fd.value = NULL;
+  fd.value = zero_value; // pff
   ret = foreach_dbus_args(test, &typed_finder, (guintptr)&fd);
-  return (ret>0 && fd.value) ? * (const char **)fd.value : NULL;
+  if (ret <= 0)
+    return FALSE;
+  g_value_init (value, G_VALUE_TYPE (&fd.value));
+  g_value_copy (&fd.value, value); // src is first parm
+  g_value_unset (&fd.value);
+  return TRUE;
 }
 
-const char *insanity_test_get_output_filename(InsanityTest *test, const char *key)
+static int filename_finder(const char *key, const GValue *value, guintptr userdata)
+{
+  DBusMessageIter *array;
+  struct finder_data fd2;
+  GValue zero_value = {0};
+  int ret;
+
+  struct finder_data *fd = (struct finder_data *)userdata;
+  if (strcmp (key, fd->key))
+    return 0;
+
+  if (G_VALUE_TYPE (value) != G_TYPE_POINTER) {
+    return 0;
+  }
+
+  array = (DBusMessageIter*)g_value_get_pointer (value);
+  fd2.key = fd->userdata;
+  fd2.value = zero_value; // pff
+  ret = foreach_dbus_array (array, &typed_finder, (guintptr)&fd2);
+  if (ret <= 0)
+    return 0;
+
+  g_value_init (&fd->value, G_TYPE_STRING);
+  g_value_copy (&fd2.value, &fd->value); // src is first
+  g_value_unset (&fd2.value);
+
+  return 1;
+}
+
+char *insanity_test_get_output_filename(InsanityTest *test, const char *key)
 {
   struct finder_data fd;
   int ret;
-  DBusMessageIter array;
+  char *fn;
+  GValue zero_value = {0};
 
   fd.key = "outputfiles";
-  fd.type = DBUS_TYPE_ARRAY;
-  fd.value = NULL;
-  ret = foreach_dbus_args(test, &typed_finder, (guintptr)&fd);
+  fd.value = zero_value; // pff
+  fd.userdata = (void*)key;
+  ret = foreach_dbus_args(test, &filename_finder, (guintptr)&fd);
   if (ret <= 0)
     return NULL;
 
-  array = *(DBusMessageIter*)fd.value;
-  fd.key = key;
-  fd.type = DBUS_TYPE_STRING;
-  fd.value = NULL;
-  ret = foreach_dbus_array (&array, &typed_finder, (guintptr)&fd);
-  return (ret>0 && fd.value) ? * (const char **)fd.value : NULL;
+  if (G_VALUE_TYPE (&fd.value) != G_TYPE_STRING) {
+    g_value_unset (&fd.value);
+    return FALSE;
+  }
+
+  fn = g_strdup (g_value_get_string (&fd.value));
+  g_value_unset (&fd.value);
+  return fn;
 }
 
 static void insanity_test_dbus_handler_remoteSetup(InsanityTest *test, DBusMessage *msg)

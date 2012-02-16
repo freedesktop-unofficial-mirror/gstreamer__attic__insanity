@@ -7,6 +7,18 @@ static gboolean blank_test_setup(InsanityTest *test)
 {
   (void)test;
   printf("blank_test_setup\n");
+
+  GValue value = {0};
+  if (insanity_test_get_argument (test, "uuid", &value)) {
+    const char *uuid = g_value_get_string (&value);
+    printf("uuid: %s\n", uuid);
+    g_value_unset (&value);
+  }
+
+  char *fn = insanity_test_get_output_filename (test, "dummy-output-file");
+  printf("fn: %s\n", fn);
+  g_free(fn);
+
   return TRUE;
 }
 
