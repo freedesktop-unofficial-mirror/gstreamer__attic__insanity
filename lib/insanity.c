@@ -38,6 +38,7 @@ struct InsanityTestPrivateData {
   DBusMessage *args;
   int cpu_load;
   gboolean done;
+  GHashTable *filename_cache;
 };
 
 static void
@@ -471,12 +472,18 @@ static int filename_finder(const char *key, const GValue *value, guintptr userda
   return 1;
 }
 
-char *insanity_test_get_output_filename(InsanityTest *test, const char *key)
+const char *insanity_test_get_output_filename(InsanityTest *test, const char *key)
 {
   struct finder_data fd;
   int ret;
   char *fn;
   GValue zero_value = {0};
+  gpointer ptr;
+
+  ptr = g_hash_table_lookup (test->priv->filename_cache, key);
+  if (ptr) {
+    return ptr;
+  }
 
   fd.key = "outputfiles";
   fd.value = zero_value; // pff
@@ -492,6 +499,8 @@ char *insanity_test_get_output_filename(InsanityTest *test, const char *key)
 
   fn = g_strdup (g_value_get_string (&fd.value));
   g_value_unset (&fd.value);
+
+  g_hash_table_insert (test->priv->filename_cache, g_strdup (key), fn);
   return fn;
 }
 
@@ -687,6 +696,8 @@ static void insanity_test_finalize (GObject *gobject)
     dbus_message_unref(priv->args);
   if (priv->conn)
     dbus_connection_unref(priv->conn);
+  if (priv->filename_cache)
+    g_hash_table_destroy (priv->filename_cache);
   G_OBJECT_CLASS (insanity_test_parent_class)->finalize (gobject);
 }
 
@@ -700,6 +711,8 @@ static void insanity_test_init (InsanityTest *test)
   strcpy (priv->name, "");
   priv->args = NULL;
   priv->done = FALSE;
+
+  priv->filename_cache = g_hash_table_new_full(&g_str_hash, &g_str_equal, &g_free, g_free);
 }
 
 static gboolean insanity_signal_stop_accumulator (GSignalInvocationHint *ihint,

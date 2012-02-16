@@ -38,7 +38,7 @@ typedef struct InsanityTestClass InsanityTestClass;
 GType insanity_test_get_type (void);
 
 gboolean insanity_test_get_argument(InsanityTest *test, const char *key, GValue *value);
-char *insanity_test_get_output_filename(InsanityTest *test, const char *key);
+const char *insanity_test_get_output_filename(InsanityTest *test, const char *key);
 void insanity_test_done(InsanityTest *test);
 void insanity_test_validate_step(InsanityTest *test, const char *name, gboolean success);
 void insanity_test_add_extra_info(InsanityTest *test, const char *name, const GValue *data);

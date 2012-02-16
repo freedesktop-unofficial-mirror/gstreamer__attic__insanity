@@ -15,9 +15,8 @@ static gboolean blank_test_setup(InsanityTest *test)
     g_value_unset (&value);
   }
 
-  char *fn = insanity_test_get_output_filename (test, "dummy-output-file");
+  const char *fn = insanity_test_get_output_filename (test, "dummy-output-file");
   printf("fn: %s\n", fn);
-  g_free(fn);
 
   return TRUE;
 }
