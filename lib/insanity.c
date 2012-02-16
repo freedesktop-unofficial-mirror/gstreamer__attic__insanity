@@ -8,6 +8,12 @@
 #include <stdarg.h>
 #include "insanity.h"
 
+/* TODO:
+  - indent, this originally came from sample code that had 3 spaces indent
+  - remove exit calls and do proper error reporting
+  - logs ?
+*/
+
 /* getrusage is Unix API */
 #define USE_CPU_LOAD
 
