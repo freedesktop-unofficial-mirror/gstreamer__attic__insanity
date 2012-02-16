@@ -241,7 +241,7 @@ void insanity_test_add_extra_info(InsanityTest *test, const char *name, const GV
 
 static void gather_end_of_test_info(InsanityTest *test)
 {
-  GValue value;
+  GValue value = {0};
 
   insanity_test_record_stop_time(test);
 
