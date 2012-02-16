@@ -190,20 +190,58 @@ static void send_signal(DBusConnection *conn, const char *signal_name, const cha
    dbus_message_unref(msg);
 }
 
-void insanity_test_validate(InsanityTest *test, const char *name, int success)
+void insanity_test_validate_step(InsanityTest *test, const char *name, gboolean success)
 {
   send_signal (test->priv->conn,"remoteValidateStepSignal",test->priv->name,DBUS_TYPE_STRING,&name,DBUS_TYPE_BOOLEAN,&success,DBUS_TYPE_INVALID);
 }
 
-void insanity_test_extra_info(InsanityTest *test, const char *name, int type, void *dataptr)
+void insanity_test_add_extra_info(InsanityTest *test, const char *name, const GValue *data)
 {
-  send_signal (test->priv->conn,"remoteExtraInfoSignal",test->priv->name,DBUS_TYPE_STRING,&name,type,dataptr,DBUS_TYPE_INVALID);
+  GType glib_type;
+  int dbus_type;
+  dbus_int32_t int32_value;
+  dbus_int64_t int64_value;
+  const char *string_value;
+  void *dataptr = NULL;
+
+  glib_type = G_VALUE_TYPE (data);
+  if (glib_type == G_TYPE_INT) {
+    int32_value = g_value_get_int (data);
+    dbus_type = DBUS_TYPE_INT32;
+    dataptr = &int32_value;
+  } else if (glib_type == G_TYPE_INT64) {
+    int64_value = g_value_get_int64 (data);
+    dbus_type = DBUS_TYPE_INT64;
+    dataptr = &int64_value;
+  } else if (glib_type == G_TYPE_STRING) {
+    string_value = g_value_get_string (data);
+    dbus_type = DBUS_TYPE_STRING;
+    dataptr = &string_value;
+  } else {
+    /* Add more if needed, there doesn't seem to be a glib "glib to dbus" conversion public API,
+       but if I missed one, it could replace the above. */
+  }
+
+  if (dataptr) {
+    send_signal (test->priv->conn,"remoteExtraInfoSignal",test->priv->name,DBUS_TYPE_STRING,&name,dbus_type,dataptr,DBUS_TYPE_INVALID);
+  }
+  else {
+    char *s = g_strdup_value_contents (data);
+    fprintf(stderr, "Unsupported extra info: %s\n", s);
+    g_free (s);
+  }
 }
 
 static void gather_end_of_test_info(InsanityTest *test)
 {
+  GValue value;
+
   insanity_test_record_stop_time(test);
-  insanity_test_extra_info (test, "cpu-load", DBUS_TYPE_INT32, &test->priv->cpu_load);
+
+  g_value_init (&value, G_TYPE_INT);
+  g_value_set_int (&value, test->priv->cpu_load);
+  insanity_test_add_extra_info (test, "cpu-load", &value);
+  g_value_unset (&value);
 }
 
 void insanity_test_done(InsanityTest *test)
@@ -373,7 +411,7 @@ static int typed_finder(const char *key, int type, void *value, guintptr userdat
   return 1;
 }
 
-const char *insanity_test_get_arg_string(InsanityTest *test, const char *key)
+const char *insanity_test_get_string_argument(InsanityTest *test, const char *key)
 {
   struct finder_data fd;
   int ret;
@@ -385,7 +423,7 @@ const char *insanity_test_get_arg_string(InsanityTest *test, const char *key)
   return (ret>0 && fd.value) ? * (const char **)fd.value : NULL;
 }
 
-const char *insanity_test_get_output_file(InsanityTest *test, const char *key)
+const char *insanity_test_get_output_filename(InsanityTest *test, const char *key)
 {
   struct finder_data fd;
   int ret;
