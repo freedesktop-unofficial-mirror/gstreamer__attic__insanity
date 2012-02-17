@@ -1,4 +1,4 @@
-SUBDIRS=lib insanity web insanity/tests
+SUBDIRS=lib insanity web tests
 
 bin_SCRIPTS=\
   bin/insanity-compare \

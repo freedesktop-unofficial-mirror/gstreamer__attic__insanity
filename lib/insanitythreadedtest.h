@@ -4,7 +4,7 @@
 #include <glib.h>
 #include <glib-object.h>
 
-#include "insanity.h"
+#include "insanitytest.h"
 
 struct InsanityThreadedTestPrivateData;
 typedef struct InsanityThreadedTestPrivateData InsanityThreadedTestPrivateData;

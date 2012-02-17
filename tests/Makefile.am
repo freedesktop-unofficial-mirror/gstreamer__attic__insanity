@@ -12,6 +12,6 @@ common_ldadd=$(GLIB_LIBS) $(GOBJECT_LIBS) $(GTHREAD_LIBS) $(DBUS_LIBS)
 
 insanity_test_blank_SOURCES=insanity-test-blank.c
 insanity_test_blank_CFLAGS=$(common_cflags)
-insanity_test_blank_LDADD=../../lib/libinsanity.la $(common_ldadd)
+insanity_test_blank_LDADD=../lib/libinsanity.la $(common_ldadd)
 
 noinst_PROGRAMS=insanity-test-blank

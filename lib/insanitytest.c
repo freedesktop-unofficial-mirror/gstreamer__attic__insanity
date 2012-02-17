@@ -23,7 +23,7 @@
 #include "config.h"
 #endif
 
-#include "insanity.h"
+#include "insanitytest.h"
 
 #include <dbus/dbus.h>
 #include <stdio.h>

@@ -65,7 +65,7 @@ AC_CONFIG_FILES(
   [lib/Makefile]
   [insanity/Makefile]
   [web/Makefile]
-  [insanity/tests/Makefile]
+  [tests/Makefile]
   [lib/insanity.pc]
   [lib/insanity-uninstalled.pc]
 )
