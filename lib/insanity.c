@@ -651,7 +651,7 @@ static gboolean listen(InsanityTest *test, const char *bus_address,const char *u
    test->priv->done = FALSE;
    while (1) {
       // barely blocking update of dbus
-      dbus_connection_read_write(conn, 100);
+      dbus_connection_read_write(conn, 10);
 
       if (test->priv->done)
         break;
