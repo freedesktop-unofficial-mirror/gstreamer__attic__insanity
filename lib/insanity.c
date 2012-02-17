@@ -298,8 +298,7 @@ static gboolean on_start(InsanityTest *test)
 
 static void on_stop(InsanityTest *test)
 {
-  gboolean ret = TRUE;
-  g_signal_emit (test, stop_signal, 0, &ret);
+  g_signal_emit (test, stop_signal, 0, NULL);
 
   gather_end_of_test_info(test);
   test->priv->done = TRUE;
@@ -892,7 +891,7 @@ static void insanity_test_class_init (InsanityTestClass *klass)
                  G_STRUCT_OFFSET (InsanityTestClass, stop),
                  NULL, NULL,
                  g_cclosure_marshal_VOID__VOID,
-                 G_TYPE_BOOLEAN /* return_type */,
+                 G_TYPE_NONE /* return_type */,
                  0, NULL);
 }
 
