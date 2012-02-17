@@ -45,6 +45,8 @@ struct InsanityTestClass
   gboolean (*setup) (InsanityTest *test);
   gboolean (*start) (InsanityTest *test);
   void (*stop) (InsanityTest *test);
+
+  void (*test) (InsanityTest *test);
 };
 typedef struct InsanityTestClass InsanityTestClass;
 

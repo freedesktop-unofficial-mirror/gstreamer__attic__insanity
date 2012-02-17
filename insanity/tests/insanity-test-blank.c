@@ -62,6 +62,12 @@ static void blank_test_stop(InsanityTest *test)
   printf("blank_test_stop\n");
 }
 
+static void blank_test_test(InsanityTest *test)
+{
+  (void)test;
+  printf("blank_test_test\n");
+}
+
 int main(int argc, const char **argv)
 {
   InsanityTest *test;
@@ -76,6 +82,8 @@ int main(int argc, const char **argv)
   g_signal_connect_after (test, "setup", G_CALLBACK (&blank_test_setup), 0);
   g_signal_connect_after (test, "start", G_CALLBACK (&blank_test_start), 0);
   g_signal_connect (test, "stop", G_CALLBACK (&blank_test_stop), 0);
+  g_signal_connect_after (test, "test", G_CALLBACK (&blank_test_test), 0);
+
 
   ret = insanity_test_run (test, argc, argv);
 

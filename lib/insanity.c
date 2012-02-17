@@ -36,6 +36,7 @@
   - remove exit calls and do proper error reporting
   - logs ?
   - gather timings at every step validated ?
+  - implement timeouts
 */
 
 #ifdef USE_CPU_LOAD
@@ -54,6 +55,7 @@ enum {
 static guint setup_signal;
 static guint start_signal;
 static guint stop_signal;
+static guint test_signal;
 static GParamSpec *properties[N_PROPERTIES] = { NULL, };
 
 struct InsanityTestPrivateData {
@@ -67,6 +69,7 @@ struct InsanityTestPrivateData {
   int cpu_load;
   gboolean done;
   GHashTable *filename_cache;
+  GThread *thread;
 
   /* test metadata */
   char *test_name;
@@ -110,6 +113,16 @@ insanity_cclosure_marshal_BOOLEAN__VOID (GClosure     *closure,
   g_value_set_boolean (return_value, v_return);
 }
 
+static gpointer
+test_thread_func (gpointer data)
+{
+  InsanityTest *test = INSANITY_TEST (data);
+
+  g_signal_emit (test, test_signal, 0, NULL);
+
+  return NULL;
+}
+
 static gboolean default_insanity_user_setup(InsanityTest *test)
 {
   (void)test;
@@ -119,15 +132,32 @@ static gboolean default_insanity_user_setup(InsanityTest *test)
 
 static gboolean default_insanity_user_start(InsanityTest *test)
 {
-  (void)test;
   printf("insanity_start\n");
+
+  test->priv->thread =
+#if GLIB_CHECK_VERSION(2,31,2)
+  g_thread_new ("insanity_worker", test_thread_func, test);
+#else
+  g_thread_create (test_thread_func, test, TRUE, NULL);
+#endif
+
+  if (!test->priv->thread)
+    return FALSE;
+
   return TRUE;
 }
 
 static void default_insanity_user_stop(InsanityTest *test)
 {
-  (void)test;
   printf("insanity_stop\n");
+
+  g_thread_join (test->priv->thread);
+}
+
+static void default_insanity_user_test(InsanityTest *test)
+{
+  (void)test;
+  printf("insanity_test\n");
 }
 
 static void insanity_test_connect (InsanityTest *test, DBusConnection *conn, const char *uuid)
@@ -877,6 +907,7 @@ static void insanity_test_class_init (InsanityTestClass *klass)
   klass->setup = &default_insanity_user_setup;
   klass->start = &default_insanity_user_start;
   klass->stop = &default_insanity_user_stop;
+  klass->test = &default_insanity_user_test;
 
   gobject_class->get_property = &insanity_test_get_property;
   gobject_class->set_property = &insanity_test_set_property;
@@ -910,6 +941,14 @@ static void insanity_test_class_init (InsanityTestClass *klass)
                  G_TYPE_FROM_CLASS (gobject_class),
                  G_SIGNAL_RUN_LAST | G_SIGNAL_NO_RECURSE | G_SIGNAL_NO_HOOKS,
                  G_STRUCT_OFFSET (InsanityTestClass, stop),
+                 NULL, NULL,
+                 g_cclosure_marshal_VOID__VOID,
+                 G_TYPE_NONE /* return_type */,
+                 0, NULL);
+   test_signal = g_signal_new ("test",
+                 G_TYPE_FROM_CLASS (gobject_class),
+                 G_SIGNAL_RUN_LAST | G_SIGNAL_NO_RECURSE | G_SIGNAL_NO_HOOKS,
+                 G_STRUCT_OFFSET (InsanityTestClass, test),
                  NULL, NULL,
                  g_cclosure_marshal_VOID__VOID,
                  G_TYPE_NONE /* return_type */,

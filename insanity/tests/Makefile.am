@@ -7,8 +7,8 @@ LIBTOOLFLAGS=--silent
 
 AM_CPPFLAGS=-I $(top_srcdir)/lib
 
-common_cflags=$(GLIB_CFLAGS) $(GOBJECT_CFLAGS) $(DBUS_CFLAGS)
-common_ldadd=$(GLIB_LIBS) $(GOBJECT_LIBS) $(DBUS_LIBS)
+common_cflags=$(GLIB_CFLAGS) $(GOBJECT_CFLAGS) $(GTHREAD_CFLAGS) $(DBUS_CFLAGS)
+common_ldadd=$(GLIB_LIBS) $(GOBJECT_LIBS) $(GTHREAD_LIBS) $(DBUS_LIBS)
 
 insanity_test_blank_SOURCES=insanity-test-blank.c
 insanity_test_blank_CFLAGS=$(common_cflags)
