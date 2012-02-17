@@ -41,7 +41,7 @@ import dbus.gobject_service
 import tempfile
 import os
 from insanity.log import error, warning, debug, info
-from insanity.test import Test
+from insanity.test import Test, PythonDBusTest
 from insanity.arguments import Arguments
 import insanity.environment as environment
 import insanity.dbustools as dbustools
@@ -165,8 +165,8 @@ class TestRun(gobject.GObject):
         * the monitor class
         * (optional) the arguments to use on that monitor
         """
-        if not isinstance(test, type) and not issubclass(test, Test):
-            raise TypeError("Given test is not a Test object !")
+        #if not isinstance(test, type) and not issubclass(test, Test):
+        #    raise TypeError("Given test is not a Test object !")
         # arguments NEED to be an Arguments object or a dictionnary
         if isinstance(arguments, dict):
             # convert dictionnary to Arguments
@@ -261,9 +261,13 @@ class TestRun(gobject.GObject):
 
         # create test with arguments
         debug("Creating test %r with arguments %r" % (testclass, kwargs))
-        test = testclass(testrun=self, bus=self._bus,
+        test = PythonDBusTest(testrun=self, bus=self._bus,
                          bus_address=self._bus_address,
+                         metadata = testclass,
                          **kwargs)
+#        test = testclass(testrun=self, bus=self._bus,
+#                         bus_address=self._bus_address,
+#                         **kwargs)
         if monitors:
             for monitor in monitors:
                 test.addMonitor(*monitor)

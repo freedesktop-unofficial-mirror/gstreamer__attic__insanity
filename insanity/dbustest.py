@@ -61,14 +61,14 @@ class DBusTest(Test, dbus.service.Object):
     __test_extra_infos__ = {
     "subprocess-return-code":"The exit value returned by the subprocess",
     "subprocess-spawn-time":"How long it took to spawn the subprocess (in milliseconds)",
-    "cpu-load" : "CPU load in percent (can exceed 100% on multi core systems)"
+    "cpu-load" : "CPU load in percent (can exceed 100% on multi core systems)" # TODO: move to C
     }
 
     __async_setup__ = True
     ## Needed for dbus
     __metaclass__ = dbus.gobject_service.ExportedGObjectType
 
-    def __init__(self, bus=None, bus_address="",
+    def __init__(self, bus=None, bus_address="", metadata = None,
                  env=None, *args, **kwargs):
         """
         bus is the private DBusConnection used for testing.
@@ -82,6 +82,9 @@ class DBusTest(Test, dbus.service.Object):
             raise Exception("You need to provide at least a bus or bus_address")
         self._bus = bus
         self._bus_address = bus_address
+        if (metadata == None):
+            raise Exception("You need to provide test metadata")
+        self._metadata = metadata
 
         self._remote_tearing_down = False
 
@@ -179,25 +182,8 @@ class DBusTest(Test, dbus.service.Object):
             if self._process:
                 # double check it hasn't actually exited
                 # give the test up to one second to exit
-                tries = 10
-                while self._returncode is None and not tries == 0:
-                    time.sleep(0.1)
-                    self._returncode = self._process.poll()
-                    tries -= 1
                 if self._returncode is None:
-                    info("Process isn't done yet, terminating it")
-                    os.kill(self._process.pid, signal.SIGTERM)
-                    time.sleep(1)
-                    self._returncode = self._process.poll()
-                if self._returncode is None:
-                    info("Process did not terminate, killing it")
-                    os.kill(self._process.pid, signal.SIGKILL)
-                    time.sleep(1)
-                    self._returncode = self._process.poll()
-                if self._returncode is None:
-                    # Probably turned into zombie process, something is
-                    # really broken...
-                    info("Process did not exit after SIGKILL")
+                    self._returncode = utils.kill_process (self._process)
                 self._process = None
             if not self._returncode is None:
                 info("Process returned %d", self._returncode)
@@ -429,7 +415,7 @@ class PythonDBusTest(DBusTest):
     def get_remote_launcher_args(self):
         # FIXME : add proper arguments
         rootdir = os.path.split(os.path.dirname(os.path.abspath(__file__)))[0]
-        path = os.path.join(rootdir, "insanity", "tests", self.__class__.__test_object__)
+        path = self._metadata.__test_filename__
         return [path, self.uuid]
 
     def __excepthook(self, exc_type, exc_value, exc_traceback):

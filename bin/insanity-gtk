@@ -85,11 +85,11 @@ class GtkTestRunner(object):
 
     def get_test_names(self):
 
-        return [t[0] for t in insanity.utils.list_available_tests()]
+        return [t.__test_name__ for t in insanity.utils.list_available_tests()]
 
     def get_scenario_names(self):
 
-        return [s[0] for s in insanity.utils.list_available_scenarios()]
+        return [s.__test_name__ for s in insanity.utils.list_available_scenarios()]
 
     def set_storage(self, storage):
 
@@ -97,7 +97,7 @@ class GtkTestRunner(object):
 
     def set_test(self, test_name):
 
-        self.test_class = insanity.utils.get_test_class(test_name)
+        self.test_class = insanity.utils.get_test_metadata(test_name)
 
     def set_arguments(self, test_args):
 

@@ -25,13 +25,18 @@ Miscellaneous utility functions and classes
 """
 
 import os
+import time
+import signal
+import subprocess
 import imp
 import urllib
 from random import randint
 import gzip
-from insanity.log import exception
+from insanity.log import info, exception
+from insanity.testmetadata import TestMetadata
 
 __uuids = []
+__tests = []
 
 def randuuid():
     """
@@ -68,19 +73,8 @@ def list_available_tests():
     * the test description
     * the test class
     """
-    from insanity.test import Test, DBusTest, PythonDBusTest, CmdLineTest
-    from insanity.scenario import Scenario
-
-    def get_valid_subclasses(cls):
-        res = []
-        if cls == Scenario:
-            return res
-        if not cls in [Test, DBusTest, PythonDBusTest, CmdLineTest]:
-            res.append((cls.__test_name__.strip(), cls.__test_description__.strip(), cls))
-        for i in cls.__subclasses__():
-            res.extend(get_valid_subclasses(i))
-        return res
-    return get_valid_subclasses(Test)
+    global __tests
+    return __tests
 
 def list_available_scenarios():
     """
@@ -92,14 +86,39 @@ def list_available_scenarios():
     from insanity.test import Test, DBusTest, PythonDBusTest, CmdLineTest
     from insanity.scenario import Scenario
 
-    def get_valid_subclasses(cls):
-        res = []
-        if not cls == Scenario:
-            res.append((cls.__test_name__.strip(), cls.__test_description__.strip(), cls))
-        for i in cls.__subclasses__():
-            res.extend(get_valid_subclasses(i))
-        return res
-    return get_valid_subclasses(Scenario)
+    #def get_valid_subclasses(cls):
+    #    res = []
+    #    if not cls == Scenario:
+    #        res.append((cls.__test_name__.strip(), cls.__test_description__.strip(), cls))
+    #    for i in cls.__subclasses__():
+    #        res.extend(get_valid_subclasses(i))
+    #    return res
+    #return get_valid_subclasses(Scenario)
+    return [] # hmm, need to look up how a scenario is different from a large test
+
+def kill_process(process):
+    tries = 10
+    returncode = None
+    while returncode is None and not tries == 0:
+        time.sleep(0.1)
+        returncode = process.poll()
+        tries -= 1
+        if returncode is None:
+            info("Process isn't done yet, terminating it")
+            os.kill(process.pid, signal.SIGTERM)
+            time.sleep(1)
+            returncode = process.poll()
+        if returncode is None:
+            info("Process did not terminate, killing it")
+            os.kill(process.pid, signal.SIGKILL)
+            time.sleep(1)
+            returncode = process.poll()
+        if returncode is None:
+            # Probably turned into zombie process, something is
+            # really broken...
+            info("Process did not exit after SIGKILL")
+    return returncode
+
 
 def scan_directory_for_tests(directory):
 
@@ -109,41 +128,41 @@ def scan_directory_for_tests(directory):
     for dirpath, dirnames, filenames in os.walk(directory):
 
         for filename in filenames:
-            basename, ext = os.path.splitext(filename)
-            if ext in source_ext and basename != "__init__":
-                import_names.append(basename)
+            fullname = os.path.join(dirpath, filename)
+            try:
+                tm = TestMetadata (fullname)
+                import_names.append(tm)
+            except Exception, e:
+                info ( 'Exception: %s' % e)
+                pass
 
-        for dirname in dirnames:
-            for ext in source_ext:
-                if os.path.exists(os.path.join(dirpath, dirname, "__init__%s" % (ext,))):
-                    import_names.append(dirname)
+        #for dirname in dirnames:
+        #    for ext in source_ext:
+        #        if os.path.exists(os.path.join(dirpath, dirname, "__init__%s" % (ext,))):
+        #            import_names.append(dirname)
 
         # Don't descent to subdirectories:
         break
 
     return import_names
 
-def scan_for_tests():
+def scan_for_tests(directory = None):
+    if directory == None:
+        directory = 'insanity/tests' # TODO
+    global __tests
+    __tests = scan_directory_for_tests (directory)
 
-    import insanity.tests
-    __import__("insanity.tests", fromlist=insanity.tests.__all__,
-               globals=globals(), locals=locals())
-
-    import insanity.tests.scenarios
-    __import__("insanity.tests.scenarios", fromlist=insanity.tests.scenarios.__all__,
-               globals=globals(), locals=locals())
-
-def get_test_class(testname):
+def get_test_metadata(testname):
     """
-    Returns the Test class corresponding to the given testname
+    Returns the Test metadata corresponding to the given testname
     """
     tests = list_available_tests()
     tests.extend(list_available_scenarios())
     testname = testname.strip()
-    for name, desc, cls in tests:
-        if testname == name:
-            return cls
-    raise ValueError("No Test class available for %s" % testname)
+    for test in tests:
+        if test.__test_name__ == testname:
+            return test
+    raise ValueError("No Test metadata available for %s" % testname)
 
 def reverse_dict(adict):
     """

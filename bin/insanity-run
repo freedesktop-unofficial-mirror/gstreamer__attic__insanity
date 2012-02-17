@@ -74,6 +74,14 @@ class OptionParser(optparse.OptionParser):
                         help="output directory (default: current)",
                         metavar="DIRECTORY",
                         default=".")
+        self.add_option("-T",
+                        "--tests",
+                        dest="tests",
+                        type="string",
+                        action="store",
+                        help="tests directory (default: current)",
+                        metavar="TESTS",
+                        default=".")
         self.add_option("-t",
                         "--test",
                         dest="test",
@@ -145,13 +153,13 @@ def test_help():
     print "Possible arguments for --test (-t):"
     all_tests = list(insanity.utils.list_available_tests())
     all_tests.extend(insanity.utils.list_available_scenarios())
-    for test_name, test_description, test_class in sorted(all_tests):
-        all_args = test_class.getFullArgumentList()
+    for test in sorted(all_tests):
+        all_args = test.getFullArgumentList()
         if not all_args:
             arg_desc = "no arguments"
         else:
             arg_desc = ", ".join(sorted(all_args.keys()))
-        print "  %s (%s)" % (test_name, arg_desc,)
+        print "  %s (%s)" % (test.__test_name__, arg_desc,)
 
         # This prints the full info, but the output is a bit messy then:
         ## if all_args:
@@ -190,14 +198,16 @@ def main():
         args_help()
         sys.exit(1)
 
+    insanity.utils.scan_for_tests(options.tests)
+
     if options.test == "help":
         test_help()
         sys.exit(1)
     elif options.test is None:
         parser.print_help()
         sys.exit(1)
-    else:
-        test_class = insanity.utils.get_test_class(options.test)
+
+    test = insanity.utils.get_test_metadata(options.test)
 
     storage_name, storage_args = options.storage
     if storage_name == "sqlite":
@@ -231,7 +241,7 @@ def main():
         test_arguments[arg_name] = gen
 
     test_run = TestRun(maxnbtests=1, workingdir=options.output)
-    test_run.addTest(test_class, test_arguments)
+    test_run.addTest(test, test_arguments)
 
     client = Client()
     client.setStorage(storage)

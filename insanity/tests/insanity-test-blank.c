@@ -8,10 +8,18 @@ static gboolean blank_test_setup(InsanityTest *test)
   (void)test;
   printf("blank_test_setup\n");
 
-  GValue value = {0};
+  GValue value, zero = {0};
+  value = zero;
   if (insanity_test_get_argument (test, "uuid", &value)) {
     const char *uuid = g_value_get_string (&value);
     printf("uuid: %s\n", uuid);
+    g_value_unset (&value);
+  }
+
+  value = zero;
+  if (insanity_test_get_argument (test, "test-argument", &value)) {
+    const char *ta = g_value_get_string (&value);
+    printf("test-argument: %s\n", ta);
     g_value_unset (&value);
   }
 
@@ -37,7 +45,7 @@ static void blank_test_stop(InsanityTest *test)
 int main(int argc, const char **argv)
 {
   InsanityTest *test;
-  int ret;
+  gboolean ret;
 
   g_type_init ();
 
@@ -51,6 +59,6 @@ int main(int argc, const char **argv)
 
   g_object_unref (test);
 
-  return ret;
+  return ret ? 0 : 1;
 }
 

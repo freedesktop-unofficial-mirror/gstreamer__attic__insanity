@@ -331,6 +331,7 @@ class CommandLineTesterClient(TesterClient):
             print stub, "Test %r is done (Success:%5.1f%%)" % (test, test.getSuccessPercentage())
         if self._verbose:
             # print out all details from test
+# TODO: very probably broken
             print stub, "Arguments:"
             ta = test.arguments
             fa = test.getFullArgumentList()

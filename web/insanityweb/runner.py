@@ -108,19 +108,19 @@ class Runner(object):
         self.current_item = None
 
     def get_test_names(self):
-        tests = [ t[0] for t in insanity.utils.list_available_tests() ]
-        tests.extend(t[0] for t in insanity.utils.list_available_scenarios())
+        tests = [ t.__test_name__ for t in insanity.utils.list_available_tests() ]
+        tests.extend(t.__test_name__ for t in insanity.utils.list_available_scenarios())
         return tests
 
     def start_test(self, test, folder, extra_arguments):
         self.run = TestRun(maxnbtests=1)
-        self.test_class = insanity.utils.get_test_class(test)
+        self.test_metadata = insanity.utils.get_test_metadata(test)
         args = {
             'uri': URIFileSystemGenerator(paths=[folder], recursive=True)
         }
         args.update(extra_arguments)
 
-        self.run.addTest(self.test_class, arguments=args)
+        self.run.addTest(self.test_metadata, arguments=args)
         self.client.addTestRun(self.run)
 
         self.current_run = self.run
