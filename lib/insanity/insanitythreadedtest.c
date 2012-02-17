@@ -2,7 +2,7 @@
 #include "config.h"
 #endif
 
-#include "insanitythreadedtest.h"
+#include "insanity/insanitythreadedtest.h"
 
 #include <stdio.h>
 

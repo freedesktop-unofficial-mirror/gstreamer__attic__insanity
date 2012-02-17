@@ -63,6 +63,7 @@ PKG_CHECK_MODULES(DBUS, dbus-1)
 AC_CONFIG_FILES(
   [Makefile]
   [lib/Makefile]
+  [lib/insanity/Makefile]
   [insanity/Makefile]
   [web/Makefile]
   [tests/Makefile]
