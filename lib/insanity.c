@@ -23,10 +23,18 @@
 #include <sys/resource.h>
 #endif
 
+enum {
+    PROP_0,
+    PROP_NAME,
+    PROP_DESC,
+    N_PROPERTIES
+};
+
 /* if global vars are good enough for gstreamer, it's good enough for insanity */
 static guint setup_signal;
 static guint start_signal;
 static guint stop_signal;
+static GParamSpec *properties[N_PROPERTIES] = { NULL, };
 
 struct InsanityTestPrivateData {
   DBusConnection *conn;
@@ -39,6 +47,14 @@ struct InsanityTestPrivateData {
   int cpu_load;
   gboolean done;
   GHashTable *filename_cache;
+
+  /* test metadata */
+  char *test_name;
+  char *test_desc;
+  GHashTable *test_checklist;
+  GHashTable *test_arguments;
+  GHashTable *test_output_files;
+  GHashTable *test_likely_errors;
 };
 
 static void
@@ -665,6 +681,43 @@ static gboolean listen(InsanityTest *test, const char *bus_address,const char *u
   return TRUE;
 }
 
+static void output_table(InsanityTest *test, FILE *f, GHashTable *table, const char *name)
+{
+  GHashTableIter it;
+  const char *label, *desc, *comma="";
+  if (g_hash_table_size (table) == 0)
+    return;
+  fprintf(f, ",\n  \"%s\": {\n", name);
+  g_hash_table_iter_init (&it, table);
+  while (g_hash_table_iter_next (&it, (gpointer)&label, (gpointer)&desc)) {
+    fprintf(f, "%s\n    \"%s\" : \"%s\"", comma, label, desc);
+    comma=",";
+  }
+  fprintf(f, "\n  }", name);
+}
+
+static void insanity_test_write_metadata(InsanityTest *test)
+{
+  FILE *f=stdout;
+  char *name, *desc;
+
+  g_object_get (G_OBJECT (test), "name", &name, NULL);
+  g_object_get (G_OBJECT (test), "desc", &desc, NULL);
+
+  fprintf(f, "Insanity test metadata:\n");
+  fprintf(f, "{\n");
+  fprintf(f, "  \"__name__\": \"%s\",\n", name);
+  fprintf(f, "  \"__description__\": \"%s\"", desc);
+  output_table(test,f,test->priv->test_checklist,"__checklist__");
+  output_table(test,f,test->priv->test_arguments,"__arguments__");
+  output_table(test,f,test->priv->test_output_files,"__output_files__");
+  output_table(test,f,test->priv->test_likely_errors,"__likely_errors__");
+  fprintf(f, "\n}\n");
+
+  g_free(name);
+  g_free(desc);
+}
+
 gboolean insanity_test_run(InsanityTest *test, int argc, const char **argv)
 {
   const char *private_dbus_address;
@@ -674,6 +727,12 @@ gboolean insanity_test_run(InsanityTest *test, int argc, const char **argv)
     fprintf(stderr, "Usage: %s <uuid>\n", argv[0]);
     return FALSE;
   }
+
+  if (!strcmp (argv[1], "--insanity-metadata")) {
+    insanity_test_write_metadata(test);
+    return TRUE;
+  }
+
   uuid = argv[1];
   private_dbus_address = getenv("PRIVATE_DBUS_ADDRESS");
   if (!private_dbus_address || !private_dbus_address[0]) {
@@ -703,6 +762,12 @@ static void insanity_test_finalize (GObject *gobject)
     g_free (test->priv->name);
   if (priv->filename_cache)
     g_hash_table_destroy (priv->filename_cache);
+  g_free (test->priv->test_name);
+  g_free (test->priv->test_desc);
+  g_hash_table_destroy (priv->test_checklist);
+  g_hash_table_destroy (priv->test_arguments);
+  g_hash_table_destroy (priv->test_output_files);
+  g_hash_table_destroy (priv->test_likely_errors);
   G_OBJECT_CLASS (insanity_test_parent_class)->finalize (gobject);
 }
 
@@ -716,8 +781,14 @@ static void insanity_test_init (InsanityTest *test)
   priv->name = NULL;
   priv->args = NULL;
   priv->done = FALSE;
-
   priv->filename_cache = g_hash_table_new_full(&g_str_hash, &g_str_equal, &g_free, g_free);
+
+  priv->test_name = NULL;
+  priv->test_desc = NULL;
+  priv->test_checklist = g_hash_table_new_full(&g_str_hash, &g_str_equal, &g_free, g_free);
+  priv->test_arguments = g_hash_table_new_full(&g_str_hash, &g_str_equal, &g_free, g_free);
+  priv->test_output_files = g_hash_table_new_full(&g_str_hash, &g_str_equal, &g_free, g_free);
+  priv->test_likely_errors = g_hash_table_new_full(&g_str_hash, &g_str_equal, &g_free, g_free);
 }
 
 static gboolean insanity_signal_stop_accumulator (GSignalInvocationHint *ihint,
@@ -734,6 +805,50 @@ static gboolean insanity_signal_stop_accumulator (GSignalInvocationHint *ihint,
   return v;
 }
 
+static void
+insanity_test_set_property (GObject *gobject,
+                          guint prop_id,
+                          const GValue *value,
+                          GParamSpec *pspec)
+{
+  InsanityTest *test = (InsanityTest *) gobject;
+
+  switch (prop_id) {
+    case PROP_NAME:
+      if (test->priv->test_name)
+        g_free (test->priv->test_name);
+      test->priv->test_name = g_strdup (g_value_get_string (value));
+      break;
+    case PROP_DESC:
+      if (test->priv->test_desc)
+        g_free (test->priv->test_desc);
+      test->priv->test_desc = g_strdup (g_value_get_string (value));
+      break;
+    default:
+      g_assert_not_reached ();
+    }
+}
+
+static void
+insanity_test_get_property (GObject *gobject,
+                          guint prop_id,
+                          GValue *value,
+                          GParamSpec *pspec)
+{
+  InsanityTest *test = (InsanityTest *) gobject;
+
+  switch (prop_id) {
+    case PROP_NAME:
+      g_value_set_string (value, test->priv->test_name);
+      break;
+    case PROP_DESC:
+      g_value_set_string (value, test->priv->test_desc);
+      break;
+    default:
+      g_assert_not_reached ();
+    }
+}
+
 static void insanity_test_class_init (InsanityTestClass *klass)
 {
   GObjectClass *gobject_class = G_OBJECT_CLASS (klass);
@@ -744,7 +859,17 @@ static void insanity_test_class_init (InsanityTestClass *klass)
   klass->start = &default_insanity_user_start;
   klass->stop = &default_insanity_user_stop;
 
+  gobject_class->get_property = &insanity_test_get_property;
+  gobject_class->set_property = &insanity_test_set_property;
+
   g_type_class_add_private (klass, sizeof (InsanityTestPrivateData));
+
+  properties[PROP_NAME] = g_param_spec_string ("name", "Name", "Name of the test",
+                                              NULL, G_PARAM_READWRITE);
+  properties[PROP_DESC] = g_param_spec_string ("desc", "Description", "Description of the test",
+                                              NULL, G_PARAM_READWRITE);
+
+  g_object_class_install_properties (gobject_class, N_PROPERTIES, properties);
 
   setup_signal = g_signal_new ("setup",
                  G_TYPE_FROM_CLASS (gobject_class),
@@ -770,5 +895,35 @@ static void insanity_test_class_init (InsanityTestClass *klass)
                  g_cclosure_marshal_VOID__VOID,
                  G_TYPE_BOOLEAN /* return_type */,
                  0, NULL);
+}
+
+InsanityTest *insanity_test_new(const char *name, const char *description)
+{
+  return g_object_new (insanity_test_get_type(), "name", name, "desc", description, NULL);
+}
+
+static void insanity_add_metadata_entry(GHashTable *hash, const char *label, const char *description)
+{
+  g_hash_table_insert (hash, g_strdup (label), g_strdup (description));
+}
+
+void insanity_test_add_checklist_item(InsanityTest *test, const char *label, const char *description)
+{
+  insanity_add_metadata_entry (test->priv->test_checklist, label, description);
+}
+
+void insanity_test_add_argument(InsanityTest *test, const char *label, const char *description)
+{
+  insanity_add_metadata_entry (test->priv->test_arguments, label, description);
+}
+
+void insanity_test_add_output_file(InsanityTest *test, const char *label, const char *description)
+{
+  insanity_add_metadata_entry (test->priv->test_output_files, label, description);
+}
+
+void insanity_test_add_likely_error(InsanityTest *test, const char *label, const char *description)
+{
+  insanity_add_metadata_entry (test->priv->test_likely_errors, label, description);
 }
 
