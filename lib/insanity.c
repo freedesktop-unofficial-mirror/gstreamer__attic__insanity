@@ -34,7 +34,7 @@ struct InsanityTestPrivateData {
   struct timeval start;
   struct rusage rusage;
 #endif
-  char name[128];
+  char *name;
   DBusMessage *args;
   int cpu_load;
   gboolean done;
@@ -99,7 +99,9 @@ static void insanity_test_connect (InsanityTest *test, DBusConnection *conn, con
   if (test->priv->conn)
     dbus_connection_unref (test->priv->conn);
   test->priv->conn = dbus_connection_ref (conn);
-  snprintf(test->priv->name, sizeof(test->priv->name), "/net/gstreamer/Insanity/Test/Test%s", uuid);
+  if (test->priv->name)
+    g_free (test->priv->name);
+  test->priv->name = g_strdup_printf ("/net/gstreamer/Insanity/Test/Test%s", uuid);
 }
 
 static void insanity_test_set_args (InsanityTest *test, DBusMessage *msg)
@@ -563,7 +565,7 @@ static gboolean listen(InsanityTest *test, const char *bus_address,const char *u
    DBusConnection* conn;
    DBusError err;
    int ret;
-   char object_name[128];
+   char *object_name;
    dbus_uint32_t serial = 0;
 
    // initialise the error
@@ -587,7 +589,7 @@ static gboolean listen(InsanityTest *test, const char *bus_address,const char *u
    }
 
    // request our name on the bus and check for errors
-   snprintf(object_name, sizeof(object_name), INSANITY_TEST_INTERFACE ".Test%s", uuid);
+   object_name = g_strdup_printf (INSANITY_TEST_INTERFACE ".Test%s", uuid);
    //printf("Using object name %s\n",object_name);
    ret = dbus_bus_request_name(conn, object_name, DBUS_NAME_FLAG_REPLACE_EXISTING , &err);
    if (dbus_error_is_set(&err)) { 
@@ -658,6 +660,7 @@ static gboolean listen(InsanityTest *test, const char *bus_address,const char *u
    }
 
    dbus_connection_unref (conn);
+  g_free (object_name);
 
   return TRUE;
 }
@@ -696,6 +699,8 @@ static void insanity_test_finalize (GObject *gobject)
     dbus_message_unref(priv->args);
   if (priv->conn)
     dbus_connection_unref(priv->conn);
+  if (test->priv->name)
+    g_free (test->priv->name);
   if (priv->filename_cache)
     g_hash_table_destroy (priv->filename_cache);
   G_OBJECT_CLASS (insanity_test_parent_class)->finalize (gobject);
@@ -708,7 +713,7 @@ static void insanity_test_init (InsanityTest *test)
 
   test->priv = priv;
   priv->conn = NULL;
-  strcpy (priv->name, "");
+  priv->name = NULL;
   priv->args = NULL;
   priv->done = FALSE;
 
