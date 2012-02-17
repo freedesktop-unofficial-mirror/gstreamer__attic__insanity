@@ -1,12 +1,14 @@
+#ifdef HAVE_CONFIG_H
 #include "config.h"
+#endif
+
+#include "insanity.h"
 
 #include <dbus/dbus.h>
-#include <unistd.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <stdarg.h>
-#include "insanity.h"
 
 /* TODO:
   - indent, this originally came from sample code that had 3 spaces indent
@@ -14,9 +16,6 @@
   - logs ?
   - gather timings at every step validated ?
 */
-
-/* getrusage is Unix API */
-#define USE_CPU_LOAD
 
 #ifdef USE_CPU_LOAD
 #include <sys/time.h>

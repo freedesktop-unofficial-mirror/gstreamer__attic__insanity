@@ -7,9 +7,13 @@ AC_PREREQ(2.53)
 AC_CANONICAL_TARGET
 
 AM_INIT_AUTOMAKE([-Wall -Werror foreign subdir-objects])
+AM_MAINTAINER_MODE
+
 AC_CONFIG_HEADERS([lib/config.h])
 
-ifdef([AM_SILENT_RULES],[AM_SILENT_RULES])
+m4_ifdef([AM_SILENT_RULES],[AM_SILENT_RULES([yes])],
+  [AM_DEFAULT_VERBOSITY=1
+   AC_SUBST(AM_DEFAULT_VERBOSITY)])
 
 dnl  3. If the library source code has changed at all since the last
 dnl     update, then increment REVISION (`C:R:A' becomes `C:r+1:A').
@@ -25,6 +29,8 @@ dnl     then set AGE to 0.
 
 LIBINSANITY_SHARED_VERSION="0:0:0"
 
+AC_PROG_CC
+AC_PROG_CC_STDC
 AC_PROG_CC_C_O
 AC_PROG_LIBTOOL
 AC_PROG_GREP
@@ -37,9 +43,15 @@ AM_CONDITIONAL(HAVE_PYTHON,test "${HAVE_PYTHON}" = "yes")
 # headers
 
 AC_HEADER_STDC
-AC_CHECK_HEADERS([unistd.h time.h])
 
-AC_TYPE_SIZE_T
+# Check if we can collect CPU usage information
+AC_CHECK_FUNCS([getrusage], HAVE_GETRUSAGE=yes, HAVE_GETRUSAGE=no)
+AC_CHECK_FUNCS([gettimeofday], HAVE_GETTIMEOFDAY=yes, HAVE_GETTIMEOFDAY=no)
+AC_CHECK_HEADER([sys/time.h], HAVE_SYS_TIME_H=yes, HAVE_SYS_TIME_H=no)
+AC_CHECK_HEADER([sys/resource.h], HAVE_SYS_RESOURCE_H=yes, HAVE_SYS_RESOURCE_H=no)
+if test x$HAVE_GETRUSAGE = "xyes" -a x$HAVE_GETTIMEOFDAY = "xyes" -a x$HAVE_SYS_TIME_H = "xyes" -a x$HAVE_SYS_RESOURCE_H = "xyes"; then
+    AC_DEFINE(USE_CPU_LOAD, 1, [Defined if CPU usage information can be collected])
+fi
 
 AC_CHECK_PROG(HAVE_PKG_CONFIG,pkg-config,yes)
 
