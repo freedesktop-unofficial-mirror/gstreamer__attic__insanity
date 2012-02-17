@@ -202,7 +202,7 @@ insanity_test_record_stop_time (InsanityTest * test)
 #endif
 }
 
-// TODO: add the full API
+/* TODO: add the full API */
 #define INSANITY_TEST_INTERFACE "net.gstreamer.Insanity.Test"
 static const char *introspect_response_template = " \
   <!DOCTYPE node PUBLIC \"-//freedesktop//DTD D-BUS Object Introspection 1.0//EN\" \
@@ -235,7 +235,6 @@ send_signal (DBusConnection * conn, const char *signal_name,
     fprintf (stderr, "Message Null\n");
     exit (1);
   }
-  // append any arguments onto signal
   if (type != DBUS_TYPE_INVALID) {
     va_start (ap, type);
     if (!dbus_message_append_args_valist (msg, type, ap)) {
@@ -244,16 +243,12 @@ send_signal (DBusConnection * conn, const char *signal_name,
     }
     va_end (ap);
   }
-  // send the message and flush the connection
   if (!dbus_connection_send (conn, msg, &serial)) {
     fprintf (stderr, "Out Of Memory!\n");
     exit (1);
   }
   dbus_connection_flush (conn);
 
-  //printf("Signal %s sent from %s\n", signal_name, path_name);
-
-  // free the message and close the connection
   dbus_message_unref (msg);
 }
 
@@ -496,7 +491,7 @@ typed_finder (const char *key, const GValue * value, guintptr userdata)
   if (strcmp (key, fd->key))
     return 0;
   g_value_init (&fd->value, G_VALUE_TYPE (value));
-  g_value_copy (value, &fd->value);     // src is first parm
+  g_value_copy (value, &fd->value);     /* src is first parm */
   return 1;
 }
 
@@ -509,12 +504,12 @@ insanity_test_get_argument (InsanityTest * test, const char *key,
   GValue zero_value = { 0 };
 
   fd.key = key;
-  fd.value = zero_value;        // pff
+  fd.value = zero_value;
   ret = foreach_dbus_args (test, &typed_finder, (guintptr) & fd);
   if (ret <= 0)
     return FALSE;
   g_value_init (value, G_VALUE_TYPE (&fd.value));
-  g_value_copy (&fd.value, value);      // src is first parm
+  g_value_copy (&fd.value, value);      /* src is first parm */
   g_value_unset (&fd.value);
   return TRUE;
 }
@@ -537,13 +532,13 @@ filename_finder (const char *key, const GValue * value, guintptr userdata)
 
   array = (DBusMessageIter *) g_value_get_pointer (value);
   fd2.key = fd->userdata;
-  fd2.value = zero_value;       // pff
+  fd2.value = zero_value;
   ret = foreach_dbus_array (array, &typed_finder, (guintptr) & fd2);
   if (ret <= 0)
     return 0;
 
   g_value_init (&fd->value, G_TYPE_STRING);
-  g_value_copy (&fd2.value, &fd->value);        // src is first
+  g_value_copy (&fd2.value, &fd->value);        /* src is first */
   g_value_unset (&fd2.value);
 
   return 1;
@@ -564,7 +559,7 @@ insanity_test_get_output_filename (InsanityTest * test, const char *key)
   }
 
   fd.key = "outputfiles";
-  fd.value = zero_value;        // pff
+  fd.value = zero_value;
   fd.userdata = (void *) key;
   ret = foreach_dbus_args (test, &filename_finder, (guintptr) & fd);
   if (ret <= 0)
@@ -651,10 +646,9 @@ listen (InsanityTest * test, const char *bus_address, const char *uuid)
   char *object_name;
   dbus_uint32_t serial = 0;
 
-  // initialise the error
   dbus_error_init (&err);
 
-  // connect to the bus and check for errors
+  /* connect to the bus and check for errors */
   conn = dbus_connection_open (bus_address, &err);
   if (dbus_error_is_set (&err)) {
     fprintf (stderr, "Connection Error (%s)\n", err.message);
@@ -670,9 +664,8 @@ listen (InsanityTest * test, const char *bus_address, const char *uuid)
     fprintf (stderr, "Failed to register bus (%s)\n", err.message);
     dbus_error_free (&err);
   }
-  // request our name on the bus and check for errors
+  /* request our name on the bus and check for errors */
   object_name = g_strdup_printf (INSANITY_TEST_INTERFACE ".Test%s", uuid);
-  //printf("Using object name %s\n",object_name);
   ret =
       dbus_bus_request_name (conn, object_name, DBUS_NAME_FLAG_REPLACE_EXISTING,
       &err);
@@ -687,16 +680,16 @@ listen (InsanityTest * test, const char *bus_address, const char *uuid)
 
   insanity_test_connect (test, conn, uuid);
 
-  // loop, testing for new messages
+  /* loop, testing for new messages */
   test->priv->done = FALSE;
   while (1) {
-    // barely blocking update of dbus
+    /* barely blocking update of dbus */
     dbus_connection_read_write (conn, 10);
 
     if (test->priv->done)
       break;
 
-    // see if we have a message to handle
+    /* see if we have a message to handle */
     msg = dbus_connection_pop_message (conn);
     if (NULL == msg) {
       continue;
@@ -712,13 +705,12 @@ listen (InsanityTest * test, const char *bus_address, const char *uuid)
     printf ("  signature %s\n", dbus_message_get_signature (msg));
 #endif
 
-    // check this is a method call for the right interface & method
+    /* check this is a method call for the right interface & method */
     if (dbus_message_is_method_call (msg, "org.freedesktop.DBus.Introspectable",
             "Introspect")) {
       char *introspect_response =
           malloc (strlen (introspect_response_template) + strlen (uuid) + 1);
       sprintf (introspect_response, introspect_response_template, uuid);
-      //printf("Got 'Introspect', answering introspect response\n");
       reply = dbus_message_new_method_return (msg);
       dbus_message_iter_init_append (reply, &args);
       if (!dbus_message_iter_append_basic (&args, DBUS_TYPE_STRING,
@@ -737,10 +729,9 @@ listen (InsanityTest * test, const char *bus_address, const char *uuid)
             INSANITY_TEST_INTERFACE)) {
       insanity_call_interface (test, msg);
     } else {
-      //printf("Got unhandled method call: interface %s, method %s\n", dbus_message_get_interface(msg), dbus_message_get_member(msg));
+      /*printf("Got unhandled method call: interface %s, method %s\n", dbus_message_get_interface(msg), dbus_message_get_member(msg));*/
     }
 
-    // free the message
     dbus_message_unref (msg);
   }
 
