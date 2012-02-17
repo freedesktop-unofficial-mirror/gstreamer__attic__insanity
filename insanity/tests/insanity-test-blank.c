@@ -21,7 +21,7 @@
 #include <stdio.h>
 #include <glib.h>
 #include <glib-object.h>
-#include "insanity.h"
+#include "insanitythreadedtest.h"
 
 static gboolean blank_test_setup(InsanityTest *test)
 {
@@ -51,8 +51,8 @@ static gboolean blank_test_setup(InsanityTest *test)
 
 static gboolean blank_test_start(InsanityTest *test)
 {
+  (void)test;
   printf("blank_test_start\n");
-  insanity_test_done(test);
   return TRUE;
 }
 
@@ -64,7 +64,7 @@ static void blank_test_stop(InsanityTest *test)
 
 static void blank_test_test(InsanityTest *test)
 {
-  (void)test;
+  insanity_test_done(test);
   printf("blank_test_test\n");
 }
 
@@ -75,7 +75,7 @@ int main(int argc, const char **argv)
 
   g_type_init ();
 
-  test = insanity_test_new ("blank-c-test", "Sample test that does nothing");
+  test = INSANITY_TEST (insanity_threaded_test_new ("blank-c-test", "Sample test that does nothing"));
   insanity_test_add_checklist_item (test, "random-step", "Some random step, nothing much");
   insanity_test_add_checklist_item (test, "other-random-step", "Some random step, nothing much either");
 

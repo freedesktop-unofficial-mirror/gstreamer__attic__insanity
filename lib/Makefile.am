@@ -8,10 +8,12 @@ insanitypcdir=$(libdir)/pkgconfig
 lib_LTLIBRARIES=libinsanity.la
 
 libinsanity_la_SOURCES=\
-  insanity.c
+  insanity.c \
+  insanitythreadedtest.c
 
 insanityinc_HEADERS=\
-  insanity.h
+  insanity.h \
+  insanitythreadedtest.h
 
 insanitypc_DATA=insanity.pc
 noinst_DATA=insanity-uninstalled.pc
