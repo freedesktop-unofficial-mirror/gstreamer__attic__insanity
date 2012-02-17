@@ -39,9 +39,9 @@ insanity_threaded_test_start (InsanityTest * itest)
 
   test->priv->thread =
 #if GLIB_CHECK_VERSION(2,31,2)
-  g_thread_new ("insanity_worker", test_thread_func, test);
+      g_thread_new ("insanity_worker", test_thread_func, test);
 #else
-  g_thread_create (test_thread_func, test, TRUE, NULL);
+      g_thread_create (test_thread_func, test, TRUE, NULL);
 #endif
 
   if (!test->priv->thread)
@@ -84,8 +84,9 @@ insanity_threaded_test_class_init (InsanityThreadedTestClass * klass)
       0, NULL);
 }
 
-InsanityThreadedTest *insanity_threaded_test_new(const char *name, const char *description)
+InsanityThreadedTest *
+insanity_threaded_test_new (const char *name, const char *description)
 {
-  return g_object_new (insanity_threaded_test_get_type(), "name", name, "desc", description, NULL);
+  return g_object_new (insanity_threaded_test_get_type (), "name", name, "desc",
+      description, NULL);
 }
-
