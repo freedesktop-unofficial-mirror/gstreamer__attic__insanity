@@ -324,6 +324,7 @@ static gboolean
 on_setup (InsanityTest * test)
 {
   gboolean ret = TRUE;
+
   g_signal_emit (test, setup_signal, 0, &ret);
   if (!ret) {
     send_signal (test->priv->conn, "remoteStopSignal", test->priv->name,
@@ -339,6 +340,7 @@ static gboolean
 on_start (InsanityTest * test)
 {
   gboolean ret = TRUE;
+
   insanity_test_record_start_time (test);
   g_signal_emit (test, start_signal, 0, &ret);
   return ret;
@@ -488,6 +490,7 @@ static int
 typed_finder (const char *key, const GValue * value, guintptr userdata)
 {
   struct finder_data *fd = (struct finder_data *) userdata;
+
   if (strcmp (key, fd->key))
     return 0;
   g_value_init (&fd->value, G_VALUE_TYPE (value));
@@ -603,17 +606,18 @@ static const struct
   const char *method;
   void (*handler) (InsanityTest *, DBusMessage *);
 } dbus_test_handlers[] = {
-  {
-  "remoteSetUp", &insanity_test_dbus_handler_remoteSetup}, {
-  "remoteStart", &insanity_test_dbus_handler_remoteStart}, {
-  "remoteStop", &insanity_test_dbus_handler_remoteStop}, {
-"remoteInfo", NULL},};
+  { "remoteSetUp", &insanity_test_dbus_handler_remoteSetup },
+  { "remoteStart", &insanity_test_dbus_handler_remoteStart },
+  { "remoteStop", &insanity_test_dbus_handler_remoteStop },
+  { "remoteInfo", NULL },
+};
 
 static gboolean
 insanity_call_interface (InsanityTest * test, DBusMessage * msg)
 {
   size_t n;
   const char *method = dbus_message_get_member (msg);
+
   for (n = 0; n < sizeof (dbus_test_handlers) / sizeof (dbus_test_handlers[0]);
       ++n) {
     if (!strcmp (method, dbus_test_handlers[n].method)) {
@@ -747,8 +751,10 @@ output_table (InsanityTest * test, FILE * f, GHashTable * table,
 {
   GHashTableIter it;
   const char *label, *desc, *comma = "";
+
   if (g_hash_table_size (table) == 0)
     return;
+
   fprintf (f, ",\n  \"%s\": {\n", name);
   g_hash_table_iter_init (&it, table);
   while (g_hash_table_iter_next (&it, (gpointer) & label, (gpointer) & desc)) {
@@ -820,6 +826,7 @@ insanity_test_finalize (GObject * gobject)
 {
   InsanityTest *test = (InsanityTest *) gobject;
   InsanityTestPrivateData *priv = test->priv;
+
   if (priv->args)
     dbus_message_unref (priv->args);
   if (priv->conn)
