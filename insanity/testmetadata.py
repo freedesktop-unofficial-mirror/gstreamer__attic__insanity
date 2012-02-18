@@ -92,7 +92,7 @@ class TestMetadata():
         self.__test_checklist__ = self.get_metadata (metadata, "__checklist__")
         info('It is a valid test')
 
-        mod = __import__("dbustest", fromlist=["insanity"])
+        mod = sys.modules["insanity.dbustest"]
         debug("Got module %r", mod)
         # get class
         cls = mod.__dict__.get("DBusTest")

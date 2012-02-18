@@ -1,3 +1,5 @@
+SUBDIRS=generators storage
+
 modules = __init__ arguments client dbustest dbustools environment generator log monitor profile scenario test testmetadata testrun threads type utils
 
 # dummy - this is just for automake to copy py-compile, as it won't do it
