@@ -21,7 +21,7 @@
 #include <stdio.h>
 #include <glib.h>
 #include <glib-object.h>
-#include "insanity/insanitythreadedtest.h"
+#include <insanity.h>
 
 static gboolean
 blank_test_setup (InsanityTest * test)
