@@ -25,6 +25,7 @@
 
 #include <insanity/insanitytest.h>
 
+#include <glib/gstdio.h>
 #include <dbus/dbus.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -962,8 +963,17 @@ insanity_test_finalize (GObject * gobject)
     dbus_connection_unref (priv->conn);
   if (test->priv->name)
     g_free (test->priv->name);
-  if (priv->filename_cache)
+  if (priv->filename_cache) {
+    if (!priv->conn) { /* unreffed, but value still set */
+      GHashTableIter i;
+      gpointer key, value;
+      g_hash_table_iter_init (&i, priv->filename_cache);
+      while (g_hash_table_iter_next (&i, &key, &value)) {
+        g_unlink (value);
+      }
+    }
     g_hash_table_destroy (priv->filename_cache);
+  }
   g_free (test->priv->test_name);
   g_free (test->priv->test_desc);
   g_hash_table_destroy (priv->test_checklist);
