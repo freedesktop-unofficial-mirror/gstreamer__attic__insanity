@@ -635,11 +635,17 @@ insanity_test_get_output_filename (InsanityTest * test, const char *key)
   }
 
   if (test->priv->standalone) {
+    if (!g_hash_table_lookup (test->priv->test_output_files, key)) {
+      fprintf (stderr, "Request for a file that was not declared\n");
+      g_mutex_unlock (&test->priv->lock);
+      return ptr;
+    }
+
     /* TODO: in /tmp ? I think glib has something to get a writable tmp dir but can't see it */
     char template[] = "insanity-standalone-XXXXXX";
     int fd = g_mkstemp (template);
     if (fd < 0) {
-      fprintf (stderr, "Failed creating tenmporary file: %s\n", strerror (errno));
+      fprintf (stderr, "Failed creating temporary file: %s\n", strerror (errno));
       fn = NULL;
     }
     else {
