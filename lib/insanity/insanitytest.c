@@ -880,9 +880,10 @@ insanity_test_run (InsanityTest * test, int argc, const char **argv)
 
   if (!strcmp (argv[1], "--run")) {
     if (on_setup (test)) {
-      on_start (test);
-      while (!test->priv->done)
-        g_usleep (100);
+      if (on_start (test)) {
+        while (!test->priv->done)
+          g_usleep (100);
+      }
       on_stop (test);
     }
     return TRUE;
