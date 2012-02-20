@@ -213,7 +213,7 @@ static const char *introspect_response_template = " \
   </node> \
 ";
 
-static void
+static gboolean
 send_signal (DBusConnection * conn, const char *signal_name,
     const char *path_name, int type, ...)
 {
@@ -225,23 +225,28 @@ send_signal (DBusConnection * conn, const char *signal_name,
       dbus_message_new_signal (path_name, INSANITY_TEST_INTERFACE, signal_name);
   if (NULL == msg) {
     fprintf (stderr, "Message Null\n");
-    exit (1);
+    return FALSE;
   }
   if (type != DBUS_TYPE_INVALID) {
     va_start (ap, type);
     if (!dbus_message_append_args_valist (msg, type, ap)) {
       fprintf (stderr, "Out Of Memory!\n");
-      exit (1);
+      va_end (ap);
+      dbus_message_unref (msg);
+      return FALSE;
     }
     va_end (ap);
   }
   if (!dbus_connection_send (conn, msg, &serial)) {
     fprintf (stderr, "Out Of Memory!\n");
-    exit (1);
+    dbus_message_unref (msg);
+    return FALSE;
   }
   dbus_connection_flush (conn);
 
   dbus_message_unref (msg);
+
+  return TRUE;
 }
 
 void
@@ -387,26 +392,26 @@ foreach_dbus_array (DBusMessageIter * iter, int (*f) (const char *key,
   type = dbus_message_iter_get_arg_type (iter);
   if (type != DBUS_TYPE_ARRAY) {
     fprintf (stderr, "Expected array, got %c\n", type);
-    exit (1);
+    return -1;
   }
   dbus_message_iter_recurse (iter, &subiter);
   do {
     type = dbus_message_iter_get_arg_type (&subiter);
     if (type != DBUS_TYPE_DICT_ENTRY) {
       fprintf (stderr, "Expected dict entry, got %c\n", type);
-      exit (1);
+      return -1;
     }
     dbus_message_iter_recurse (&subiter, &subsubiter);
 
     type = dbus_message_iter_get_arg_type (&subsubiter);
     if (type != DBUS_TYPE_STRING) {
       fprintf (stderr, "Expected string, got %c\n", type);
-      exit (1);
+      return -1;
     }
     dbus_message_iter_get_basic (&subsubiter, &key);
     if (!dbus_message_iter_next (&subsubiter)) {
       fprintf (stderr, "Value not present\n");
-      exit (1);
+      return -1;
     }
     type = dbus_message_iter_get_arg_type (&subsubiter);
     if (type == DBUS_TYPE_STRING) {
@@ -460,12 +465,12 @@ foreach_dbus_array (DBusMessageIter * iter, int (*f) (const char *key,
           break;
         default:
           fprintf (stderr, "Unsupported type: %c\n", type);
-          exit (1);
+          return -1;
           break;
       }
     } else {
       fprintf (stderr, "Expected variant, got %c\n", type);
-      exit (1);
+      return -1;
     }
 
     /* < 0 -> error, 0 -> continue, > 0 -> stop */
@@ -641,9 +646,10 @@ insanity_call_interface (InsanityTest * test, DBusMessage * msg)
       DBusMessage *reply = dbus_message_new_method_return (msg);
       if (!dbus_connection_send (test->priv->conn, reply, &serial)) {
         fprintf (stderr, "Out Of Memory!\n");
-        exit (1);
       }
-      dbus_connection_flush (test->priv->conn);
+      else {
+        dbus_connection_flush (test->priv->conn);
+      }
       dbus_message_unref (reply);
 
       if (dbus_test_handlers[n].handler)
@@ -673,16 +679,18 @@ listen (InsanityTest * test, const char *bus_address, const char *uuid)
   if (dbus_error_is_set (&err)) {
     fprintf (stderr, "Connection Error (%s)\n", err.message);
     dbus_error_free (&err);
+    return FALSE;
   }
   if (NULL == conn) {
     fprintf (stderr, "Connection Null\n");
-    exit (1);
+    return FALSE;
   }
 
   ret = dbus_bus_register (conn, &err);
   if (dbus_error_is_set (&err)) {
     fprintf (stderr, "Failed to register bus (%s)\n", err.message);
     dbus_error_free (&err);
+    /* Is this supposed to be fatal ? */
   }
   /* request our name on the bus and check for errors */
   object_name = g_strdup_printf (INSANITY_TEST_INTERFACE ".Test%s", uuid);
@@ -692,10 +700,11 @@ listen (InsanityTest * test, const char *bus_address, const char *uuid)
   if (dbus_error_is_set (&err)) {
     fprintf (stderr, "Name Error (%s)\n", err.message);
     dbus_error_free (&err);
+    /* Is this supposed to be fatal ? */
   }
   if (DBUS_REQUEST_NAME_REPLY_PRIMARY_OWNER != ret) {
     fprintf (stderr, "Not Primary Owner (%d)\n", ret);
-    exit (1);
+    return FALSE;
   }
 
   insanity_test_connect (test, conn, uuid);
@@ -736,12 +745,14 @@ listen (InsanityTest * test, const char *bus_address, const char *uuid)
       if (!dbus_message_iter_append_basic (&args, DBUS_TYPE_STRING,
               &introspect_response)) {
         fprintf (stderr, "Out Of Memory!\n");
-        exit (1);
+        dbus_message_unref (reply);
+        goto msg_error;
       }
       free (introspect_response);
       if (!dbus_connection_send (conn, reply, &serial)) {
         fprintf (stderr, "Out Of Memory!\n");
-        exit (1);
+        dbus_message_unref (reply);
+        goto msg_error;
       }
       dbus_connection_flush (conn);
       dbus_message_unref (reply);
@@ -752,6 +763,7 @@ listen (InsanityTest * test, const char *bus_address, const char *uuid)
       /*printf("Got unhandled method call: interface %s, method %s\n", dbus_message_get_interface(msg), dbus_message_get_member(msg));*/
     }
 
+msg_error:
     dbus_message_unref (msg);
   }
 
