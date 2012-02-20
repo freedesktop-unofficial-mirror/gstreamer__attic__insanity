@@ -248,6 +248,11 @@ void
 insanity_test_validate_step (InsanityTest * test, const char *name,
     gboolean success)
 {
+  if (!test->priv->conn) {
+    printf("step: %s: %s\n", name, success ? "PASS" : "FAIL");
+    return;
+  }
+
   send_signal (test->priv->conn, "remoteValidateStepSignal", test->priv->name,
       DBUS_TYPE_STRING, &name, DBUS_TYPE_BOOLEAN, &success, DBUS_TYPE_INVALID);
 }
@@ -262,6 +267,13 @@ insanity_test_add_extra_info (InsanityTest * test, const char *name,
   dbus_int64_t int64_value;
   const char *string_value;
   void *dataptr = NULL;
+
+  if (!test->priv->conn) {
+    char *s = g_strdup_value_contents (data);
+    printf("Extra info: %s: %s\n", name, s);
+    g_free (s);
+    return;
+  }
 
   glib_type = G_VALUE_TYPE (data);
   if (glib_type == G_TYPE_INT) {
@@ -308,8 +320,10 @@ void
 insanity_test_done (InsanityTest * test)
 {
   gather_end_of_test_info (test);
-  send_signal (test->priv->conn, "remoteStopSignal", test->priv->name,
-      DBUS_TYPE_INVALID);
+  if (test->priv->conn) {
+    send_signal (test->priv->conn, "remoteStopSignal", test->priv->name,
+        DBUS_TYPE_INVALID);
+  }
 }
 
 static gboolean
@@ -318,13 +332,17 @@ on_setup (InsanityTest * test)
   gboolean ret = TRUE;
 
   g_signal_emit (test, setup_signal, 0, &ret);
-  if (!ret) {
-    send_signal (test->priv->conn, "remoteStopSignal", test->priv->name,
-        DBUS_TYPE_INVALID);
-  } else {
-    send_signal (test->priv->conn, "remoteReadySignal", test->priv->name,
-        DBUS_TYPE_INVALID);
+
+  if (test->priv->conn) {
+    if (!ret) {
+      send_signal (test->priv->conn, "remoteStopSignal", test->priv->name,
+          DBUS_TYPE_INVALID);
+    } else {
+      send_signal (test->priv->conn, "remoteReadySignal", test->priv->name,
+          DBUS_TYPE_INVALID);
+    }
   }
+
   return ret;
 }
 
@@ -498,6 +516,9 @@ insanity_test_get_argument (InsanityTest * test, const char *key,
   int ret;
   GValue zero_value = { 0 };
 
+  if (!test->priv->conn)
+    return FALSE;
+
   fd.key = key;
   fd.value = zero_value;
   ret = foreach_dbus_args (test, &typed_finder, (guintptr) & fd);
@@ -547,6 +568,9 @@ insanity_test_get_output_filename (InsanityTest * test, const char *key)
   char *fn;
   GValue zero_value = { 0 };
   gpointer ptr;
+
+  if (!test->priv->conn)
+    return "";
 
   ptr = g_hash_table_lookup (test->priv->filename_cache, key);
   if (ptr) {
@@ -785,13 +809,19 @@ insanity_test_run (InsanityTest * test, int argc, const char **argv)
   const char *private_dbus_address;
   const char *uuid;
 
-  if (argc < 2) {
-    fprintf (stderr, "Usage: %s <uuid>\n", argv[0]);
+  if (argc < 2 || !strcmp (argv[1], "--help") || !strcmp (argv[1], "-h")) {
+    fprintf (stderr, "Usage: %s [--insanity-metadata | --run | <uuid>]\n", argv[0]);
     return FALSE;
   }
 
   if (!strcmp (argv[1], "--insanity-metadata")) {
     insanity_test_write_metadata (test);
+    return TRUE;
+  }
+
+  if (!strcmp (argv[1], "--run")) {
+    if (on_setup (test))
+      on_start (test);
     return TRUE;
   }
 
