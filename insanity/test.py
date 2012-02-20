@@ -511,7 +511,7 @@ class Test(gobject.GObject):
     ## Getters/Setters
 
     @classmethod
-    def getFullCheckList(cls):
+    def getClassFullCheckList(cls):
         """
         Returns the full test checklist. This is used to know all the
         possible check items for this instance, along with their description.
@@ -525,7 +525,7 @@ class Test(gobject.GObject):
         return dc
 
     @classmethod
-    def getFullArgumentList(cls):
+    def getClassFullArgumentList(cls):
         """
         Returns the full list of arguments with descriptions.
 
@@ -545,7 +545,7 @@ class Test(gobject.GObject):
         return dc
 
     @classmethod
-    def getFullExtraInfoList(cls):
+    def getClassFullExtraInfoList(cls):
         """
         Returns the full list of extra info with descriptions.
         """
@@ -558,7 +558,7 @@ class Test(gobject.GObject):
         return dc
 
     @classmethod
-    def getFullOutputFilesList(cls):
+    def getClassFullOutputFilesList(cls):
         """
         Returns the full list of output files with descriptions.
         """

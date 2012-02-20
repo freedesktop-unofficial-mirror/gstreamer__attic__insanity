@@ -77,15 +77,16 @@ class DBusTest(Test, dbus.service.Object):
 
         You need to provide at least bus or bus_address.
         """
+        if (metadata == None):
+            raise Exception("You need to provide test metadata")
+        self._metadata = metadata
+
         Test.__init__(self, bus_address=bus_address,
                       *args, **kwargs)
         if (bus == None) and (bus_address == ""):
             raise Exception("You need to provide at least a bus or bus_address")
         self._bus = bus
         self._bus_address = bus_address
-        if (metadata == None):
-            raise Exception("You need to provide test metadata")
-        self._metadata = metadata
         self._execcmd = execcmd
 
         self._remote_tearing_down = False
@@ -399,6 +400,18 @@ class DBusTest(Test, dbus.service.Object):
         self._remoteinstance = None
         if not self._stopping:
             self.stop()
+
+    def getFullCheckList(self):
+        return self._metadata.getFullCheckList()
+
+    def getFullArgumentList(self):
+        return self._metadata.getFullArgumentList()
+
+    def getFullExtraInfoList(self):
+        return self._metadata.getFullExtraInfoList()
+
+    def getFullOutputFilesList(self):
+        return self._metadata.getFullOutputFilesList()
 
 class PythonDBusTest(DBusTest):
     """

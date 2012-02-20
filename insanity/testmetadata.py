@@ -109,7 +109,7 @@ class TestMetadata():
         Returns the full test checklist. This is used to know all the
         possible check items for this instance, along with their description.
         """
-        dc = self.__test_class__.getFullCheckList()
+        dc = self.__test_class__.getClassFullCheckList()
         if self.__test_checklist__ != None:
             dc.update(self.__test_checklist__)
         return dc
@@ -125,7 +125,7 @@ class TestMetadata():
             * default value
             * extended description (Can be None)
         """
-        dc = self.__test_class__.getFullArgumentList()
+        dc = self.__test_class__.getClassFullArgumentList()
         if self.__test_arguments__ != None:
             dc.update(self.__test_arguments__)
         return dc
@@ -134,7 +134,7 @@ class TestMetadata():
         """
         Returns the full list of extra info with descriptions.
         """
-        dc = self.__test_class__.getFullExtraInfoList()
+        dc = self.__test_class__.getClassFullExtraInfoList()
         if self.__test_extra_infos__ != None:
             dc.update(self.__test_extra_infos__)
         return dc
@@ -143,7 +143,7 @@ class TestMetadata():
         """
         Returns the full list of output files with descriptions.
         """
-        dc = self.__test_class__.getFullOutputFilesList()
+        dc = self.__test_class__.getClassFullOutputFilesList()
         if self.__test_output_files__ != None:
             dc.update(self.__test_output_files__)
         return dc
