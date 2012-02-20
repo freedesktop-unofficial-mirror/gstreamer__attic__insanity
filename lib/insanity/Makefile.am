@@ -11,6 +11,8 @@ libinsanity_la_SOURCES=\
   insanitythreadedtest.c
 
 insanityinc_HEADERS=\
+  insanity.h \
+  insanitydefs.h \
   insanitytest.h \
   insanitythreadedtest.h
 
