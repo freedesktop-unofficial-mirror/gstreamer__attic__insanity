@@ -195,6 +195,10 @@ insanity_test_record_stop_time (InsanityTest * test)
   us = tv_us_diff (&test->priv->rusage.ru_utime, &rusage.ru_utime)
       + tv_us_diff (&test->priv->rusage.ru_stime, &rusage.ru_stime);
   test->priv->cpu_load = 100 * us / tv_us_diff (&test->priv->start, &end);
+
+  /* getrusage times are apparently quite granular, and jump above realtime */
+  if (test->priv->cpu_load > 100)
+    test->priv->cpu_load = 100;
 #endif
 }
 
