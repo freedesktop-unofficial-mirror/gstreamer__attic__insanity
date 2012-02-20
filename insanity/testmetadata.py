@@ -110,7 +110,8 @@ class TestMetadata():
         possible check items for this instance, along with their description.
         """
         dc = self.__test_class__.getFullCheckList()
-        dc.update(self.__test_checklist__)
+        if self.__test_checklist__ != None:
+            dc.update(self.__test_checklist__)
         return dc
 
     def getFullArgumentList(self):
@@ -125,7 +126,8 @@ class TestMetadata():
             * extended description (Can be None)
         """
         dc = self.__test_class__.getFullArgumentList()
-        dc.update(self.__test_arguments__)
+        if self.__test_arguments__ != None:
+            dc.update(self.__test_arguments__)
         return dc
 
     def getFullExtraInfoList(self):
@@ -133,7 +135,8 @@ class TestMetadata():
         Returns the full list of extra info with descriptions.
         """
         dc = self.__test_class__.getFullExtraInfoList()
-        dc.update(self.__test_extra_infos__)
+        if self.__test_extra_infos__ != None:
+            dc.update(self.__test_extra_infos__)
         return dc
 
     def getFullOutputFilesList(self):
@@ -141,6 +144,7 @@ class TestMetadata():
         Returns the full list of output files with descriptions.
         """
         dc = self.__test_class__.getFullOutputFilesList()
-        dc.update(self.__output_files__)
+        if self.__test_output_files__ != None:
+            dc.update(self.__test_output_files__)
         return dc
 
