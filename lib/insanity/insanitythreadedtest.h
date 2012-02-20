@@ -26,7 +26,7 @@
 #include <glib.h>
 #include <glib-object.h>
 
-#include "insanity/insanitytest.h"
+#include <insanity/insanitytest.h>
 
 struct InsanityThreadedTestPrivateData;
 typedef struct InsanityThreadedTestPrivateData InsanityThreadedTestPrivateData;

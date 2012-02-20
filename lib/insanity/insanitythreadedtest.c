@@ -24,7 +24,7 @@
 #include "config.h"
 #endif
 
-#include "insanity/insanitythreadedtest.h"
+#include <insanity/insanitythreadedtest.h>
 
 #include <stdio.h>
 
