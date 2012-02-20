@@ -71,7 +71,6 @@ struct InsanityTestPrivateData
   int cpu_load;
   gboolean done;
   GHashTable *filename_cache;
-  GThread *thread;
 
   /* test metadata */
   char *test_name;
