@@ -20,8 +20,8 @@
  Boston, MA 02111-1307, USA.
 */
 
-#ifndef INSANITY_H_GUARD
-#define INSANITY_H_GUARD
+#ifndef INSANITY_TEST_H_GUARD
+#define INSANITY_TEST_H_GUARD
 
 #include <glib.h>
 #include <glib-object.h>
