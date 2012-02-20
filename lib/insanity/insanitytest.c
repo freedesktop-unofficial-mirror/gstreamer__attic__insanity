@@ -30,6 +30,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdarg.h>
+#include <errno.h>
 
 /* TODO:
   - logs ?
@@ -624,15 +625,26 @@ insanity_test_get_output_filename (InsanityTest * test, const char *key)
 
   g_mutex_lock (&test->priv->lock);
 
-  if (!test->priv->conn) {
-    g_mutex_unlock (&test->priv->lock);
-    return NULL; /* TODO: dummy files */
-  }
-
   ptr = g_hash_table_lookup (test->priv->filename_cache, key);
   if (ptr) {
     g_mutex_unlock (&test->priv->lock);
     return ptr;
+  }
+
+  if (!test->priv->conn) {
+    /* TODO: in /tmp ? I think glib has something to get a writable tmp dir but can't see it */
+    char template[] = "insanity-standalone-XXXXXX";
+    int fd = g_mkstemp (template);
+    if (fd < 0) {
+      fprintf (stderr, "Failed creating tenmporary file: %s\n", strerror (errno));
+      fn = NULL;
+    }
+    else {
+      fn = g_strdup (template);
+      g_hash_table_insert (test->priv->filename_cache, g_strdup (key), fn);
+    }
+    g_mutex_unlock (&test->priv->lock);
+    return fn;
   }
 
   fd.key = "outputfiles";
