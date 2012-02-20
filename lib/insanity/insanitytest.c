@@ -68,6 +68,7 @@ struct InsanityTestPrivateData
   DBusMessage *args;
   int cpu_load;
   gboolean done;
+  gboolean exit;
   GHashTable *filename_cache;
 
   /* test metadata */
@@ -327,6 +328,7 @@ insanity_test_done (InsanityTest * test)
     send_signal (test->priv->conn, "remoteStopSignal", test->priv->name,
         DBUS_TYPE_INVALID);
   }
+  test->priv->done = TRUE;
 }
 
 static gboolean
@@ -365,7 +367,7 @@ on_stop (InsanityTest * test)
   g_signal_emit (test, stop_signal, 0, NULL);
 
   gather_end_of_test_info (test);
-  test->priv->done = TRUE;
+  test->priv->exit = TRUE;
 }
 
 static int
@@ -709,11 +711,12 @@ listen (InsanityTest * test, const char *bus_address, const char *uuid)
 
   /* loop, testing for new messages */
   test->priv->done = FALSE;
+  test->priv->exit = FALSE;
   while (1) {
     /* barely blocking update of dbus */
     dbus_connection_read_write (conn, 10);
 
-    if (test->priv->done)
+    if (test->priv->exit)
       break;
 
     /* see if we have a message to handle */
@@ -830,8 +833,12 @@ insanity_test_run (InsanityTest * test, int argc, const char **argv)
   }
 
   if (!strcmp (argv[1], "--run")) {
-    if (on_setup (test))
+    if (on_setup (test)) {
       on_start (test);
+      while (!test->priv->done)
+        g_usleep (100);
+      on_stop (test);
+    }
     return TRUE;
   }
 
@@ -887,6 +894,7 @@ insanity_test_init (InsanityTest * test)
   priv->name = NULL;
   priv->args = NULL;
   priv->done = FALSE;
+  priv->exit = FALSE;
   priv->filename_cache =
       g_hash_table_new_full (&g_str_hash, &g_str_equal, &g_free, g_free);
 
