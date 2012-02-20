@@ -9,7 +9,7 @@ AC_CANONICAL_TARGET
 AM_INIT_AUTOMAKE([-Wall -Werror foreign subdir-objects])
 AM_MAINTAINER_MODE
 
-AC_CONFIG_HEADERS([lib/config.h])
+AC_CONFIG_HEADERS([lib/insanity/config.h])
 
 m4_ifdef([AM_SILENT_RULES],[AM_SILENT_RULES([yes])],
   [AM_DEFAULT_VERBOSITY=1
