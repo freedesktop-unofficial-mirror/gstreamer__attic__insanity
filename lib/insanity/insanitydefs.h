@@ -1,6 +1,6 @@
 /* Insanity QA system
 
-       insanity.h
+       insanitydefs.h
 
  Copyright (c) 2012, Collabora Ltd <vincent@collabora.co.uk>
 
@@ -20,12 +20,10 @@
  Boston, MA 02111-1307, USA.
 */
 
-#ifndef INSANITY_H_GUARD
-#define INSANITY_H_GUARD
+#ifndef INSANITY_DEFS_H_GUARD
+#define INSANITY_DEFS_H_GUARD
 
-#include <insanity/insanitydefs.h>
-#include <insanity/insanitytest.h>
-#include <insanity/insanitythreadedtest.h>
+#define INSANITY_PADDING 8
 
 #endif
 

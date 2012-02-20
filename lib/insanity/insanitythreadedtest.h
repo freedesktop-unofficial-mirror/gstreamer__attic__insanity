@@ -26,6 +26,7 @@
 #include <glib.h>
 #include <glib-object.h>
 
+#include <insanity/insanitydefs.h>
 #include <insanity/insanitytest.h>
 
 struct InsanityThreadedTestPrivateData;
@@ -38,6 +39,8 @@ struct InsanityThreadedTest {
   InsanityTest parent;
 
   InsanityThreadedTestPrivateData *priv;
+
+  gpointer _insanity_reserved[INSANITY_PADDING];
 };
 
 struct InsanityThreadedTestClass
@@ -45,6 +48,8 @@ struct InsanityThreadedTestClass
   InsanityTestClass parent_class;
 
   void (*test) (InsanityThreadedTest *test);
+
+  gpointer _insanity_reserved[INSANITY_PADDING];
 };
 typedef struct InsanityThreadedTestClass InsanityThreadedTestClass;
 
