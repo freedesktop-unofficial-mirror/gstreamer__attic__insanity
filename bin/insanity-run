@@ -89,6 +89,14 @@ class OptionParser(optparse.OptionParser):
                         help="test or scenario to run (pass help for list of tests)",
                         metavar="TESTNAME",
                         default=None)
+        self.add_option("-e",
+                        "--execcmd",
+                        dest="execcmd",
+                        type="string",
+                        action="store",
+                        help="set the exec command line (pass help for examples)",
+                        metavar="EXEC",
+                        default="%t %a")
         self.add_option("-a",
                         "--args",
                         dest="args",
@@ -185,6 +193,17 @@ def args_help():
     print "  uri:urifilesystem:/testclips"
     print "  uri:playlist:/home/user/playlist.txt"
 
+def execcmd_help():
+    print "Usage for --execcmd (-e) option:"
+    print "  <FORMAT-STRING>"
+    print "Escape sequences in this string will be replaced by:"
+    print "  %t     the test binary"
+    print "  %a     the arguments list"
+    print "Examples:"
+    print "  valgrind --leak-check=full %t %a"
+    print "Default"
+    print "  %t %a"
+
 def main():
 
     parser = OptionParser()
@@ -196,6 +215,10 @@ def main():
 
     if options.args == "help":
         args_help()
+        sys.exit(1)
+
+    if options.execcmd == "help":
+        execcmd_help()
         sys.exit(1)
 
     insanity.utils.scan_for_tests(options.tests)
@@ -240,7 +263,7 @@ def main():
 
         test_arguments[arg_name] = gen
 
-    test_run = TestRun(maxnbtests=1, workingdir=options.output)
+    test_run = TestRun(maxnbtests=1, workingdir=options.output, execcmd=options.execcmd)
     test_run.addTest(test, test_arguments)
 
     client = Client()

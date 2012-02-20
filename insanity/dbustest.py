@@ -36,6 +36,7 @@ from insanity.dbustools import unwrap
 from insanity.log import error, warning, debug, info, exception
 import insanity.utils as utils
 import gobject
+import re
 
 class DBusTest(Test, dbus.service.Object):
     """
@@ -68,7 +69,7 @@ class DBusTest(Test, dbus.service.Object):
     ## Needed for dbus
     __metaclass__ = dbus.gobject_service.ExportedGObjectType
 
-    def __init__(self, bus=None, bus_address="", metadata = None,
+    def __init__(self, bus=None, bus_address="", metadata = None, execcmd = None,
                  env=None, *args, **kwargs):
         """
         bus is the private DBusConnection used for testing.
@@ -85,6 +86,7 @@ class DBusTest(Test, dbus.service.Object):
         if (metadata == None):
             raise Exception("You need to provide test metadata")
         self._metadata = metadata
+        self._execcmd = execcmd
 
         self._remote_tearing_down = False
 
@@ -104,7 +106,6 @@ class DBusTest(Test, dbus.service.Object):
         self._stdin = None
         self._stdout = None
         self._stderr = None
-        self._preargs = []
         self._environ = env or {}
         self._environ.update(os.environ.copy())
         self._subprocessspawntime = 0
@@ -124,8 +125,8 @@ class DBusTest(Test, dbus.service.Object):
             return False
 
         # get the remote launcher
-        pargs = self._preargs
-        pargs.extend(self.get_remote_launcher_args())
+        pargs = self.get_remote_launcher_args()
+        shell = isinstance (pargs, basestring)
 
         cwd = self._testrun.getWorkingDirectory()
 
@@ -147,6 +148,7 @@ class DBusTest(Test, dbus.service.Object):
                                              stdout = self._stdout,
                                              stderr = self._stderr,
                                              env=self._environ,
+                                             shell = shell,
                                              cwd=cwd)
             self._pid = self._process.pid
         except:
@@ -414,9 +416,14 @@ class PythonDBusTest(DBusTest):
 
     def get_remote_launcher_args(self):
         # FIXME : add proper arguments
-        rootdir = os.path.split(os.path.dirname(os.path.abspath(__file__)))[0]
-        path = self._metadata.__test_filename__
-        return [path, self.uuid]
+        if self._execcmd == None:
+            rootdir = os.path.split(os.path.dirname(os.path.abspath(__file__)))[0]
+            path = self._metadata.__test_filename__
+            return [path, self.uuid]
+        execcmd = self._execcmd
+        execcmd = re.sub("%t", self._metadata.__test_filename__, execcmd, 0)
+        execcmd = re.sub("%a", self.uuid, execcmd, 0)
+        return execcmd
 
     def __excepthook(self, exc_type, exc_value, exc_traceback):
 
