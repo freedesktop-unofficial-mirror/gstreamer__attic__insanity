@@ -73,6 +73,7 @@ struct InsanityTestPrivateData
   gboolean exit;
   GHashTable *filename_cache;
   GMutex lock;
+  gboolean standalone;
 
   /* test metadata */
   char *test_name;
@@ -145,6 +146,7 @@ insanity_test_connect (InsanityTest * test, DBusConnection * conn,
     const char *uuid)
 {
   g_mutex_lock (&test->priv->lock);
+  test->priv->standalone = FALSE;
   if (test->priv->conn)
     dbus_connection_unref (test->priv->conn);
   test->priv->conn = dbus_connection_ref (conn);
@@ -266,7 +268,7 @@ insanity_test_validate_step (InsanityTest * test, const char *name,
     gboolean success)
 {
   g_mutex_lock (&test->priv->lock);
-  if (!test->priv->conn) {
+  if (test->priv->standalone) {
     printf("step: %s: %s\n", name, success ? "PASS" : "FAIL");
   }
   else {
@@ -290,7 +292,7 @@ insanity_test_add_extra_info_internal (InsanityTest * test, const char *name,
   if (!locked)
     g_mutex_lock (&test->priv->lock);
 
-  if (!test->priv->conn) {
+  if (test->priv->standalone) {
     char *s = g_strdup_value_contents (data);
     printf("Extra info: %s: %s\n", name, s);
     g_free (s);
@@ -358,7 +360,7 @@ insanity_test_done (InsanityTest * test)
 {
   g_mutex_lock (&test->priv->lock);
   gather_end_of_test_info (test);
-  if (test->priv->conn) {
+  if (!test->priv->standalone) {
     send_signal (test->priv->conn, "remoteStopSignal", test->priv->name,
         DBUS_TYPE_INVALID);
   }
@@ -373,7 +375,7 @@ on_setup (InsanityTest * test)
 
   g_signal_emit (test, setup_signal, 0, &ret);
 
-  if (test->priv->conn) {
+  if (!test->priv->standalone) {
     if (!ret) {
       send_signal (test->priv->conn, "remoteStopSignal", test->priv->name,
           DBUS_TYPE_INVALID);
@@ -560,7 +562,7 @@ insanity_test_get_argument (InsanityTest * test, const char *key,
 
   g_mutex_lock (&test->priv->lock);
 
-  if (!test->priv->conn) {
+  if (test->priv->standalone) {
     const char *ptr = g_hash_table_lookup (test->priv->arguments, key);
     if (ptr) {
       g_value_init (value, G_TYPE_STRING);
@@ -632,7 +634,7 @@ insanity_test_get_output_filename (InsanityTest * test, const char *key)
     return ptr;
   }
 
-  if (!test->priv->conn) {
+  if (test->priv->standalone) {
     /* TODO: in /tmp ? I think glib has something to get a writable tmp dir but can't see it */
     char template[] = "insanity-standalone-XXXXXX";
     int fd = g_mkstemp (template);
@@ -741,6 +743,8 @@ listen (InsanityTest * test, const char *bus_address, const char *uuid)
   int ret;
   char *object_name;
   dbus_uint32_t serial = 0;
+
+  test->priv->standalone = FALSE;
 
   dbus_error_init (&err);
 
@@ -997,6 +1001,7 @@ insanity_test_init (InsanityTest * test)
   priv->name = NULL;
   priv->args = NULL;
   priv->cpu_load = -1;
+  priv->standalone = TRUE;
   priv->done = FALSE;
   priv->exit = FALSE;
   priv->filename_cache =
