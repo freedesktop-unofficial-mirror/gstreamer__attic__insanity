@@ -41,16 +41,16 @@ import dbus.service
 import dbus.mainloop.glib
 import time
 
-# import all tests and scenarios
-import insanity.utils as utils
-utils.scan_for_tests()
-
 import insanity.dbustools as dbustools
 from insanity.testrun import TestRun
 from insanity.scenario import Scenario
 from insanity.log import warning, debug, info, exception, initLogging
 
 initLogging()
+
+# import all tests and scenarios
+import insanity.utils as utils
+utils.scan_for_tests()
 
 # TODO
 #
