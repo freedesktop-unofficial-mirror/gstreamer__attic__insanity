@@ -32,8 +32,6 @@
 #include <stdarg.h>
 
 /* TODO:
-  - indent, this originally came from sample code that had 3 spaces indent
-  - remove exit calls and do proper error reporting
   - logs ?
   - gather timings at every step validated ?
   - implement timeouts
