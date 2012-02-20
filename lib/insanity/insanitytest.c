@@ -79,6 +79,8 @@ struct InsanityTestPrivateData
   GHashTable *test_arguments;
   GHashTable *test_output_files;
   GHashTable *test_likely_errors;
+
+  GHashTable *arguments;
 };
 
 static void
@@ -557,8 +559,13 @@ insanity_test_get_argument (InsanityTest * test, const char *key,
   g_mutex_lock (&test->priv->lock);
 
   if (!test->priv->conn) {
+    const char *ptr = g_hash_table_lookup (test->priv->arguments, key);
+    if (ptr) {
+      g_value_init (value, G_TYPE_STRING);
+      g_value_set_string (value, ptr);
+    }
     g_mutex_unlock (&test->priv->lock);
-    return FALSE;
+    return ptr ? TRUE : FALSE;
   }
 
   fd.key = key;
@@ -866,6 +873,12 @@ insanity_test_write_metadata (InsanityTest * test)
   g_free (desc);
 }
 
+static void
+usage (const char *argv0)
+{
+  fprintf (stderr, "Usage: %s [--insanity-metadata | --run [name=value]... | <uuid>]\n", argv0);
+}
+
 gboolean
 insanity_test_run (InsanityTest * test, int argc, const char **argv)
 {
@@ -873,7 +886,7 @@ insanity_test_run (InsanityTest * test, int argc, const char **argv)
   const char *uuid;
 
   if (argc < 2 || !strcmp (argv[1], "--help") || !strcmp (argv[1], "-h")) {
-    fprintf (stderr, "Usage: %s [--insanity-metadata | --run | <uuid>]\n", argv[0]);
+    usage (argv[0]);
     return FALSE;
   }
 
@@ -883,6 +896,20 @@ insanity_test_run (InsanityTest * test, int argc, const char **argv)
   }
 
   if (!strcmp (argv[1], "--run")) {
+    int n;
+
+    for (n = 2; n < argc; ++n) {
+      const char *argument = argv[n];
+      const char *equals = strchr (argument, '=');
+      if (!equals) {
+        usage (argv[0]);
+        return FALSE;
+      }
+      g_hash_table_insert (test->priv->arguments,
+          g_strndup (argument, equals - argument), g_strdup (equals + 1));
+          printf("New arg: '%s' = '%s'\n",g_strndup (argument, equals - argument), g_strdup (equals + 1));
+    }
+
     if (on_setup (test)) {
       if (on_start (test)) {
         while (!test->priv->done)
@@ -931,6 +958,7 @@ insanity_test_finalize (GObject * gobject)
   g_hash_table_destroy (priv->test_arguments);
   g_hash_table_destroy (priv->test_output_files);
   g_hash_table_destroy (priv->test_likely_errors);
+  g_hash_table_destroy (priv->arguments);
   g_mutex_clear (&priv->lock);
   G_OBJECT_CLASS (insanity_test_parent_class)->finalize (gobject);
 }
@@ -950,6 +978,8 @@ insanity_test_init (InsanityTest * test)
   priv->done = FALSE;
   priv->exit = FALSE;
   priv->filename_cache =
+      g_hash_table_new_full (&g_str_hash, &g_str_equal, &g_free, g_free);
+  priv->arguments =
       g_hash_table_new_full (&g_str_hash, &g_str_equal, &g_free, g_free);
 
   priv->test_name = NULL;
