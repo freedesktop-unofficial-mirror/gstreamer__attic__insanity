@@ -334,6 +334,9 @@ gather_end_of_test_info (InsanityTest * test)
 {
   GValue value = { 0 };
 
+  if (test->priv->cpu_load >= 0)
+    return;
+
   insanity_test_record_stop_time (test);
 
   g_value_init (&value, G_TYPE_INT);
@@ -938,6 +941,7 @@ insanity_test_init (InsanityTest * test)
   priv->conn = NULL;
   priv->name = NULL;
   priv->args = NULL;
+  priv->cpu_load = -1;
   priv->done = FALSE;
   priv->exit = FALSE;
   priv->filename_cache =
