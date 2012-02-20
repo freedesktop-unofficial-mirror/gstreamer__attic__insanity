@@ -32,7 +32,7 @@
 static guint test_signal;
 
 G_DEFINE_TYPE (InsanityThreadedTest, insanity_threaded_test,
-    INSANITY_TEST_TYPE);
+    INSANITY_TYPE_TEST);
 
 struct InsanityThreadedTestPrivateData
 {

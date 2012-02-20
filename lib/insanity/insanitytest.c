@@ -848,7 +848,7 @@ static void
 insanity_test_init (InsanityTest * test)
 {
   InsanityTestPrivateData *priv = G_TYPE_INSTANCE_GET_PRIVATE (test,
-      INSANITY_TEST_TYPE, InsanityTestPrivateData);
+      INSANITY_TYPE_TEST, InsanityTestPrivateData);
 
   test->priv = priv;
   priv->conn = NULL;
