@@ -981,9 +981,13 @@ insanity_add_metadata_entry (GHashTable * hash, const char *label,
 
 void
 insanity_test_add_checklist_item (InsanityTest * test, const char *label,
-    const char *description)
+    const char *description, const char *error_hint)
 {
   insanity_add_metadata_entry (test->priv->test_checklist, label, description);
+  if (error_hint) {
+    insanity_add_metadata_entry (test->priv->test_likely_errors, label,
+        error_hint);
+  }
 }
 
 void
@@ -998,13 +1002,5 @@ insanity_test_add_output_file (InsanityTest * test, const char *label,
     const char *description)
 {
   insanity_add_metadata_entry (test->priv->test_output_files, label,
-      description);
-}
-
-void
-insanity_test_add_likely_error (InsanityTest * test, const char *label,
-    const char *description)
-{
-  insanity_add_metadata_entry (test->priv->test_likely_errors, label,
       description);
 }

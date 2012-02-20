@@ -85,9 +85,9 @@ main (int argc, const char **argv)
       INSANITY_TEST (insanity_threaded_test_new ("blank-c-test",
           "Sample test that does nothing"));
   insanity_test_add_checklist_item (test, "random-step",
-      "Some random step, nothing much");
+      "Some random step, nothing much", NULL);
   insanity_test_add_checklist_item (test, "other-random-step",
-      "Some random step, nothing much either");
+      "Some random step, nothing much either", "error blah");
 
   g_signal_connect_after (test, "setup", G_CALLBACK (&blank_test_setup), 0);
   g_signal_connect_after (test, "start", G_CALLBACK (&blank_test_start), 0);
