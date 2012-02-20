@@ -148,7 +148,7 @@ def scan_directory_for_tests(directory):
 
 def scan_for_tests(directory = None):
     if directory == None:
-        directory = 'insanity/tests' # TODO
+        directory = 'tests' # TODO
     global __tests
     __tests = scan_directory_for_tests (directory)
 
