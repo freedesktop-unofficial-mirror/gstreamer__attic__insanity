@@ -115,33 +115,26 @@ insanity_cclosure_marshal_BOOLEAN__VOID (GClosure * closure,
 }
 
 static gboolean
-default_insanity_user_setup (InsanityTest * test)
+insanity_test_setup (InsanityTest * test)
 {
   (void) test;
-  printf ("insanity_setup\n");
+  printf ("insanity_test_setup\n");
   return TRUE;
 }
 
 static gboolean
-default_insanity_user_start (InsanityTest * test)
+insanity_test_start (InsanityTest * test)
 {
   (void) test;
-  printf ("insanity_start\n");
+  printf ("insanity_test_start\n");
   return TRUE;
 }
 
 static void
-default_insanity_user_stop (InsanityTest * test)
+insanity_test_stop (InsanityTest * test)
 {
   (void) test;
-  printf ("insanity_stop\n");
-}
-
-static void
-default_insanity_user_test (InsanityTest * test)
-{
-  (void) test;
-  printf ("insanity_test\n");
+  printf ("insanity_test_stop\n");
 }
 
 static void
@@ -930,9 +923,9 @@ insanity_test_class_init (InsanityTestClass * klass)
 
   gobject_class->finalize = insanity_test_finalize;
 
-  klass->setup = &default_insanity_user_setup;
-  klass->start = &default_insanity_user_start;
-  klass->stop = &default_insanity_user_stop;
+  klass->setup = &insanity_test_setup;
+  klass->start = &insanity_test_start;
+  klass->stop = &insanity_test_stop;
 
   gobject_class->get_property = &insanity_test_get_property;
   gobject_class->set_property = &insanity_test_set_property;
