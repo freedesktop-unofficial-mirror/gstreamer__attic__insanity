@@ -15,3 +15,7 @@ insanity_test_blank_CFLAGS=$(common_cflags)
 insanity_test_blank_LDADD=../lib/insanity/libinsanity.la $(common_ldadd)
 
 noinst_PROGRAMS=insanity-test-blank
+
+TESTS=run-insanity-test-blank
+
+EXTRA_DIST=run-insanity-test-blank
