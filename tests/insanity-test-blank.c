@@ -31,9 +31,9 @@ blank_test_setup (InsanityTest * test)
 
   GValue value, zero = { 0 };
   value = zero;
-  if (insanity_test_get_argument (test, "uuid", &value)) {
-    const char *uuid = g_value_get_string (&value);
-    printf ("uuid: %s\n", uuid);
+  if (insanity_test_get_argument (test, "uri", &value)) {
+    const char *uri = g_value_get_string (&value);
+    printf ("uri: %s\n", uri);
     g_value_unset (&value);
   }
 
@@ -78,6 +78,7 @@ main (int argc, char **argv)
 {
   InsanityTest *test;
   gboolean ret;
+  GValue def;
 
   g_type_init ();
 
@@ -88,6 +89,9 @@ main (int argc, char **argv)
       "Some random step, nothing much", NULL);
   insanity_test_add_checklist_item (test, "other-random-step",
       "Some random step, nothing much either", "error blah");
+  insanity_test_add_argument (test, "uri", "URI description",
+      "URI full description", G_TYPE_STRING, "http://127.0.0.1/");
+  insanity_test_add_output_file (test, "dummy-output-file", "dummy output file");
 
   g_signal_connect_after (test, "setup", G_CALLBACK (&blank_test_setup), 0);
   g_signal_connect_after (test, "start", G_CALLBACK (&blank_test_start), 0);
