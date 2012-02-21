@@ -60,6 +60,18 @@ static guint stop_signal;
 static guint test_signal;
 static GParamSpec *properties[N_PROPERTIES] = { NULL, };
 
+#if GLIB_CHECK_VERSION(2,30,2)
+#define USE_NEW_GLIB_MUTEX_API
+#endif
+
+#ifdef USE_NEW_GLIB_MUTEX_API
+#define LOCK(test) g_mutex_lock(&((test)->priv->lock))
+#define UNLOCK(test) g_mutex_unlock(&((test)->priv->lock))
+#else
+#define LOCK(test) g_mutex_lock((test)->priv->lock)
+#define UNLOCK(test) g_mutex_unlock((test)->priv->lock)
+#endif
+
 struct InsanityTestPrivateData
 {
   DBusConnection *conn;
@@ -74,7 +86,11 @@ struct InsanityTestPrivateData
   gboolean exit;
   GHashTable *filename_cache;
   char *tmpdir;
+#ifdef USE_NEW_GLIB_MUTEX_API
   GMutex lock;
+#else
+  GMutex *lock;
+#endif
   gboolean standalone;
 
   /* test metadata */
@@ -149,7 +165,7 @@ static void
 insanity_test_connect (InsanityTest * test, DBusConnection * conn,
     const char *uuid)
 {
-  g_mutex_lock (&test->priv->lock);
+  LOCK (test);
   test->priv->standalone = FALSE;
   if (test->priv->conn)
     dbus_connection_unref (test->priv->conn);
@@ -158,13 +174,13 @@ insanity_test_connect (InsanityTest * test, DBusConnection * conn,
     g_free (test->priv->name);
   test->priv->name =
       g_strdup_printf ("/net/gstreamer/Insanity/Test/Test%s", uuid);
-  g_mutex_unlock (&test->priv->lock);
+  UNLOCK (test);
 }
 
 static void
 insanity_test_set_args (InsanityTest * test, DBusMessage * msg)
 {
-  g_mutex_lock (&test->priv->lock);
+  LOCK (test);
   if (test->priv->args) {
     dbus_message_unref (test->priv->args);
     test->priv->args = NULL;
@@ -172,7 +188,7 @@ insanity_test_set_args (InsanityTest * test, DBusMessage * msg)
   if (msg) {
     test->priv->args = dbus_message_ref (msg);
   }
-  g_mutex_unlock (&test->priv->lock);
+  UNLOCK (test);
 }
 
 static void
@@ -267,7 +283,7 @@ void
 insanity_test_validate_step (InsanityTest * test, const char *name,
     gboolean success)
 {
-  g_mutex_lock (&test->priv->lock);
+  LOCK (test);
   if (test->priv->standalone) {
     printf("step: %s: %s\n", name, success ? "PASS" : "FAIL");
   }
@@ -275,7 +291,7 @@ insanity_test_validate_step (InsanityTest * test, const char *name,
     send_signal (test->priv->conn, "remoteValidateStepSignal", test->priv->name,
         DBUS_TYPE_STRING, &name, DBUS_TYPE_BOOLEAN, &success, DBUS_TYPE_INVALID);
   }
-  g_mutex_unlock (&test->priv->lock);
+  UNLOCK (test);
 }
 
 static void
@@ -290,14 +306,14 @@ insanity_test_set_extra_info_internal (InsanityTest * test, const char *name,
   void *dataptr = NULL;
 
   if (!locked)
-    g_mutex_lock (&test->priv->lock);
+    LOCK (test);
 
   if (test->priv->standalone) {
     char *s = g_strdup_value_contents (data);
     printf("Extra info: %s: %s\n", name, s);
     g_free (s);
     if (!locked)
-      g_mutex_unlock (&test->priv->lock);
+      UNLOCK (test);
     return;
   }
 
@@ -329,7 +345,7 @@ insanity_test_set_extra_info_internal (InsanityTest * test, const char *name,
   }
 
   if (!locked)
-    g_mutex_unlock (&test->priv->lock);
+    UNLOCK (test);
 }
 
 void
@@ -358,14 +374,14 @@ gather_end_of_test_info (InsanityTest * test)
 void
 insanity_test_done (InsanityTest * test)
 {
-  g_mutex_lock (&test->priv->lock);
+  LOCK (test);
   gather_end_of_test_info (test);
   if (!test->priv->standalone) {
     send_signal (test->priv->conn, "remoteStopSignal", test->priv->name,
         DBUS_TYPE_INVALID);
   }
   test->priv->done = TRUE;
-  g_mutex_unlock (&test->priv->lock);
+  UNLOCK (test);
 }
 
 static gboolean
@@ -403,10 +419,10 @@ on_stop (InsanityTest * test)
 {
   g_signal_emit (test, stop_signal, 0, NULL);
 
-  g_mutex_lock (&test->priv->lock);
+  LOCK (test);
   gather_end_of_test_info (test);
   test->priv->exit = TRUE;
-  g_mutex_unlock (&test->priv->lock);
+  UNLOCK (test);
 }
 
 static int
@@ -560,7 +576,7 @@ insanity_test_get_argument (InsanityTest * test, const char *key,
   int ret;
   GValue zero_value = { 0 };
 
-  g_mutex_lock (&test->priv->lock);
+  LOCK (test);
 
   if (test->priv->standalone) {
     const char *ptr = g_hash_table_lookup (test->priv->arguments, key);
@@ -568,7 +584,7 @@ insanity_test_get_argument (InsanityTest * test, const char *key,
       g_value_init (value, G_TYPE_STRING);
       g_value_set_string (value, ptr);
     }
-    g_mutex_unlock (&test->priv->lock);
+    UNLOCK (test);
     return ptr ? TRUE : FALSE;
   }
 
@@ -576,14 +592,14 @@ insanity_test_get_argument (InsanityTest * test, const char *key,
   fd.value = zero_value;
   ret = foreach_dbus_args (test, &typed_finder, (guintptr) & fd);
   if (ret <= 0) {
-    g_mutex_unlock (&test->priv->lock);
+    UNLOCK (test);
     return FALSE;
   }
   g_value_init (value, G_VALUE_TYPE (&fd.value));
   g_value_copy (&fd.value, value);      /* src is first parm */
   g_value_unset (&fd.value);
 
-  g_mutex_unlock (&test->priv->lock);
+  UNLOCK (test);
   return TRUE;
 }
 
@@ -627,18 +643,18 @@ insanity_test_get_output_filename (InsanityTest * test, const char *key)
   gpointer ptr;
   char *template;
 
-  g_mutex_lock (&test->priv->lock);
+  LOCK (test);
 
   ptr = g_hash_table_lookup (test->priv->filename_cache, key);
   if (ptr) {
-    g_mutex_unlock (&test->priv->lock);
+    UNLOCK (test);
     return ptr;
   }
 
   if (test->priv->standalone) {
     if (!g_hash_table_lookup (test->priv->test_output_files, key)) {
       fprintf (stderr, "Request for a file that was not declared\n");
-      g_mutex_unlock (&test->priv->lock);
+      UNLOCK (test);
       return ptr;
     }
 
@@ -649,7 +665,7 @@ insanity_test_get_output_filename (InsanityTest * test, const char *key)
         g_error_free (error);
       if (!test->priv->tmpdir) {
         fprintf (stderr, "Failed to create temporary directory\n");
-        g_mutex_unlock (&test->priv->lock);
+        UNLOCK (test);
         return ptr;
       }
     }
@@ -666,7 +682,7 @@ insanity_test_get_output_filename (InsanityTest * test, const char *key)
       fn = template;
       g_hash_table_insert (test->priv->filename_cache, g_strdup (key), fn);
     }
-    g_mutex_unlock (&test->priv->lock);
+    UNLOCK (test);
     return fn;
   }
 
@@ -675,13 +691,13 @@ insanity_test_get_output_filename (InsanityTest * test, const char *key)
   fd.userdata = (void *) key;
   ret = foreach_dbus_args (test, &filename_finder, (guintptr) & fd);
   if (ret <= 0) {
-    g_mutex_unlock (&test->priv->lock);
+    UNLOCK (test);
     return NULL;
   }
 
   if (G_VALUE_TYPE (&fd.value) != G_TYPE_STRING) {
     g_value_unset (&fd.value);
-    g_mutex_unlock (&test->priv->lock);
+    UNLOCK (test);
     return FALSE;
   }
 
@@ -689,7 +705,7 @@ insanity_test_get_output_filename (InsanityTest * test, const char *key)
   g_value_unset (&fd.value);
 
   g_hash_table_insert (test->priv->filename_cache, g_strdup (key), fn);
-  g_mutex_unlock (&test->priv->lock);
+  UNLOCK (test);
   return fn;
 }
 
@@ -966,9 +982,9 @@ insanity_test_run (InsanityTest * test, int argc, char **argv)
       if (on_start (test)) {
         while (1) {
           gboolean done;
-          g_mutex_lock (&test->priv->lock);
+          LOCK (test);
           done = test->priv->done;
-          g_mutex_unlock (&test->priv->lock);
+          UNLOCK (test);
           if (done)
             break;
           g_usleep (100);
@@ -1045,7 +1061,11 @@ insanity_test_finalize (GObject * gobject)
   g_hash_table_destroy (priv->test_output_files);
   g_hash_table_destroy (priv->test_likely_errors);
   g_hash_table_destroy (priv->arguments);
+#ifdef USE_NEW_GLIB_MUTEX_API
   g_mutex_clear (&priv->lock);
+#else
+  g_mutex_destroy (priv->lock);
+#endif
   G_OBJECT_CLASS (insanity_test_parent_class)->finalize (gobject);
 }
 
@@ -1055,7 +1075,11 @@ insanity_test_init (InsanityTest * test)
   InsanityTestPrivateData *priv = G_TYPE_INSTANCE_GET_PRIVATE (test,
       INSANITY_TYPE_TEST, InsanityTestPrivateData);
 
+#ifdef USE_NEW_GLIB_MUTEX_API
   g_mutex_init (&priv->lock);
+#else
+  priv->lock = g_mutex_new ();
+#endif
   test->priv = priv;
   priv->conn = NULL;
   priv->name = NULL;
@@ -1104,7 +1128,7 @@ insanity_test_set_property (GObject * gobject,
 {
   InsanityTest *test = (InsanityTest *) gobject;
 
-  g_mutex_lock (&test->priv->lock);
+  LOCK (test);
   switch (prop_id) {
     case PROP_NAME:
       if (test->priv->test_name)
@@ -1124,7 +1148,7 @@ insanity_test_set_property (GObject * gobject,
     default:
       g_assert_not_reached ();
   }
-  g_mutex_unlock (&test->priv->lock);
+  UNLOCK (test);
 }
 
 static void
@@ -1133,7 +1157,7 @@ insanity_test_get_property (GObject * gobject,
 {
   InsanityTest *test = (InsanityTest *) gobject;
 
-  g_mutex_lock (&test->priv->lock);
+  LOCK (test);
   switch (prop_id) {
     case PROP_NAME:
       g_value_set_string (value, test->priv->test_name);
@@ -1147,7 +1171,7 @@ insanity_test_get_property (GObject * gobject,
     default:
       g_assert_not_reached ();
   }
-  g_mutex_unlock (&test->priv->lock);
+  UNLOCK (test);
 }
 
 static void
