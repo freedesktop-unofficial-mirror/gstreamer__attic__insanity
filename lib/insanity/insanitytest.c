@@ -73,6 +73,7 @@ struct InsanityTestPrivateData
   gboolean done;
   gboolean exit;
   GHashTable *filename_cache;
+  char *tmpdir;
   GMutex lock;
   gboolean standalone;
 
@@ -624,6 +625,7 @@ insanity_test_get_output_filename (InsanityTest * test, const char *key)
   char *fn;
   GValue zero_value = { 0 };
   gpointer ptr;
+  char *template;
 
   g_mutex_lock (&test->priv->lock);
 
@@ -640,15 +642,28 @@ insanity_test_get_output_filename (InsanityTest * test, const char *key)
       return ptr;
     }
 
-    /* TODO: in /tmp ? I think glib has something to get a writable tmp dir but can't see it */
-    char template[] = "insanity-standalone-XXXXXX";
+    if (!test->priv->tmpdir) {
+      GError *error = NULL;
+      test->priv->tmpdir = g_dir_make_tmp (NULL, &error);
+      if (error)
+        g_error_free (error);
+      if (!test->priv->tmpdir) {
+        fprintf (stderr, "Failed to create temporary directory\n");
+        g_mutex_unlock (&test->priv->lock);
+        return ptr;
+      }
+    }
+
+    template = g_strdup_printf ("%s/insanity-standalone-XXXXXX", test->priv->tmpdir);
     int fd = g_mkstemp (template);
     if (fd < 0) {
-      fprintf (stderr, "Failed creating temporary file: %s\n", strerror (errno));
+      fprintf (stderr, "Failed creating temporary file %s: %s\n",
+          template, strerror (errno));
       fn = NULL;
+      g_free (template);
     }
     else {
-      fn = g_strdup (template);
+      fn = template;
       g_hash_table_insert (test->priv->filename_cache, g_strdup (key), fn);
     }
     g_mutex_unlock (&test->priv->lock);
@@ -991,6 +1006,10 @@ insanity_test_finalize (GObject * gobject)
     }
     g_hash_table_destroy (priv->filename_cache);
   }
+  if (priv->tmpdir) {
+    g_rmdir (priv->tmpdir);
+    g_free (priv->tmpdir);
+  }
   g_free (test->priv->test_name);
   g_free (test->priv->test_desc);
   g_free (test->priv->test_full_desc);
@@ -1017,6 +1036,7 @@ insanity_test_init (InsanityTest * test)
   priv->args = NULL;
   priv->cpu_load = -1;
   priv->standalone = TRUE;
+  priv->tmpdir = NULL;
   priv->done = FALSE;
   priv->exit = FALSE;
   priv->filename_cache =
