@@ -939,8 +939,15 @@ insanity_test_run (InsanityTest * test, int argc, const char **argv)
 
     if (on_setup (test)) {
       if (on_start (test)) {
-        while (!test->priv->done)
+        while (1) {
+          gboolean done;
+          g_mutex_lock (&test->priv->lock);
+          done = test->priv->done;
+          g_mutex_unlock (&test->priv->lock);
+          if (done)
+            break;
           g_usleep (100);
+        }
       }
       on_stop (test);
     }
