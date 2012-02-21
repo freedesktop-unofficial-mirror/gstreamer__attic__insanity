@@ -35,6 +35,9 @@ import gobject
 gobject.threads_init()
 from insanity.log import debug, exception
 
+def _tupletostr(atup):
+    return ".".join([str(x) for x in atup])
+
 # TODO : methods/classes to retrieve/process environment
 #
 # examples:
@@ -90,9 +93,24 @@ def collectEnvironment(environ, callback):
     else:
         gobject.timeout_add(500, _pollSubProcess, proc, respath, callback)
 
-def _privateCollectEnvironment():
+def _getGObjectEnvironment():
     d = {}
+    d["pygobject-path"] = gobject.__path__[0]
+    d["pygobject-file"] = gobject.__file__
+    d["glib-version"] = _tupletostr(gobject.glib_version)
+    d["pygobject-version"] = _tupletostr(gobject.pygobject_version)
+    d["pygtk-version"] = _tupletostr(gobject.pygtk_version)
     return d
+
+def _privateCollectEnvironment():
+    """
+    Method called from the subprocess to collect environment
+    """
+    # we first get the system environment variables
+    res = os.environ.copy()
+    res["uname"] = ' '.join(os.uname())
+    res.update(_getGObjectEnvironment())
+    return res
 
 if __name__ == "__main__":
     # args : <outputfile>
