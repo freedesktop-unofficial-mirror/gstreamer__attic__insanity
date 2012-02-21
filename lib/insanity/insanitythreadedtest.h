@@ -53,7 +53,7 @@ struct InsanityThreadedTestClass
 };
 typedef struct InsanityThreadedTestClass InsanityThreadedTestClass;
 
-InsanityThreadedTest *insanity_threaded_test_new(const char *name, const char *description);
+InsanityThreadedTest *insanity_threaded_test_new(const char *name, const char *description, const char *full_description);
 
 /* Handy macros */
 #define INSANITY_THREADED_TEST_TYPE                (insanity_threaded_test_get_type ())

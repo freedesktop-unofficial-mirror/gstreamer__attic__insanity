@@ -87,9 +87,11 @@ class TestMetadata():
         self.__test_filename__ = os.path.abspath(filename)
         self.__test_name__ = self.get_metadata (metadata, "__name__")
         self.__test_description__ = self.get_metadata (metadata, "__description__")
+        self.__test_full_description__ = self.get_metadata (metadata, "__full_description__")
         self.__test_arguments__ = self.get_metadata (metadata, "__arguments__")
         self.__test_output_files__ = self.get_metadata (metadata, "__output_files__")
         self.__test_checklist__ = self.get_metadata (metadata, "__checklist__")
+        self.__test_extra_infos__ = self.get_metadata (metadata, "__extra_infos__")
         info('It is a valid test')
 
         mod = sys.modules["insanity.dbustest"]

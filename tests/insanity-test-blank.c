@@ -83,7 +83,7 @@ main (int argc, const char **argv)
 
   test =
       INSANITY_TEST (insanity_threaded_test_new ("blank-c-test",
-          "Sample test that does nothing"));
+          "Sample test that does nothing", NULL));
   insanity_test_add_checklist_item (test, "random-step",
       "Some random step, nothing much", NULL);
   insanity_test_add_checklist_item (test, "other-random-step",

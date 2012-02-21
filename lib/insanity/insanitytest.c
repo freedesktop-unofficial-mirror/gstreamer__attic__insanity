@@ -49,6 +49,7 @@ enum
   PROP_0,
   PROP_NAME,
   PROP_DESC,
+  PROP_FULL_DESC,
   N_PROPERTIES
 };
 
@@ -78,8 +79,10 @@ struct InsanityTestPrivateData
   /* test metadata */
   char *test_name;
   char *test_desc;
+  char *test_full_desc;
   GHashTable *test_checklist;
   GHashTable *test_arguments;
+  GHashTable *test_extra_infos;
   GHashTable *test_output_files;
   GHashTable *test_likely_errors;
 
@@ -279,7 +282,7 @@ insanity_test_validate_step (InsanityTest * test, const char *name,
 }
 
 static void
-insanity_test_add_extra_info_internal (InsanityTest * test, const char *name,
+insanity_test_set_extra_info_internal (InsanityTest * test, const char *name,
     const GValue * data, gboolean locked)
 {
   GType glib_type;
@@ -333,10 +336,10 @@ insanity_test_add_extra_info_internal (InsanityTest * test, const char *name,
 }
 
 void
-insanity_test_add_extra_info (InsanityTest * test, const char *name,
+insanity_test_set_extra_info (InsanityTest * test, const char *name,
     const GValue * data)
 {
-  insanity_test_add_extra_info_internal (test, name, data, FALSE);
+  insanity_test_set_extra_info_internal (test, name, data, FALSE);
 }
 
 static void
@@ -351,7 +354,7 @@ gather_end_of_test_info (InsanityTest * test)
 
   g_value_init (&value, G_TYPE_INT);
   g_value_set_int (&value, test->priv->cpu_load);
-  insanity_test_add_extra_info_internal (test, "cpu-load", &value, TRUE);
+  insanity_test_set_extra_info_internal (test, "cpu-load", &value, TRUE);
   g_value_unset (&value);
 }
 
@@ -888,6 +891,7 @@ insanity_test_write_metadata (InsanityTest * test)
   fprintf (f, "  \"__description__\": \"%s\"", desc);
   output_table (test, f, test->priv->test_checklist, "__checklist__");
   output_table (test, f, test->priv->test_arguments, "__arguments__");
+  output_table (test, f, test->priv->test_extra_infos, "__extra_infos__");
   output_table (test, f, test->priv->test_output_files, "__output_files__");
   output_table (test, f, test->priv->test_likely_errors, "__likely_errors__");
   fprintf (f, "\n}\n");
@@ -986,8 +990,10 @@ insanity_test_finalize (GObject * gobject)
   }
   g_free (test->priv->test_name);
   g_free (test->priv->test_desc);
+  g_free (test->priv->test_full_desc);
   g_hash_table_destroy (priv->test_checklist);
   g_hash_table_destroy (priv->test_arguments);
+  g_hash_table_destroy (priv->test_extra_infos);
   g_hash_table_destroy (priv->test_output_files);
   g_hash_table_destroy (priv->test_likely_errors);
   g_hash_table_destroy (priv->arguments);
@@ -1017,9 +1023,12 @@ insanity_test_init (InsanityTest * test)
 
   priv->test_name = NULL;
   priv->test_desc = NULL;
+  priv->test_full_desc = NULL;
   priv->test_checklist =
       g_hash_table_new_full (&g_str_hash, &g_str_equal, &g_free, g_free);
   priv->test_arguments =
+      g_hash_table_new_full (&g_str_hash, &g_str_equal, &g_free, g_free);
+  priv->test_extra_infos =
       g_hash_table_new_full (&g_str_hash, &g_str_equal, &g_free, g_free);
   priv->test_output_files =
       g_hash_table_new_full (&g_str_hash, &g_str_equal, &g_free, g_free);
@@ -1058,6 +1067,11 @@ insanity_test_set_property (GObject * gobject,
         g_free (test->priv->test_desc);
       test->priv->test_desc = g_strdup (g_value_get_string (value));
       break;
+    case PROP_FULL_DESC:
+      if (test->priv->test_full_desc)
+        g_free (test->priv->test_full_desc);
+      test->priv->test_full_desc = g_strdup (g_value_get_string (value));
+      break;
     default:
       g_assert_not_reached ();
   }
@@ -1077,6 +1091,9 @@ insanity_test_get_property (GObject * gobject,
       break;
     case PROP_DESC:
       g_value_set_string (value, test->priv->test_desc);
+      break;
+    case PROP_FULL_DESC:
+      g_value_set_string (value, test->priv->test_full_desc);
       break;
     default:
       g_assert_not_reached ();
@@ -1106,6 +1123,9 @@ insanity_test_class_init (InsanityTestClass * klass)
   properties[PROP_DESC] =
       g_param_spec_string ("desc", "Description", "Description of the test",
       NULL, G_PARAM_READWRITE);
+  properties[PROP_FULL_DESC] =
+      g_param_spec_string ("full-desc", "Full description",
+      "Full description of the test", NULL, G_PARAM_READWRITE);
 
   g_object_class_install_properties (gobject_class, N_PROPERTIES, properties);
 
@@ -1134,10 +1154,14 @@ insanity_test_class_init (InsanityTestClass * klass)
 }
 
 InsanityTest *
-insanity_test_new (const char *name, const char *description)
+insanity_test_new (const char *name, const char *description,
+    const char *full_description)
 {
-  return g_object_new (insanity_test_get_type (), "name", name, "desc",
-      description, NULL);
+  InsanityTest *test = g_object_new (insanity_test_get_type (),
+      "name", name, "desc", description, NULL);
+  if (full_description)
+    g_object_set (test, "full-desc", full_description, NULL);
+  return test;
 }
 
 static void
@@ -1163,6 +1187,14 @@ insanity_test_add_argument (InsanityTest * test, const char *label,
     const char *description)
 {
   insanity_add_metadata_entry (test->priv->test_arguments, label, description);
+}
+
+void
+insanity_test_add_extra_info (InsanityTest * test, const char *label,
+    const char *description)
+{
+  insanity_add_metadata_entry (test->priv->test_extra_infos, label,
+      description);
 }
 
 void

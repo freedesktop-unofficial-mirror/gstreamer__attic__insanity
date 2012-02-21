@@ -107,8 +107,11 @@ insanity_threaded_test_class_init (InsanityThreadedTestClass * klass)
 }
 
 InsanityThreadedTest *
-insanity_threaded_test_new (const char *name, const char *description)
+insanity_threaded_test_new (const char *name, const char *description, const char *full_description)
 {
-  return g_object_new (insanity_threaded_test_get_type (), "name", name, "desc",
-      description, NULL);
+  InsanityThreadedTest *test = g_object_new (insanity_threaded_test_get_type (),
+      "name", name, "desc", description, NULL);
+  if (full_description)
+    g_object_set (test, "full-desc", full_description, NULL);
+  return test;
 }

@@ -64,16 +64,17 @@ typedef struct InsanityTestClass InsanityTestClass;
 
 GType insanity_test_get_type (void);
 
-InsanityTest *insanity_test_new(const char *name, const char *description);
+InsanityTest *insanity_test_new(const char *name, const char *description, const char *full_description);
 void insanity_test_add_checklist_item(InsanityTest *test, const char *label, const char *description, const char *error_hint);
 void insanity_test_add_argument(InsanityTest *test, const char *label, const char *description);
 void insanity_test_add_output_file(InsanityTest *test, const char *label, const char *description);
+void insanity_test_add_extra_info(InsanityTest *test, const char *label, const char *description);
 
 gboolean insanity_test_get_argument(InsanityTest *test, const char *key, GValue *value);
 const char *insanity_test_get_output_filename(InsanityTest *test, const char *key);
 void insanity_test_done(InsanityTest *test);
 void insanity_test_validate_step(InsanityTest *test, const char *name, gboolean success);
-void insanity_test_add_extra_info(InsanityTest *test, const char *name, const GValue *data);
+void insanity_test_set_extra_info(InsanityTest *test, const char *name, const GValue *data);
 
 gboolean insanity_test_run(InsanityTest *test, int argc, const char **argv);
 
