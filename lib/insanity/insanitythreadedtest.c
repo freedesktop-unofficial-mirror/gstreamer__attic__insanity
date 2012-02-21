@@ -83,7 +83,7 @@ static void
 insanity_threaded_test_init (InsanityThreadedTest * test)
 {
   InsanityThreadedTestPrivateData *priv = G_TYPE_INSTANCE_GET_PRIVATE (test,
-      INSANITY_THREADED_TEST_TYPE, InsanityThreadedTestPrivateData);
+      INSANITY_TYPE_THREADED_TEST, InsanityThreadedTestPrivateData);
 
   test->priv = priv;
 }
