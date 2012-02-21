@@ -918,25 +918,39 @@ usage (const char *argv0)
 }
 
 gboolean
-insanity_test_run (InsanityTest * test, int argc, const char **argv)
+insanity_test_run (InsanityTest * test, int argc, char **argv)
 {
   const char *private_dbus_address;
-  const char *uuid;
+  const char *opt_uuid = NULL;
+  gboolean opt_run = FALSE;
+  gboolean opt_metadata = FALSE;
+  const GOptionEntry options[] = {
+    {"run", 0, 0, G_OPTION_ARG_NONE, &opt_run, "Run the test standalone", NULL},
+    {"insanity-metadata", 0, 0, G_OPTION_ARG_NONE, &opt_metadata, "Output test metadata", NULL},
+    {"dbus-uuid", 0, 0, G_OPTION_ARG_STRING, &opt_uuid, "Set D-Bus uuid", "UUID"},
+    {NULL}
+  };
+  GOptionContext *ctx;
+  GError *err = NULL;
+  gboolean ret = TRUE;
 
-  if (argc < 2 || !strcmp (argv[1], "--help") || !strcmp (argv[1], "-h")) {
-    usage (argv[0]);
+  ctx = g_option_context_new (test->priv->test_desc);
+  g_option_context_add_main_entries (ctx, options, NULL);
+  if (!g_option_context_parse (ctx, &argc, &argv, &err)) {
+    fprintf (stderr, "Error initializing: %s\n", err->message);
+    g_error_free (err);
+    g_option_context_free (ctx);
     return FALSE;
   }
 
-  if (!strcmp (argv[1], "--insanity-metadata")) {
+  if (opt_metadata) {
     insanity_test_write_metadata (test);
-    return TRUE;
+    ret = TRUE;
   }
-
-  if (!strcmp (argv[1], "--run")) {
+  else if (opt_run && !opt_uuid) {
     int n;
 
-    for (n = 2; n < argc; ++n) {
+    for (n = 1; n < argc; ++n) {
       const char *argument = argv[n];
       const char *equals = strchr (argument, '=');
       if (!equals) {
@@ -962,21 +976,33 @@ insanity_test_run (InsanityTest * test, int argc, const char **argv)
       }
       on_stop (test);
     }
-    return TRUE;
+    ret = TRUE;
   }
 
-  uuid = argv[1];
-  private_dbus_address = getenv ("PRIVATE_DBUS_ADDRESS");
-  if (!private_dbus_address || !private_dbus_address[0]) {
-    fprintf (stderr,
-        "The PRIVATE_DBUS_ADDRESS environment variable must be set\n");
-    return FALSE;
-  }
+  else if (opt_run && opt_uuid) {
+    private_dbus_address = getenv ("PRIVATE_DBUS_ADDRESS");
+    if (!private_dbus_address || !private_dbus_address[0]) {
+      fprintf (stderr,
+          "The PRIVATE_DBUS_ADDRESS environment variable must be set\n");
+      ret = FALSE;
+    }
+    else {
 #if 0
-  printf ("uuid: %s\n", uuid);
-  printf ("PRIVATE_DBUS_ADDRESS: %s\n", private_dbus_address);
+      printf ("uuid: %s\n", opt_uuid);
+      printf ("PRIVATE_DBUS_ADDRESS: %s\n", private_dbus_address);
 #endif
-  return listen (test, private_dbus_address, uuid);
+      ret = listen (test, private_dbus_address, opt_uuid);
+    }
+  }
+
+  else {
+    fprintf (stderr, "%s\n", g_option_context_get_help (ctx, FALSE, NULL));
+    ret = FALSE;
+  }
+
+  g_option_context_free (ctx);
+
+  return ret;
 }
 
 

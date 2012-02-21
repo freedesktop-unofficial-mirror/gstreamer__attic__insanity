@@ -74,7 +74,7 @@ blank_test_test (InsanityTest * test)
 }
 
 int
-main (int argc, const char **argv)
+main (int argc, char **argv)
 {
   InsanityTest *test;
   gboolean ret;

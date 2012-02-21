@@ -76,7 +76,7 @@ void insanity_test_done(InsanityTest *test);
 void insanity_test_validate_step(InsanityTest *test, const char *name, gboolean success);
 void insanity_test_set_extra_info(InsanityTest *test, const char *name, const GValue *data);
 
-gboolean insanity_test_run(InsanityTest *test, int argc, const char **argv);
+gboolean insanity_test_run(InsanityTest *test, int argc, char **argv);
 
 #endif
 

@@ -444,7 +444,8 @@ class PythonDBusTest(DBusTest):
             return [path, self.uuid]
         execcmd = self._execcmd
         execcmd = re.sub("%t", self._metadata.__test_filename__, execcmd, 0)
-        execcmd = re.sub("%a", self.uuid, execcmd, 0)
+        args = "--run --dbus-uuid=" + self.uuid
+        execcmd = re.sub("%a", args, execcmd, 0)
         return execcmd
 
     def __excepthook(self, exc_type, exc_value, exc_traceback):
