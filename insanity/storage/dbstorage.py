@@ -920,7 +920,7 @@ class DBStorage(DataStorage, AsyncStorage):
             self.__startNewTestRun(testrun, None)
         debug("test:%r", test)
         self.__storeTestClassInfo(test)
-        testtid = self._getTestTypeID(test.__test_name__)
+        testtid = self._getTestTypeID(test.getTestName())
         testid = self.__rawNewTestStarted(self.__testruns[testrun],
                                           testtid, commit)
         debug("got testid %d", testid)
@@ -986,15 +986,15 @@ class DBStorage(DataStorage, AsyncStorage):
 
         # store the dictionnaries
         self.__storeTestArgumentsDict(tid, test.getArguments(),
-                                     test.__test_name__)
+                                     test.getTestName())
         self.__storeTestCheckListList(tid, test.getCheckList(),
-                                     test.__test_name__)
+                                     test.getTestName())
         self.__storeTestExtraInfoDict(tid, test.getExtraInfo(),
-                                     test.__test_name__)
+                                     test.getTestName())
         self.__storeTestOutputFileDict(tid, test.getOutputFiles(),
-                                      test.__test_name__)
+                                      test.getTestName())
         self.__storeTestErrorExplanationDict(tid, test.getErrorExplanations(),
-                                             test.__test_name__)
+                                             test.getTestName())
 
         # finally update the test
         updatestr = "UPDATE test SET resultpercentage=?, parentid=? WHERE id=?"
@@ -1290,27 +1290,23 @@ class DBStorage(DataStorage, AsyncStorage):
         self.__storeTestClassOutputFileDict(ctype, outputfiles)
 
 
-    def __insertTestClassInfo(self, tclass):
-        ctype = tclass.__dict__.get("__test_name__").strip()
+    def __insertTestClassInfo(self, testinstance):
+        ctype = testinstance.getTestName().strip()
         searchstr = "SELECT * FROM testclassinfo WHERE type=?"
         if len(self._FetchAll(searchstr, (ctype, ))) >= 1:
             return False
         # get info
-        desc = tclass.__dict__.get("__test_description__").strip()
-        fdesc = tclass.__dict__.get("__test_full_description__")
+        desc = testinstance.getTestDescription().strip()
+        fdesc = testinstance.getTestFullDescription()
         if fdesc:
             fdesc.strip()
-        args = tclass.__dict__.get("__test_arguments__")
+        args = testinstance.getFullArgumentList()
         if args:
             args = dict([(key, val[0]) for key,val in args.iteritems()])
-        checklist = tclass.__dict__.get("__test_checklist__")
-        extrainfo = tclass.__dict__.get("__test_extra_infos__")
-        outputfiles = tclass.__dict__.get("__test_output_files__")
-        from insanity.test import Test
-        if tclass == Test:
-            parent = None
-        else:
-            parent = tclass.__base__.__dict__.get("__test_name__").strip()
+        checklist = testinstance.getFullCheckList()
+        extrainfo = testinstance.getFullExtraInfoList()
+        outputfiles = testinstance.getFullOutputFilesList()
+        parent = None
 
         self.__rawInsertTestClassInfo(ctype=ctype, description=desc,
                                       fulldescription=fdesc, args=args,
@@ -1332,15 +1328,10 @@ class DBStorage(DataStorage, AsyncStorage):
     def __storeTestClassInfo(self, testinstance):
         from insanity.test import Test
         # check if we don't already have info for this class
-        debug("test name: %s", testinstance.__test_name__)
-        if self.__hasTestClassInfo(testinstance.__test_name__):
+        debug("test name: %s", testinstance.getTestName())
+        if self.__hasTestClassInfo(testinstance.getTestName()):
             return
-        # we need an inverted mro (so we can know the parent class)
-        for cl in testinstance.__class__.mro():
-            if not self.__insertTestClassInfo(cl):
-                break
-            if cl == Test:
-                break
+        self.__insertTestClassInfo(testinstance)
 
     def __insertMonitorClassInfo(self, tclass):
         from insanity.monitor import Monitor

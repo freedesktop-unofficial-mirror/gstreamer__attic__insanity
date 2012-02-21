@@ -413,6 +413,15 @@ class DBusTest(Test, dbus.service.Object):
     def getFullOutputFilesList(self):
         return self._metadata.getFullOutputFilesList()
 
+    def getTestName(self):
+        return self._metadata.__test_name__
+
+    def getTestDescription(self):
+        return self._metadata.__test_description__
+
+    def getTestFullDescription(self):
+        return self._metadata.__test_full_description__
+
 class PythonDBusTest(DBusTest):
     """
     Convenience class for python-based tests being run in a separate process

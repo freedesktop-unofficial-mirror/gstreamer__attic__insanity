@@ -718,6 +718,14 @@ class Test(gobject.GObject):
         """
         return self.__test_likely_errors__.get(checkitem, None)
 
+    def getTestName(self):
+        return self.__test_name__
+
+    def getTestDescription(self):
+        return self.__test_description__
+
+    def getTestFullDescription(self):
+        return self.__test_full_description__
 
 # For compatibility:
 from insanity.dbustest import DBusTest, PythonDBusTest, CmdLineTest
