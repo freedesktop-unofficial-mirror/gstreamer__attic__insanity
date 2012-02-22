@@ -283,17 +283,30 @@ send_signal (DBusConnection * conn, const char *signal_name,
 
 void
 insanity_test_validate_step (InsanityTest * test, const char *name,
-    gboolean success)
+    gboolean success, const char *description)
 {
   gboolean *b;
 
   LOCK (test);
   if (test->priv->standalone) {
-    printf("step: %s: %s\n", name, success ? "PASS" : "FAIL");
+    if (description) {
+      printf("step: %s: %s (%s)\n", name, success ? "PASS" : "FAIL",
+          description);
+    }
+    else {
+      printf("step: %s: %s\n", name, success ? "PASS" : "FAIL");
+    }
   }
   else {
-    send_signal (test->priv->conn, "remoteValidateStepSignal", test->priv->name,
-        DBUS_TYPE_STRING, &name, DBUS_TYPE_BOOLEAN, &success, DBUS_TYPE_INVALID);
+    if (description) {
+      send_signal (test->priv->conn, "remoteValidateStepSignal", test->priv->name,
+          DBUS_TYPE_STRING, &name, DBUS_TYPE_BOOLEAN, &success,
+          DBUS_TYPE_STRING, &description, DBUS_TYPE_INVALID);
+    }
+    else {
+      send_signal (test->priv->conn, "remoteValidateStepSignal", test->priv->name,
+          DBUS_TYPE_STRING, &name, DBUS_TYPE_BOOLEAN, &success, DBUS_TYPE_INVALID);
+    }
   }
 
   b = g_malloc (sizeof (gboolean));

@@ -49,6 +49,7 @@ def printTestInfo(db, testid):
     if resperc == None:
         # test didn't end in the database
         return
+    error_explanations = db.getTestErrorExplanations (testid)
     # test number + name
     print "Test #% 3d (%s) Success : %0.1f%%" % (testid, ttype, resperc)
     # arguments
@@ -57,8 +58,13 @@ def printTestInfo(db, testid):
         print "\t% -30s:\t%s" % (key, val)
     # results
     print "Results :"
+    checkid = 0
     for key,val in checks:
-        print "\t% -30s:\t%s" % (key, val)
+        checkid = checkid + 1
+        if val == 0 and error_explanations and checkid in error_explanations:
+            print "\t% -30s:\t%s (%s)" % (key, val, error_explanations[checkid])
+        else:
+            print "\t% -30s:\t%s" % (key, val)
     if extras:
         print "Extra Information:"
         for k, v in extras:

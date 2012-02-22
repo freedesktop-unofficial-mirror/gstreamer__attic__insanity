@@ -438,7 +438,7 @@ class Test(gobject.GObject):
 
     ## Methods for tests to return information
 
-    def validateStep(self, checkitem, validated=True):
+    def validateStep(self, checkitem, validated=True, description = None):
         """
         Validate a step in the checklist.
         checkitem is one of the keys of __test_checklist__
@@ -459,7 +459,10 @@ class Test(gobject.GObject):
         if not validated:
             if self.isExpectedFailure(checkitem, self._extrainfo):
                 self._expected_failures[checkitem] = True
-            explanation = self.processFailure(checkitem, self._extrainfo)
+            if description:
+                explanation = description
+            else:
+                explanation = self.processFailure(checkitem, self._extrainfo)
             if explanation is not None:
                 self._error_explanations[checkitem] = explanation
 

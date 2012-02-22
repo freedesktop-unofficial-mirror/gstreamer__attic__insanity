@@ -291,9 +291,9 @@ class DBusTest(Test, dbus.service.Object):
         self.validateStep("no-timeout", True)
         self.stop()
 
-    def _remoteValidateStepCb(self, step, validate):
+    def _remoteValidateStepCb(self, step, validate, desc):
         info("%s step:%s : %r", self.uuid, step, validate)
-        self.validateStep(unwrap(step), validate)
+        self.validateStep(unwrap(step), validate, desc)
 
     def _remoteExtraInfoCb(self, key, value):
         info("%s key:%s value:%r", self.uuid, key, value)

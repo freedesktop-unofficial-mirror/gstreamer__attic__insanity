@@ -69,6 +69,7 @@ blank_test_stop (InsanityTest * test)
 static void
 blank_test_test (InsanityTest * test)
 {
+  insanity_test_validate_step (test, "random-step", FALSE, "Explanation of random-step failure");
   insanity_test_done (test);
   printf ("blank_test_test\n");
 }

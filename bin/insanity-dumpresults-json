@@ -92,6 +92,7 @@ def getTestInfo(db, testid):
     data = {}
     trid, ttype, args, checks, resperc, extras, outputfiles, parentid, \
             ismon, isscen = db.getFullTestInfo(testid)
+    expl = db.getTestErrorExplanations (testid)
 
     if resperc is None:
         # test didn't end up in the database
@@ -120,8 +121,12 @@ def getTestInfo(db, testid):
     attributes["success-percentage"] = "%0.1f" % resperc
     for k, v in args.items():
         attributes[("arg." + k)[:MAX_ATTR_LEN]] = str(v)
+    checkid = 0
     for k, v in checks:
+        checkid = checkid + 1
         attributes[("check." + k)[:MAX_ATTR_LEN]] = str(v)
+        if v == 0 and expl and checkid in expl:
+          attributes[("check." + k + ".explanation")[:MAX_ATTR_LEN]] = expl[checkid]
     for k, v in extras:
         attributes[("extra." + k)[:MAX_ATTR_LEN]] = str(v)
     for k, v in outputfiles.items():
