@@ -1196,7 +1196,10 @@ insanity_test_finalize (GObject * gobject)
       gpointer key, value;
       g_hash_table_iter_init (&i, priv->filename_cache);
       while (g_hash_table_iter_next (&i, &key, &value)) {
-        g_unlink (value);
+        /* only unlink those random ones */
+        if (test->priv->tmpdir && g_str_has_prefix (value, test->priv->tmpdir)) {
+          g_unlink (value);
+        }
       }
     }
     g_hash_table_destroy (priv->filename_cache);
