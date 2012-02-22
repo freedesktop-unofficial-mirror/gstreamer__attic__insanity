@@ -60,6 +60,9 @@ PKG_CHECK_MODULES(GOBJECT, gobject-2.0)
 PKG_CHECK_MODULES(GTHREAD, gthread-2.0)
 PKG_CHECK_MODULES(DBUS, dbus-1)
 
+dnl check for gobject-introspection
+GOBJECT_INTROSPECTION_CHECK([1.31.1])
+
 AC_CONFIG_FILES(
   [Makefile]
   [lib/Makefile]
