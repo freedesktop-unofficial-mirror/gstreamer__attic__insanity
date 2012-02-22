@@ -776,7 +776,6 @@ static const struct
   { "remoteSetUp", &insanity_test_dbus_handler_remoteSetup },
   { "remoteStart", &insanity_test_dbus_handler_remoteStart },
   { "remoteStop", &insanity_test_dbus_handler_remoteStop },
-  { "remoteInfo", NULL },
 };
 
 static gboolean
