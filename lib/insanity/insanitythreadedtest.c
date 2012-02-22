@@ -106,6 +106,19 @@ insanity_threaded_test_class_init (InsanityThreadedTestClass * klass)
       0, NULL);
 }
 
+/**
+ * insanity_threaded_test_new:
+ * @name: the short name of the test.
+ * @description: a one line description of the test.
+ * @full_description: (allow-none): an optional longer description of the test.
+ *
+ * This function creates a new threaded test with the given properties.
+ *
+ * Threaded tests create a thread, and the test signal which will be called
+ * in the new thread.
+ *
+ * Returns: (transfer full): a new #InsanityThreadedTest instance.
+ */
 InsanityThreadedTest *
 insanity_threaded_test_new (const char *name, const char *description, const char *full_description)
 {

@@ -114,7 +114,7 @@ main (int argc, char **argv)
   g_signal_connect_after (test, "test", G_CALLBACK (&blank_test_test), 0);
 
 
-  ret = insanity_test_run (test, argc, argv);
+  ret = insanity_test_run (test, &argc, &argv);
 
   g_object_unref (test);
 

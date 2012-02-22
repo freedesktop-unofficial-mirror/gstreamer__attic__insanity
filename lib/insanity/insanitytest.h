@@ -33,23 +33,45 @@ typedef struct InsanityTestPrivateData InsanityTestPrivateData;
 struct InsanityTest;
 typedef struct InsanityTest InsanityTest;
 
+/**
+ * InsanityTest:
+ *
+ * The opaque #InsanityTest data structure.
+ */
 struct InsanityTest {
   GObject parent;
 
+  /*< private >*/
   InsanityTestPrivateData *priv;
 
   gpointer _insanity_reserved[INSANITY_PADDING];
 };
 
+/**
+ * InsanityTestClass:
+ * @parent_class: the parent class structure
+ * @setup: setup anything the test needs before starting. Arguments are
+ *         now available at this time. Any cleanup for this work should
+ *         be done in teardown.
+ * @start: start the test. Should signal ready when done.
+ * @stop: stop the test.
+ * @teardown: cleanup anything before leaving the test. The test will not
+ *            be started again after this.
+ *
+ * Insanity test class. Override the vmethods to customize functionality.
+ */
 struct InsanityTestClass
 {
   GObjectClass parent_class;
 
+  /*< public >*/
+  /* vtable */
   gboolean (*setup) (InsanityTest *test);
   gboolean (*start) (InsanityTest *test);
   void (*stop) (InsanityTest *test);
   void (*teardown) (InsanityTest *test);
 
+  /*< private >*/
   gpointer _insanity_reserved[INSANITY_PADDING];
 };
 typedef struct InsanityTestClass InsanityTestClass;
@@ -67,7 +89,7 @@ GType insanity_test_get_type (void);
 
 InsanityTest *insanity_test_new(const char *name, const char *description, const char *full_description);
 void insanity_test_add_checklist_item(InsanityTest *test, const char *label, const char *description, const char *error_hint);
-gboolean insanity_test_add_argument(InsanityTest *test, const char *label, const char *description, const char *full_description, const GValue *default_value);
+void insanity_test_add_argument(InsanityTest *test, const char *label, const char *description, const char *full_description, const GValue *default_value);
 void insanity_test_add_output_file(InsanityTest *test, const char *label, const char *description);
 void insanity_test_add_extra_info(InsanityTest *test, const char *label, const char *description);
 
@@ -77,7 +99,7 @@ void insanity_test_done(InsanityTest *test);
 void insanity_test_validate_step(InsanityTest *test, const char *name, gboolean success, const char *description);
 void insanity_test_set_extra_info(InsanityTest *test, const char *name, const GValue *data);
 
-gboolean insanity_test_run(InsanityTest *test, int argc, char **argv);
+gboolean insanity_test_run(InsanityTest *test, int *argc, char ***argv);
 
 #endif
 

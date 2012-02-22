@@ -289,6 +289,17 @@ send_signal (DBusConnection * conn, const char *signal_name,
   return TRUE;
 }
 
+/**
+ * insanity_test_validate_step:
+ * @test: a #InsanityTest to operate on
+ * @name: the name of the step
+ * @success: whether the step passed, or failed
+ * @description: (allow-none): optional description string
+ *
+ * Declares a given step as either passed, or failed.
+ * An optional description may be given to supply more information
+ * about the reason for a particular failure.
+ */
 void
 insanity_test_validate_step (InsanityTest * test, const char *name,
     gboolean success, const char *description)
@@ -372,6 +383,16 @@ insanity_test_set_extra_info_internal (InsanityTest * test, const char *name,
     UNLOCK (test);
 }
 
+/**
+ * insanity_test_set_extra_info:
+ * @test: a #InsanityTest to operate on
+ * @name: a label for the extra information
+ * @data: the extra information
+ *
+ * Allows a test to supply any relevant information of interest.
+ * As an example, Insanity uses this system to record the CPU load
+ * used by a given test, the data here being an integer.
+ */
 void
 insanity_test_set_extra_info (InsanityTest * test, const char *name,
     const GValue * data)
@@ -395,6 +416,12 @@ gather_end_of_test_info (InsanityTest * test)
   g_value_unset (&value);
 }
 
+/**
+ * insanity_test_done:
+ * @test: a #InsanityTest to operate on
+ *
+ * This function MUST be called when each test is finished.
+ */
 void
 insanity_test_done (InsanityTest * test)
 {
@@ -683,6 +710,16 @@ typed_finder (const char *key, const GValue * value, guintptr userdata)
   return 1;
 }
 
+/**
+ * insanity_test_get_argument:
+ * @test: a #InsanityTest to operate on
+ * @key: the name of the argument to retrieve
+ * @value: a pointer to a value to receive the contents of the argument
+ *
+ * Returns: TRUE if the argument was found (in which case the value
+ * is initialized and contains its value), FALSE otherwise (in which
+ * case the value is left untouched).
+ */
 gboolean
 insanity_test_get_argument (InsanityTest * test, const char *key,
     GValue * value)
@@ -718,6 +755,13 @@ insanity_test_get_argument (InsanityTest * test, const char *key,
   return ret;
 }
 
+/**
+ * insanity_test_get_output_filename:
+ * @test: a #InsanityTest to operate on
+ * @key: the label of the filename to retrieve
+ *
+ * Returns: the filename associated to the key, or NULL if none.
+ */
 const char *
 insanity_test_get_output_filename (InsanityTest * test, const char *key)
 {
@@ -1147,8 +1191,19 @@ insanity_report_failed_tests (InsanityTest *test, gboolean verbose)
   return failed;
 }
 
+/**
+ * insanity_test_run:
+ * @test: a #InsanityTest to operate on
+ * @argc: (inout) (allow-none): pointer to application's argc
+ * @argv: (inout) (array length=argc) (allow-none): pointer to application's argv
+ *
+ * This function runs the test after it was setup.
+ * It will handle remote/standalone modes, command line handling, etc.
+ *
+ * Returns: %TRUE on success, FALSE on error.
+ */
 gboolean
-insanity_test_run (InsanityTest * test, int argc, char **argv)
+insanity_test_run (InsanityTest * test, int *argc, char ***argv)
 {
   const char *private_dbus_address;
   const char *opt_uuid = NULL;
@@ -1166,7 +1221,7 @@ insanity_test_run (InsanityTest * test, int argc, char **argv)
 
   ctx = g_option_context_new (test->priv->test_desc);
   g_option_context_add_main_entries (ctx, options, NULL);
-  if (!g_option_context_parse (ctx, &argc, &argv, &err)) {
+  if (!g_option_context_parse (ctx, argc, argv, &err)) {
     fprintf (stderr, "Error initializing: %s\n", err->message);
     g_error_free (err);
     g_option_context_free (ctx);
@@ -1182,18 +1237,18 @@ insanity_test_run (InsanityTest * test, int argc, char **argv)
 
     /* Load any command line output files and arguments */
     test->priv->args = g_hash_table_new_full (&g_str_hash, &g_str_equal, &g_free, &free_gvalue);
-    for (n = 1; n < argc; ++n) {
+    for (n = 1; n < *argc; ++n) {
       char *key;
       const char *equals;
       GValue value = {0}, *v;
 
-      equals = strchr (argv[n], '=');
+      equals = strchr ((*argv)[n], '=');
       if (!equals) {
-        usage (argv[0]);
+        usage ((*argv)[0]);
         return FALSE;
       }
 
-      key = g_strndup (argv[n], equals - argv[n]);
+      key = g_strndup ((*argv)[n], equals - (*argv)[n]);
       if (g_hash_table_lookup (test->priv->test_output_files, key)) {
         g_hash_table_insert (test->priv->filename_cache, key, g_strdup (equals+1));
       }
@@ -1470,6 +1525,16 @@ insanity_test_class_init (InsanityTestClass * klass)
       0, NULL);
 }
 
+/**
+ * insanity_test_new:
+ * @name: the short name of the test.
+ * @description: a one line description of the test.
+ * @full_description: (allow-none): an optional longer description of the test.
+ *
+ * This function creates a new test with the given properties.
+ *
+ * Returns: (transfer full): a new #InsanityTest instance.
+ */
 InsanityTest *
 insanity_test_new (const char *name, const char *description,
     const char *full_description)
@@ -1488,6 +1553,18 @@ insanity_add_metadata_entry (GHashTable * hash, const char *label,
   g_hash_table_insert (hash, g_strdup (label), g_strdup (description));
 }
 
+/**
+ * insanity_test_add_checklist_item:
+ * @test: a #InsanityTest instance to operate on.
+ * @label: the new checklist item's name
+ * @description: a one line description of that item
+ * @error_hint: (allow-none): an optional explanatory description of why this error may happen
+ *
+ * This function adds a checklist item declaration to the test.
+ *
+ * Checklist items are the individual steps that a test can pass or fail
+ * using insanity_test_validate_step.
+ */
 void
 insanity_test_add_checklist_item (InsanityTest * test, const char *label,
     const char *description, const char *error_hint)
@@ -1499,7 +1576,22 @@ insanity_test_add_checklist_item (InsanityTest * test, const char *label,
   }
 }
 
-gboolean
+/**
+ * insanity_test_add_argument:
+ * @test: a #InsanityTest instance to operate on.
+ * @label: the new argument's name
+ * @description: a one line description of that argument
+ * @full_description: (allow-none): an optional longer description of that argument
+ * @default_value: the default value for this parameter if not supplied at runtime
+ *
+ * This function adds an argument declaration to the test.
+ *
+ * Arguments are paramters which can be passed to the test, and which value
+ * may be queried at runtime with insanity_test_get_argument. Arguments may
+ * be changed every time a test is started, so should be inspected each time
+ * the start function is called.
+ */
+void
 insanity_test_add_argument (InsanityTest * test, const char *label,
     const char *description, const char *full_description,
     const GValue *default_value)
@@ -1512,9 +1604,19 @@ insanity_test_add_argument (InsanityTest * test, const char *label,
   g_value_init (&arg->default_value, G_VALUE_TYPE (default_value));
   g_value_copy (default_value, &arg->default_value); /* Source is first */
   g_hash_table_insert (test->priv->test_arguments, g_strdup (label), arg);
-  return TRUE;
 }
 
+/**
+ * insanity_test_add_extra_info:
+ * @test: a #InsanityTest instance to operate on.
+ * @label: the new extra info's name
+ * @description: a one line description of that extra info
+ *
+ * This function adds an extra info declaration to the test.
+ *
+ * Extra infos are test specific data that a test can signal to
+ * the caller using insanity_test_add_extra_info.
+ */
 void
 insanity_test_add_extra_info (InsanityTest * test, const char *label,
     const char *description)
@@ -1523,6 +1625,20 @@ insanity_test_add_extra_info (InsanityTest * test, const char *label,
       description);
 }
 
+/**
+ * insanity_test_add_output_file:
+ * @test: a #InsanityTest instance to operate on.
+ * @label: the new output file's name
+ * @description: a one line description of that file's purpose
+ *
+ * This function adds an output file declaration to the test.
+ *
+ * Output files will be named automatically for the test's use.
+ * A test can obtain the filename assigned to an output file
+ * using insanity_test_get_output_filename, open it, and write
+ * to it. After the test has finished, these files will be
+ * either collected, deleted, or left for the user as requested.
+ */
 void
 insanity_test_add_output_file (InsanityTest * test, const char *label,
     const char *description)

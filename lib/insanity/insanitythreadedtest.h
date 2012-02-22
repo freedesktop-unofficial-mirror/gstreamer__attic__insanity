@@ -35,20 +35,35 @@ typedef struct InsanityThreadedTestPrivateData InsanityThreadedTestPrivateData;
 struct InsanityThreadedTest;
 typedef struct InsanityThreadedTest InsanityThreadedTest;
 
+/**
+ * InsanityTest:
+ *
+ * The opaque #InsanityTest data structure.
+ */
 struct InsanityThreadedTest {
   InsanityTest parent;
 
+  /*< private >*/
   InsanityThreadedTestPrivateData *priv;
 
   gpointer _insanity_reserved[INSANITY_PADDING];
 };
 
+/**
+ * InsanityThreadedTestClass:
+ * @parent_class: the parent class structure
+ * @test: Start the test
+ *
+ * Insanity threaded test class. Override the vmethods to customize
+ * functionality.
+ */
 struct InsanityThreadedTestClass
 {
   InsanityTestClass parent_class;
 
   void (*test) (InsanityThreadedTest *test);
 
+  /*< private >*/
   gpointer _insanity_reserved[INSANITY_PADDING];
 };
 typedef struct InsanityThreadedTestClass InsanityThreadedTestClass;
