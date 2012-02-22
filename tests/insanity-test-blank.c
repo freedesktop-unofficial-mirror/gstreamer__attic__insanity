@@ -34,7 +34,6 @@ blank_test_setup (InsanityTest * test)
 static gboolean
 blank_test_start (InsanityTest * test)
 {
-#if 0
   GValue value, zero = { 0 };
   value = zero;
   if (insanity_test_get_argument (test, "uri", &value)) {
@@ -43,6 +42,7 @@ blank_test_start (InsanityTest * test)
     g_value_unset (&value);
   }
 
+#if 0
   value = zero;
   if (insanity_test_get_argument (test, "test-argument", &value)) {
     const char *ta = g_value_get_string (&value);

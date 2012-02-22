@@ -235,7 +235,7 @@ class TestRun(gobject.GObject):
         if test in self._runninginstances:
             self._runninginstances.remove(test)
         self._storage.newTestFinished(self, test)
-        self._runNext()
+        self._runNextBatch()
 
     def _singleTestCheck(self, test, check, validate):
         pass
@@ -245,26 +245,18 @@ class TestRun(gobject.GObject):
         if len(self._runninginstances) >= self._maxnbtests:
             warning("We were already running the max number of tests")
             return False
-        info("Getting next test arguments for this batch")
-        try:
-            kwargs = self._currentarguments.next()
-        except StopIteration:
-            if len(self._runninginstances):
-                info("No more arguments, but still a test running")
-                return False
-            info("No more arguments, we're finished with this batch")
-            self._runNextBatch()
-            return False
 
         # grab the next arguments
         testclass = self._currenttest
         monitors = self._currentmonitors
 
         # create test with arguments
+        kwargs={}
         debug("Creating test %r with arguments %r" % (testclass, kwargs))
         test = PythonDBusTest(testrun=self, bus=self._bus,
                          bus_address=self._bus_address,
                          metadata = testclass, execcmd = self.execcmd,
+                         test_arguments = self._currentarguments,
                          **kwargs)
 #        test = testclass(testrun=self, bus=self._bus,
 #                         bus_address=self._bus_address,
@@ -288,7 +280,7 @@ class TestRun(gobject.GObject):
         if len(self._runninginstances) < self._maxnbtests:
             warning("still more test to run (current:%d/max:%d)",
                     len(self._runninginstances), self._maxnbtests)
-            gobject.idle_add(self._runNext)
+            gobject.idle_add(self._runNextBatch)
         return False
 
     def _runNextBatch(self):

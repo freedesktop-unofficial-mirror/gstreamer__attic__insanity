@@ -70,7 +70,7 @@ class DBusTest(Test, dbus.service.Object):
     __metaclass__ = dbus.gobject_service.ExportedGObjectType
 
     def __init__(self, bus=None, bus_address="", metadata = None, execcmd = None,
-                 env=None, *args, **kwargs):
+                 test_arguments = None, env=None, *args, **kwargs):
         """
         bus is the private DBusConnection used for testing.
         bus_address is the address of the private DBusConnection used for testing.
@@ -80,6 +80,7 @@ class DBusTest(Test, dbus.service.Object):
         if (metadata == None):
             raise Exception("You need to provide test metadata")
         self._metadata = metadata
+        self._test_arguments = test_arguments
 
         Test.__init__(self, bus_address=bus_address,
                       *args, **kwargs)
@@ -162,11 +163,11 @@ class DBusTest(Test, dbus.service.Object):
         # Don't forget to set a timeout for waiting for the connection
         return True
 
-    def start(self):
+    def start(self, args):
         info("uuid:%s", self.uuid)
         if Test.start(self) == False:
             return False
-        return self.callRemoteStart(self.args)
+        return self.callRemoteStart(args)
 
     def tearDown(self):
         info("uuid:%s", self.uuid)
@@ -307,10 +308,16 @@ class DBusTest(Test, dbus.service.Object):
         info("%s", self.uuid)
         # increment timeout by 5s
         self._timeout += 5
-        if self._running:
+
+        try:
+            args = self._test_arguments.next().copy()
+            args["bus_address"] = self._bus_address
+            args["timeout"] = self._timeout
+            if self._outputfiles:
+                args["outputfiles"] = self.getOutputFiles()
+            self.start(args)
+        except:
             self.tearDown()
-        else:
-            self.start()
 
     def _remoteStopCb(self):
         info("%s", self.uuid)
@@ -400,12 +407,6 @@ class DBusTest(Test, dbus.service.Object):
         remoterunner = dbus.Interface(remoteobj,
                                       "net.gstreamer.Insanity.Test")
         debug("Got remote iface %r" % remoterunner)
-        args = self.arguments.copy()
-        args["bus_address"] = self._bus_address
-        args["timeout"] = self._timeout
-        if self._outputfiles:
-            args["outputfiles"] = self.getOutputFiles()
-        self.args = args
         try:
             delay = time.time() - self._subprocessconnecttime
             self._remoteinstance = dbus.Interface(remoteobj,
