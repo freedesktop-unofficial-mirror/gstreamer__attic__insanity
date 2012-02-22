@@ -78,7 +78,7 @@ main (int argc, char **argv)
 {
   InsanityTest *test;
   gboolean ret;
-  GValue def;
+  GValue def = {0};
 
   g_type_init ();
 
@@ -89,8 +89,12 @@ main (int argc, char **argv)
       "Some random step, nothing much", NULL);
   insanity_test_add_checklist_item (test, "other-random-step",
       "Some random step, nothing much either", "error blah");
+
+  g_value_init (&def, G_TYPE_STRING);
+  g_value_set_string (&def, "http://127.0.0.1/");
   insanity_test_add_argument (test, "uri", "URI description",
-      "URI full description", G_TYPE_STRING, "http://127.0.0.1/");
+      "URI full description", &def);
+  g_value_unset (&def);
   insanity_test_add_output_file (test, "dummy-output-file", "dummy output file");
 
   g_signal_connect_after (test, "setup", G_CALLBACK (&blank_test_setup), 0);

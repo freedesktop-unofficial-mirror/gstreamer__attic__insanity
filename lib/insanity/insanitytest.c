@@ -1408,54 +1408,15 @@ insanity_test_add_checklist_item (InsanityTest * test, const char *label,
 gboolean
 insanity_test_add_argument (InsanityTest * test, const char *label,
     const char *description, const char *full_description,
-    GType type, ...)
+    const GValue *default_value)
 {
   Argument *arg;
-  va_list ap;
-  GValue v = {0};
-
-  va_start (ap, type);
-  if (type == G_TYPE_INT) {
-    g_value_init (&v, G_TYPE_INT);
-    g_value_set_int (&v, va_arg (ap, int));
-  }
-  else if (type == G_TYPE_UINT) {
-    g_value_init (&v, G_TYPE_UINT);
-    g_value_set_uint (&v, va_arg (ap, unsigned int));
-  }
-  else if (type == G_TYPE_INT64) {
-    g_value_init (&v, G_TYPE_INT64);
-    g_value_set_int64 (&v, va_arg (ap, gint64));
-  }
-  else if (type == G_TYPE_UINT64) {
-    g_value_init (&v, G_TYPE_UINT64);
-    g_value_set_uint64 (&v, va_arg (ap, guint64));
-  }
-  else if (type == G_TYPE_BOOLEAN) {
-    g_value_init (&v, G_TYPE_BOOLEAN);
-    g_value_set_boolean (&v, va_arg (ap, gboolean));
-  }
-  else if (type == G_TYPE_STRING) {
-    g_value_init (&v, G_TYPE_STRING);
-    g_value_set_string (&v, va_arg (ap, const char *)); /* does strdup */
-  }
-  else if (type == G_TYPE_DOUBLE) {
-    g_value_init (&v, G_TYPE_DOUBLE);
-    g_value_set_float (&v, va_arg (ap, double));
-  }
-  else {
-    va_end (ap);
-    fprintf (stderr, "Unsupported argument type\n");
-    return FALSE;
-  }
-  va_end (ap);
 
   arg = g_slice_alloc0 (sizeof (Argument));
   arg->description = g_strdup (description);
   arg->full_description = full_description ? g_strdup (full_description) : NULL;
-  g_value_init (&arg->default_value, G_VALUE_TYPE (&v));
-  g_value_copy (&v, &arg->default_value); /* Source is first */
-  g_value_unset (&v);
+  g_value_init (&arg->default_value, G_VALUE_TYPE (default_value));
+  g_value_copy (default_value, &arg->default_value); /* Source is first */
   g_hash_table_insert (test->priv->test_arguments, g_strdup (label), arg);
   return TRUE;
 }
