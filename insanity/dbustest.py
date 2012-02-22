@@ -475,9 +475,3 @@ class PythonDBusTest(DBusTest):
         self.__orig_excepthook = sys.excepthook
         sys.excepthook = self.__excepthook
 
-class CmdLineTest(PythonDBusTest):
-    """
-    Tests that run a command line application/script.
-    """
-    # TODO : fill with command line generic stuff
-    pass

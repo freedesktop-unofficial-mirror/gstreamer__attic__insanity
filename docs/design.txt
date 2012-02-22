@@ -122,10 +122,9 @@ Client -- Test
   being analyzed, or the duration of the test, or the tags being
   emitted by any gstreamer pipeline, ....
 
-  Python base classes will be provided to quickly create tests. Two
-  main subclasses are available:
-  * GstreamerTest : For all tests that use GStreamer.
-  * CmdLineTest : For spawning any command-line application.
+  Python base classes will be provided to quickly create tests. One
+  subclass is available:
+  * PythonDBusTest : Spawns an external test and communicates via D-Bus.
 
 Client -- Monitor
 -----------------

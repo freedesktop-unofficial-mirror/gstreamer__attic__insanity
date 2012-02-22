@@ -40,8 +40,6 @@ import gobject
 # +--- DBusTest
 #      |
 #      +--- PythonDBusTest
-#           |
-#           +--- CmdLineTest
 
 class Test(gobject.GObject):
     """
@@ -731,4 +729,4 @@ class Test(gobject.GObject):
         return self.__test_full_description__
 
 # For compatibility:
-from insanity.dbustest import DBusTest, PythonDBusTest, CmdLineTest
+from insanity.dbustest import DBusTest, PythonDBusTest

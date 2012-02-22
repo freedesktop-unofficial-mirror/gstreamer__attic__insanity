@@ -83,7 +83,7 @@ def list_available_scenarios():
     * the scenario description
     * the scenario class
     """
-    from insanity.test import Test, DBusTest, PythonDBusTest, CmdLineTest
+    from insanity.test import Test, DBusTest, PythonDBusTest
     from insanity.scenario import Scenario
 
     #def get_valid_subclasses(cls):
