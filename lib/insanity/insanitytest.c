@@ -92,6 +92,7 @@ struct InsanityTestPrivateData
   GMutex *lock;
 #endif
   gboolean standalone;
+  GHashTable *checklist_results;
 
   /* test metadata */
   char *test_name;
@@ -284,6 +285,8 @@ void
 insanity_test_validate_step (InsanityTest * test, const char *name,
     gboolean success)
 {
+  gboolean *b;
+
   LOCK (test);
   if (test->priv->standalone) {
     printf("step: %s: %s\n", name, success ? "PASS" : "FAIL");
@@ -292,6 +295,10 @@ insanity_test_validate_step (InsanityTest * test, const char *name,
     send_signal (test->priv->conn, "remoteValidateStepSignal", test->priv->name,
         DBUS_TYPE_STRING, &name, DBUS_TYPE_BOOLEAN, &success, DBUS_TYPE_INVALID);
   }
+
+  b = g_malloc (sizeof (gboolean));
+  *b = success;
+  g_hash_table_insert (test->priv->checklist_results, g_strdup (name), b);
   UNLOCK (test);
 }
 
@@ -1068,6 +1075,36 @@ parse_value (InsanityTest *test, const char *key, const char *string_value, GVal
   return FALSE;
 }
 
+static unsigned int
+insanity_report_failed_tests (InsanityTest *test)
+{
+  GHashTableIter i;
+  gpointer key, value;
+  unsigned int failed = 0;
+
+  /* Get all checklist items that were passed or failed */
+  g_hash_table_iter_init (&i, test->priv->checklist_results);
+  while (g_hash_table_iter_next (&i, &key, &value)) {
+    gboolean success = *(gboolean *)value;
+    printf ("%s: %s\n", (const char *)key, success ? "PASS" : "FAIL");
+    if (!success)
+      failed++;
+  }
+
+  /* Get all checklist items that were not passed nor failed */
+  g_hash_table_iter_init (&i, test->priv->test_checklist);
+  while (g_hash_table_iter_next (&i, &key, &value)) {
+    if (!g_hash_table_lookup (test->priv->checklist_results, key)) {
+      printf ("%s: SKIP\n", (const char *)key);
+      ++failed;
+    }
+  }
+
+  printf("%u/%u failed tests\n", failed,
+      g_hash_table_size (test->priv->test_checklist));
+  return failed;
+}
+
 gboolean
 insanity_test_run (InsanityTest * test, int argc, char **argv)
 {
@@ -1145,7 +1182,7 @@ insanity_test_run (InsanityTest * test, int argc, char **argv)
       }
       on_stop (test);
     }
-    ret = TRUE;
+    ret = (insanity_report_failed_tests (test) == 0);
   }
 
   else if (opt_run && opt_uuid) {
@@ -1204,10 +1241,12 @@ insanity_test_finalize (GObject * gobject)
     }
     g_hash_table_destroy (priv->filename_cache);
   }
+  g_hash_table_destroy (priv->checklist_results);
   if (priv->tmpdir) {
     g_rmdir (priv->tmpdir);
     g_free (priv->tmpdir);
   }
+
   g_free (test->priv->test_name);
   g_free (test->priv->test_desc);
   g_free (test->priv->test_full_desc);
@@ -1246,6 +1285,8 @@ insanity_test_init (InsanityTest * test)
   priv->exit = FALSE;
   priv->filename_cache =
       g_hash_table_new_full (&g_str_hash, &g_str_equal, &g_free, g_free);
+  priv->checklist_results =
+      g_hash_table_new_full (&g_str_hash, &g_str_equal, &g_free, &g_free);
 
   priv->test_name = NULL;
   priv->test_desc = NULL;
