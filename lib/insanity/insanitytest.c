@@ -298,15 +298,10 @@ insanity_test_validate_step (InsanityTest * test, const char *name,
     }
   }
   else {
-    if (description) {
-      send_signal (test->priv->conn, "remoteValidateStepSignal", test->priv->name,
-          DBUS_TYPE_STRING, &name, DBUS_TYPE_BOOLEAN, &success,
-          DBUS_TYPE_STRING, &description, DBUS_TYPE_INVALID);
-    }
-    else {
-      send_signal (test->priv->conn, "remoteValidateStepSignal", test->priv->name,
-          DBUS_TYPE_STRING, &name, DBUS_TYPE_BOOLEAN, &success, DBUS_TYPE_INVALID);
-    }
+    const char *desc = description ? description : "";
+    send_signal (test->priv->conn, "remoteValidateStepSignal", test->priv->name,
+        DBUS_TYPE_STRING, &name, DBUS_TYPE_BOOLEAN, &success,
+        DBUS_TYPE_STRING, &desc, DBUS_TYPE_INVALID);
   }
 
   b = g_malloc (sizeof (gboolean));

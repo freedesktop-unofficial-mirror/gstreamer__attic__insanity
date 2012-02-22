@@ -457,7 +457,7 @@ class Test(gobject.GObject):
         if not validated:
             if self.isExpectedFailure(checkitem, self._extrainfo):
                 self._expected_failures[checkitem] = True
-            if description:
+            if description and description != "":
                 explanation = description
             else:
                 explanation = self.processFailure(checkitem, self._extrainfo)
