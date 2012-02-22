@@ -1214,9 +1214,6 @@ insanity_test_run (InsanityTest * test, int argc, char **argv)
       printf ("PRIVATE_DBUS_ADDRESS: %s\n", private_dbus_address);
 #endif
       ret = listen (test, private_dbus_address, opt_uuid);
-
-      if (ret)
-        ret = (insanity_report_failed_tests (test, FALSE) == 0);
     }
   }
 
