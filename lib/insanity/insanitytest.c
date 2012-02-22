@@ -1089,7 +1089,7 @@ parse_value (InsanityTest *test, const char *key, const char *string_value, GVal
 }
 
 static unsigned int
-insanity_report_failed_tests (InsanityTest *test)
+insanity_report_failed_tests (InsanityTest *test, gboolean verbose)
 {
   GHashTableIter i;
   gpointer key, value;
@@ -1099,7 +1099,8 @@ insanity_report_failed_tests (InsanityTest *test)
   g_hash_table_iter_init (&i, test->priv->checklist_results);
   while (g_hash_table_iter_next (&i, &key, &value)) {
     gboolean success = *(gboolean *)value;
-    printf ("%s: %s\n", (const char *)key, success ? "PASS" : "FAIL");
+    if (verbose)
+      printf ("%s: %s\n", (const char *)key, success ? "PASS" : "FAIL");
     if (!success)
       failed++;
   }
@@ -1108,13 +1109,16 @@ insanity_report_failed_tests (InsanityTest *test)
   g_hash_table_iter_init (&i, test->priv->test_checklist);
   while (g_hash_table_iter_next (&i, &key, &value)) {
     if (!g_hash_table_lookup (test->priv->checklist_results, key)) {
-      printf ("%s: SKIP\n", (const char *)key);
+      if (verbose)
+        printf ("%s: SKIP\n", (const char *)key);
       ++failed;
     }
   }
 
-  printf("%u/%u failed tests\n", failed,
-      g_hash_table_size (test->priv->test_checklist));
+  if (verbose)
+    printf("%u/%u failed tests\n", failed,
+        g_hash_table_size (test->priv->test_checklist));
+
   return failed;
 }
 
@@ -1195,7 +1199,7 @@ insanity_test_run (InsanityTest * test, int argc, char **argv)
       }
       on_stop (test);
     }
-    ret = (insanity_report_failed_tests (test) == 0);
+    ret = (insanity_report_failed_tests (test, TRUE) == 0);
   }
 
   else if (opt_run && opt_uuid) {
@@ -1211,6 +1215,9 @@ insanity_test_run (InsanityTest * test, int argc, char **argv)
       printf ("PRIVATE_DBUS_ADDRESS: %s\n", private_dbus_address);
 #endif
       ret = listen (test, private_dbus_address, opt_uuid);
+
+      if (ret)
+        ret = (insanity_report_failed_tests (test, FALSE) == 0);
     }
   }
 
