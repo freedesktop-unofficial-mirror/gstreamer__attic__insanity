@@ -116,9 +116,7 @@ class DBusTest(Test, dbus.service.Object):
     # Test class overrides
 
     def test(self):
-        info("uuid:%s", self.uuid)
-        self.remoteTest()
-        self.callRemoteTest()
+        pass
 
     def setUp(self):
         info("uuid:%s", self.uuid)
@@ -164,13 +162,19 @@ class DBusTest(Test, dbus.service.Object):
         # Don't forget to set a timeout for waiting for the connection
         return True
 
+    def start(self):
+        info("uuid:%s", self.uuid)
+        if Test.start(self) == False:
+            return False
+        return self.callRemoteStart(self.args)
+
     def tearDown(self):
         info("uuid:%s", self.uuid)
         # FIXME : tear down the other process gracefully
         #    by first sending it the termination remote signal
         #    and then checking it's killed
         try:
-            self.callRemoteStop()
+            self.callRemoteTearDown()
         finally:
             if self._testrun:
                 if self._newremotetestsid:
@@ -201,6 +205,7 @@ class DBusTest(Test, dbus.service.Object):
 
     def stop(self):
         info("uuid:%s", self.uuid)
+        self.callRemoteStop()
         Test.stop(self)
 
     def get_remote_launcher_args(self):
@@ -237,18 +242,27 @@ class DBusTest(Test, dbus.service.Object):
     def _voidRemoteCallBackHandler(self):
         pass
 
+    def _voidRemoteSetUpCallBackHandler(self):
+        self._remotetimeoutid = gobject.timeout_add(self._timeout * 1000,
+                                                    self._remoteSetUpTimeoutCb)
+
+    def _voidRemoteStartCallBackHandler(self):
+        self._remotetimeoutid = gobject.timeout_add(self._timeout * 1000,
+                                                    self._remoteStartTimeoutCb)
+
+
     def _voidRemoteErrBackHandler(self, exc, caller=None, fatal=True):
         error("%r : %s", caller, exc)
         if fatal:
             warning("FATAL : aborting test")
             # a fatal error happened, DIVE DIVE DIVE !
-            self.stop()
-
-    def _voidRemoteTestErrBackHandler(self, exc):
-        self._voidRemoteErrBackHandler(exc, "remoteTest")
+            self.teardown()
 
     def _voidRemoteSetUpErrBackHandler(self, exc):
         self._voidRemoteErrBackHandler(exc, "remoteSetUp")
+
+    def _voidRemoteStartErrBackHandler(self, exc):
+        self._voidRemoteErrBackHandler(exc, "remoteStart")
 
     def _voidRemoteStopErrBackHandler(self, exc):
         self._voidRemoteErrBackHandler(exc, "remoteStop", fatal=False)
@@ -256,35 +270,47 @@ class DBusTest(Test, dbus.service.Object):
     def _voidRemoteTearDownErrBackHandler(self, exc):
         self._voidRemoteErrBackHandler(exc, "remoteTearDown", fatal=False)
 
-    ## Proxies for remote DBUS calls
-    def callRemoteTest(self):
-        # call remote instance "remoteTest()"
-        if not self._remoteinstance:
-            return
-        self._remoteinstance.remoteStart(reply_handler=self._voidRemoteCallBackHandler,
-                                        error_handler=self._voidRemoteTestErrBackHandler)
 
-    def callRemoteSetUp(self, args):
+
+    ## Proxies for remote DBUS calls
+    def callRemoteSetUp(self):
         # call remote instance "remoteSetUp()"
         if not self._remoteinstance:
             return
-        self._remoteinstance.remoteSetUp(args,
-                                         reply_handler=self._voidRemoteCallBackHandler,
+        self._remoteinstance.remoteSetUp(reply_handler=self._voidRemoteSetUpCallBackHandler,
                                          error_handler=self._voidRemoteSetUpErrBackHandler)
+
+    def callRemoteStart(self, args):
+        # call remote instance "remoteStart()"
+        if not self._remoteinstance:
+            return
+        self._remoteinstance.remoteStart(args,
+                                         reply_handler=self._voidRemoteStartCallBackHandler,
+                                         error_handler=self._voidRemoteStartErrBackHandler)
 
     def callRemoteStop(self):
         # call remote instance "remoteStop()"
         if not self._remoteinstance:
             return
-        self._remoteinstance.remoteStop(reply_handler=self.remoteStop,
+        self._remoteinstance.remoteStop(reply_handler=self._voidRemoteCallBackHandler,
                                         error_handler=self._voidRemoteStopErrBackHandler)
+
+    def callRemoteTearDown(self):
+        # call remote instance "remoteTearDown()"
+        if not self._remoteinstance:
+            return
+        self._remoteinstance.remoteTearDown(reply_handler=self._voidRemoteCallBackHandler,
+                                            error_handler=self._voidRemoteTearDownErrBackHandler)
 
     ## callbacks from remote signals
     def _remoteReadyCb(self):
         info("%s", self.uuid)
         # increment timeout by 5s
         self._timeout += 5
-        self.start()
+        if self._running:
+            self.tearDown()
+        else:
+            self.start()
 
     def _remoteStopCb(self):
         info("%s", self.uuid)
@@ -300,7 +326,13 @@ class DBusTest(Test, dbus.service.Object):
         self.extraInfo(unwrap(key), unwrap(value))
 
     ## Remote DBUS calls
-    def _remoteTestTimeoutCb(self):
+    def _remoteSetUpTimeoutCb(self):
+        debug("%s", self.uuid)
+        self.validateStep("no-timeout", False)
+        self._remotetimeoutid = 0
+        return False
+
+    def _remoteStartTimeoutCb(self):
         debug("%s", self.uuid)
         self.validateStep("no-timeout", False)
         self.remoteTearDown()
@@ -316,14 +348,14 @@ class DBusTest(Test, dbus.service.Object):
         """
         info("%s", self.uuid)
         # add a timeout
-        self._remotetimeoutid = gobject.timeout_add(self._timeout * 1000,
-                                                    self._remoteTestTimeoutCb)
+        #self._remotetimeoutid = gobject.timeout_add(self._timeout * 1000,
+        #                                            self._remoteTestTimeoutCb)
 
     def remoteStop(self):
         info("%s", self.uuid)
         # because of being asynchronous, we call remoteTearDown first
-        self.tearDown()
-        Test.stop(self)
+        #self.tearDown()
+        #Test.stop(self)
 
     def remoteTearDown(self):
         """
@@ -373,6 +405,7 @@ class DBusTest(Test, dbus.service.Object):
         args["timeout"] = self._timeout
         if self._outputfiles:
             args["outputfiles"] = self.getOutputFiles()
+        self.args = args
         try:
             delay = time.time() - self._subprocessconnecttime
             self._remoteinstance = dbus.Interface(remoteobj,
@@ -386,7 +419,7 @@ class DBusTest(Test, dbus.service.Object):
                                                    self._remoteValidateStepCb)
             self._remoteinstance.connect_to_signal("remoteExtraInfoSignal",
                                                    self._remoteExtraInfoCb)
-            self.callRemoteSetUp(args)
+            self.callRemoteSetUp()
         except:
             exception("Exception raised when creating remote instance !")
             self.stop()

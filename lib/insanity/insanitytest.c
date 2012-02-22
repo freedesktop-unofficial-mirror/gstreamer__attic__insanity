@@ -58,6 +58,7 @@ static guint setup_signal;
 static guint start_signal;
 static guint stop_signal;
 static guint test_signal;
+static guint teardown_signal;
 static GParamSpec *properties[N_PROPERTIES] = { NULL, };
 
 #if GLIB_CHECK_VERSION(2,30,2)
@@ -178,6 +179,13 @@ insanity_test_stop (InsanityTest * test)
 }
 
 static void
+insanity_test_teardown (InsanityTest * test)
+{
+  (void) test;
+  printf ("insanity_test_teardown\n");
+}
+
+static void
 insanity_test_connect (InsanityTest * test, DBusConnection * conn,
     const char *uuid)
 {
@@ -226,7 +234,6 @@ insanity_test_record_stop_time (InsanityTest * test)
 #endif
 }
 
-/* TODO: add the full API */
 #define INSANITY_TEST_INTERFACE "net.gstreamer.Insanity.Test"
 static const char *introspect_response_template = " \
   <!DOCTYPE node PUBLIC \"-//freedesktop//DTD D-BUS Object Introspection 1.0//EN\" \
@@ -238,9 +245,10 @@ static const char *introspect_response_template = " \
       </method> \
     </interface> \
     <interface name=\"" INSANITY_TEST_INTERFACE "\"> \
-      <method name=\"remoteSetUp\"> \
-        <arg direction=\"in\" type=\"a{sv}\" /> \
-      </method> \
+      <method name=\"remoteSetUp\"> </method> \
+      <method name=\"remoteStart\"> <arg direction=\"in\" type=\"a{sv}\" /> </method> \
+      <method name=\"remoteStop\"> </method> \
+      <method name=\"remoteTearDown\"> </method> \
     </interface> \
   </node> \
 ";
@@ -391,7 +399,6 @@ void
 insanity_test_done (InsanityTest * test)
 {
   LOCK (test);
-  gather_end_of_test_info (test);
   if (!test->priv->standalone) {
     send_signal (test->priv->conn, "remoteStopSignal", test->priv->name,
         DBUS_TYPE_INVALID);
@@ -406,6 +413,10 @@ on_setup (InsanityTest * test)
   gboolean ret = TRUE;
 
   g_signal_emit (test, setup_signal, 0, &ret);
+
+  LOCK (test);
+  insanity_test_record_start_time (test);
+  UNLOCK (test);
 
   if (!test->priv->standalone) {
     if (!ret) {
@@ -425,7 +436,6 @@ on_start (InsanityTest * test)
 {
   gboolean ret = TRUE;
 
-  insanity_test_record_start_time (test);
   g_signal_emit (test, start_signal, 0, &ret);
   return ret;
 }
@@ -435,8 +445,22 @@ on_stop (InsanityTest * test)
 {
   g_signal_emit (test, stop_signal, 0, NULL);
 
+  if (!test->priv->standalone) {
+    send_signal (test->priv->conn, "remoteReadySignal", test->priv->name,
+        DBUS_TYPE_INVALID);
+  }
+}
+
+static void
+on_teardown (InsanityTest * test)
+{
   LOCK (test);
   gather_end_of_test_info (test);
+  UNLOCK (test);
+
+  g_signal_emit (test, teardown_signal, 0, NULL);
+
+  LOCK (test);
   test->priv->exit = TRUE;
   UNLOCK (test);
 }
@@ -745,14 +769,13 @@ insanity_test_get_output_filename (InsanityTest * test, const char *key)
 static void
 insanity_test_dbus_handler_remoteSetup (InsanityTest * test, DBusMessage * msg)
 {
-  insanity_test_set_args (test, msg);
   on_setup (test);
 }
 
 static void
 insanity_test_dbus_handler_remoteStart (InsanityTest * test, DBusMessage * msg)
 {
-  (void) msg;
+  insanity_test_set_args (test, msg);
   on_start (test);
 }
 
@@ -763,6 +786,13 @@ insanity_test_dbus_handler_remoteStop (InsanityTest * test, DBusMessage * msg)
   on_stop (test);
 }
 
+static void
+insanity_test_dbus_handler_remoteTearDown (InsanityTest * test, DBusMessage * msg)
+{
+  (void) msg;
+  on_teardown (test);
+}
+
 static const struct
 {
   const char *method;
@@ -771,6 +801,7 @@ static const struct
   { "remoteSetUp", &insanity_test_dbus_handler_remoteSetup },
   { "remoteStart", &insanity_test_dbus_handler_remoteStart },
   { "remoteStop", &insanity_test_dbus_handler_remoteStop },
+  { "remoteTearDown", &insanity_test_dbus_handler_remoteTearDown },
 };
 
 static gboolean
@@ -1192,6 +1223,7 @@ insanity_test_run (InsanityTest * test, int argc, char **argv)
         }
       }
       on_stop (test);
+      on_teardown (test);
     }
     ret = (insanity_report_failed_tests (test, TRUE) == 0);
   }
@@ -1389,6 +1421,7 @@ insanity_test_class_init (InsanityTestClass * klass)
   klass->setup = &insanity_test_setup;
   klass->start = &insanity_test_start;
   klass->stop = &insanity_test_stop;
+  klass->teardown = &insanity_test_teardown;
 
   gobject_class->get_property = &insanity_test_get_property;
   gobject_class->set_property = &insanity_test_set_property;
@@ -1427,6 +1460,12 @@ insanity_test_class_init (InsanityTestClass * klass)
       G_TYPE_FROM_CLASS (gobject_class),
       G_SIGNAL_RUN_LAST | G_SIGNAL_NO_RECURSE | G_SIGNAL_NO_HOOKS,
       G_STRUCT_OFFSET (InsanityTestClass, stop),
+      NULL, NULL, g_cclosure_marshal_VOID__VOID, G_TYPE_NONE /* return_type */ ,
+      0, NULL);
+  teardown_signal = g_signal_new ("teardown",
+      G_TYPE_FROM_CLASS (gobject_class),
+      G_SIGNAL_RUN_LAST | G_SIGNAL_NO_RECURSE | G_SIGNAL_NO_HOOKS,
+      G_STRUCT_OFFSET (InsanityTestClass, teardown),
       NULL, NULL, g_cclosure_marshal_VOID__VOID, G_TYPE_NONE /* return_type */ ,
       0, NULL);
 }

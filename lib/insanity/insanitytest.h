@@ -48,6 +48,7 @@ struct InsanityTestClass
   gboolean (*setup) (InsanityTest *test);
   gboolean (*start) (InsanityTest *test);
   void (*stop) (InsanityTest *test);
+  void (*teardown) (InsanityTest *test);
 
   gpointer _insanity_reserved[INSANITY_PADDING];
 };

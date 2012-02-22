@@ -362,6 +362,7 @@ class Test(gobject.GObject):
 
         Your teardown MUST happen in a synchronous fashion.
         """
+        stoptime = time.time()
         if self._asynctimeoutid:
             gobject.source_remove(self._asynctimeoutid)
             self._asynctimeoutid = 0
@@ -377,6 +378,14 @@ class Test(gobject.GObject):
             else:
                 debug("removing unexistent file from outputfiles dictionnary")
                 del self._outputfiles[ofname]
+        if self._teststarttime:
+            debug("stoptime:%r , teststarttime:%r",
+                  stoptime, self._teststarttime)
+            self.extraInfo("test-total-duration",
+                           int((stoptime - self._teststarttime) * 1000))
+        for instance in self._monitorinstances:
+            instance.tearDown()
+        self.emit("done")
 
     def stop(self):
         """
@@ -388,21 +397,11 @@ class Test(gobject.GObject):
             return
         info("STOPPING %r" % self)
         self._stopping = True
-        stoptime = time.time()
         # if we still have the timeoutid, we didn't timeout
         notimeout = False
         if self._testtimeoutid:
             notimeout = True
         self.validateStep("no-timeout", notimeout)
-        self.tearDown()
-        if self._teststarttime:
-            debug("stoptime:%r , teststarttime:%r",
-                  stoptime, self._teststarttime)
-            self.extraInfo("test-total-duration",
-                           int((stoptime - self._teststarttime) * 1000))
-        for instance in self._monitorinstances:
-            instance.tearDown()
-        self.emit("done")
 
     def start(self):
         """
@@ -411,6 +410,7 @@ class Test(gobject.GObject):
         Only called by tests that implement asynchronous setUp
         """
         # if we were doing async setup, remove asyncsetup timeout
+        self._stopping = False
         if self.__async_setup__:
             if self._asynctimeoutid:
                 gobject.source_remove(self._asynctimeoutid)

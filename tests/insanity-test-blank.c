@@ -28,7 +28,13 @@ blank_test_setup (InsanityTest * test)
 {
   (void) test;
   printf ("blank_test_setup\n");
+  return TRUE;
+}
 
+static gboolean
+blank_test_start (InsanityTest * test)
+{
+#if 0
   GValue value, zero = { 0 };
   value = zero;
   if (insanity_test_get_argument (test, "uri", &value)) {
@@ -47,15 +53,11 @@ blank_test_setup (InsanityTest * test)
   const char *fn =
       insanity_test_get_output_filename (test, "dummy-output-file");
   printf ("fn: %s\n", fn);
+#endif
 
-  return TRUE;
-}
-
-static gboolean
-blank_test_start (InsanityTest * test)
-{
   (void) test;
   printf ("blank_test_start\n");
+
   return TRUE;
 }
 
@@ -64,6 +66,13 @@ blank_test_stop (InsanityTest * test)
 {
   (void) test;
   printf ("blank_test_stop\n");
+}
+
+static void
+blank_test_teardown (InsanityTest * test)
+{
+  (void) test;
+  printf ("blank_test_teardown\n");
 }
 
 static void
@@ -101,6 +110,7 @@ main (int argc, char **argv)
   g_signal_connect_after (test, "setup", G_CALLBACK (&blank_test_setup), 0);
   g_signal_connect_after (test, "start", G_CALLBACK (&blank_test_start), 0);
   g_signal_connect (test, "stop", G_CALLBACK (&blank_test_stop), 0);
+  g_signal_connect (test, "teardown", G_CALLBACK (&blank_test_teardown), 0);
   g_signal_connect_after (test, "test", G_CALLBACK (&blank_test_test), 0);
 
 
