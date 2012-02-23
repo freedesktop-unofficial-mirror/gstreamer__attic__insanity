@@ -1,14 +1,13 @@
 # This is the pkg-config file for libinsanity
 prefix=
 exec_prefix=
-libdir=${pcfiledir}/../../lib
-includedir=${pcfiledir}/../../include
+libdir=${pcfiledir}/insanity
+includedir=${pcfiledir}
 
-Name: libinsanity
-Description: libinsanity is a library to help write tests (not installed)
+Name: insanity
+Description: insanity is a library to help write tests (not installed)
 Version: @VERSION@
-Requires: 
-Conflicts: 
-Libs: ${libdir}/.libs/libinsanity.a
-Libs.private: 
+Requires: glib-2.0 gobject-2.0
+Requires.private: gthread-2.0 dbus-1
+Libs: ${libdir}/.libs/libinsanity.la
 Cflags: -I${includedir}

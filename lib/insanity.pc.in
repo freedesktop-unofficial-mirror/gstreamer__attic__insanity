@@ -4,11 +4,10 @@ exec_prefix=@exec_prefix@
 libdir=@libdir@
 includedir=@includedir@
 
-Name: libinsanity
-Description: libinsanity is a library to help write tests
+Name: insanity
+Description: insanity is a library to help write tests
 Version: @VERSION@
-Requires: 
-Conflicts: 
-Libs: -linsanity
-Libs.private: @GLIB_LIBS@ @DBUS_LIBS@
+Requires: glib-2.0 gobject-2.0
+Requires.private: gthread-2.0 dbus-1
+Libs: -L${libdir} -linsanity
 Cflags: -I${includedir}
