@@ -235,23 +235,22 @@ insanity_test_record_stop_time (InsanityTest * test)
 }
 
 #define INSANITY_TEST_INTERFACE "net.gstreamer.Insanity.Test"
-static const char *introspect_response_template = " \
-  <!DOCTYPE node PUBLIC \"-//freedesktop//DTD D-BUS Object Introspection 1.0//EN\" \
-  \"http://www.freedesktop.org/standards/dbus/1.0/introspect.dtd\"> \
-  <node name=\"/net/gstreamer/Insanity/Test/Test%s\"> \
-    <interface name=\"org.freedesktop.DBus.Introspectable\"> \
-      <method name=\"Introspect\"> \
-        <arg direction=\"out\" type=\"s\" /> \
-      </method> \
-    </interface> \
-    <interface name=\"" INSANITY_TEST_INTERFACE "\"> \
-      <method name=\"remoteSetUp\"> </method> \
-      <method name=\"remoteStart\"> <arg direction=\"in\" type=\"a{sv}\" /> </method> \
-      <method name=\"remoteStop\"> </method> \
-      <method name=\"remoteTearDown\"> </method> \
-    </interface> \
-  </node> \
-";
+static const char *introspect_response_template =
+  "<!DOCTYPE node PUBLIC \"-//freedesktop//DTD D-BUS Object Introspection 1.0//EN\" "
+  "\"http://www.freedesktop.org/standards/dbus/1.0/introspect.dtd\">\n"
+  "<node name=\"/net/gstreamer/Insanity/Test/Test%s\">\n"
+  "  <interface name=\"org.freedesktop.DBus.Introspectable\">\n"
+  "    <method name=\"Introspect\">\n"
+  "      <arg direction=\"out\" type=\"s\" />\n"
+  "    </method>\n"
+  "  </interface>\n"
+  "  <interface name=\"" INSANITY_TEST_INTERFACE "\">\n"
+  "    <method name=\"remoteSetUp\"> </method>\n"
+  "    <method name=\"remoteStart\"> <arg direction=\"in\" type=\"a{sv}\" /> </method>\n"
+  "    <method name=\"remoteStop\"> </method>\n"
+  "    <method name=\"remoteTearDown\"> </method>\n"
+  "  </interface>\n"
+  "</node>\n";
 
 static gboolean
 send_signal (DBusConnection * conn, const char *signal_name,
