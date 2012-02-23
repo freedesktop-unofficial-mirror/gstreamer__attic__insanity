@@ -43,6 +43,7 @@ from insanity.testrun import TestRun
 from insanity.storage.sqlite import SQLiteStorage
 from insanity.generators.filesystem import FileSystemGenerator, URIFileSystemGenerator
 from insanity.generators.playlist import PlaylistGenerator
+from insanity.generators.external import ExternalGenerator
 
 class Client(CommandLineTesterClient):
 
@@ -189,9 +190,11 @@ def args_help():
     print "  filesystem:PATH"
     print "  urifilesystem:PATH"
     print "  playlist:PATH"
+    print "  external:COMMANDLINE"
     print "Examples:"
     print "  uri:urifilesystem:/testclips"
     print "  uri:playlist:/home/user/playlist.txt"
+    print "  uri:external:\"find `pwd` | sed -e s:^:file\\\://:\""
 
 def execcmd_help():
     print "Usage for --execcmd (-e) option:"
@@ -249,6 +252,8 @@ def main():
             gen_class = URIFileSystemGenerator
         elif gen_name == "playlist":
             gen_class = PlaylistGenerator
+        elif gen_name == "external":
+            gen_class = ExternalGenerator
         else:
             args_help()
             sys.exit(1)
@@ -256,6 +261,8 @@ def main():
             # FIXME:
             if gen_class == PlaylistGenerator:
                 gen = gen_class(location=gen_args)
+            elif gen_class == ExternalGenerator:
+                gen = gen_class(command=gen_args)
             else:
                 gen = gen_class(paths=[gen_args])
         else:
