@@ -714,7 +714,7 @@ typed_finder (const char *key, const GValue * value, guintptr userdata)
  * insanity_test_get_argument:
  * @test: a #InsanityTest to operate on
  * @key: the name of the argument to retrieve
- * @value: a pointer to a value to receive the contents of the argument
+ * @value: (out caller-allocates): a pointer to a value to receive the contents of the argument
  *
  * Returns: TRUE if the argument was found (in which case the value
  * is initialized and contains its value), FALSE otherwise (in which
