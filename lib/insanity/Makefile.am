@@ -20,12 +20,12 @@ libinsanity_la_LIBADD=$(GLIB_LIBS) $(GOBJECT_LIBS) $(GTHREAD_LIBS) $(DBUS_LIBS)
 libinsanity_la_CFLAGS=$(GLIB_CFLAGS) $(GOBJECT_CFLAGS) $(GTHREAD_CFLAGS) $(DBUS_CFLAGS)
 
 if HAVE_INTROSPECTION
-BUILT_GIRSOURCES = Insanity.gir
+BUILT_GIRSOURCES = Insanity-1.0.gir
 
 gir_headers=$(patsubst %,$(srcdir)/%, $(insanityinc_HEADERS))
 gir_sources=$(patsubst %,$(srcdir)/%, $(libinsanity_la_SOURCES))
 
-Insanity.gir: $(INTROSPECTION_SCANNER) libinsanity.la
+Insanity-1.0.gir: $(INTROSPECTION_SCANNER) libinsanity.la
 	$(AM_V_GEN) $(INTROSPECTION_SCANNER) -v --namespace Insanity \
 		--nsversion=0.0.1 \
 		--warn-all \
