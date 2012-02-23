@@ -89,6 +89,8 @@ blank_test_test (InsanityTest * test)
   insanity_test_set_extra_info (test, "random-extra-info", &info); 
   g_value_unset (&info);
 
+  INSANITY_TEST_CHECK (test, 1 != 0);
+
   /* Must be called when the test is done */
   insanity_test_done (test);
 }
