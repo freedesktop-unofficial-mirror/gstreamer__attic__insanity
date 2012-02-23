@@ -95,8 +95,8 @@ void insanity_test_done(InsanityTest *test);
 void insanity_test_validate_step(InsanityTest *test, const char *name, gboolean success, const char *description);
 void insanity_test_set_extra_info(InsanityTest *test, const char *name, const GValue *data);
 
-gboolean insanity_test_check (InsanityTest *test, gboolean expr, const char *msg,...);
-#define INSANITY_TEST_CHECK(test, expr) insanity_test_check(test, (expr), "%s:%u: check failed: %s", __FILE__, __LINE__, #expr)
+gboolean insanity_test_check (InsanityTest *test, const char *step, gboolean expr, const char *msg,...);
+#define INSANITY_TEST_CHECK(test, step, expr) insanity_test_check(test, step, (expr), "%s:%u: check failed: %s", __FILE__, __LINE__, #expr)
 
 gboolean insanity_test_run(InsanityTest *test, int *argc, char ***argv);
 
