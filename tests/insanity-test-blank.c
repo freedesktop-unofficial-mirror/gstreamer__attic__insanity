@@ -78,9 +78,19 @@ blank_test_teardown (InsanityTest * test)
 static void
 blank_test_test (InsanityTest * test)
 {
-  insanity_test_validate_step (test, "random-step", FALSE, "Explanation of random-step failure");
-  insanity_test_done (test);
+  GValue info = {0};
+
   printf ("blank_test_test\n");
+
+  /* Show how to validate steps and send extra info */
+  insanity_test_validate_step (test, "random-step", TRUE, "Explanation of random-step failure");
+  g_value_init (&info, G_TYPE_STRING);
+  g_value_set_string (&info, "Foo");
+  insanity_test_set_extra_info (test, "random-extra-info", &info); 
+  g_value_unset (&info);
+
+  /* Must be called when the test is done */
+  insanity_test_done (test);
 }
 
 int
@@ -95,10 +105,11 @@ main (int argc, char **argv)
   test =
       INSANITY_TEST (insanity_threaded_test_new ("blank-c-test",
           "Sample test that does nothing", NULL));
+
   insanity_test_add_checklist_item (test, "random-step",
       "Some random step, nothing much", NULL);
-  insanity_test_add_checklist_item (test, "other-random-step",
-      "Some random step, nothing much either", "error blah");
+  insanity_test_add_extra_info (test, "random-extra-info",
+      "Some random extra info");
 
   g_value_init (&def, G_TYPE_STRING);
   g_value_set_string (&def, "http://127.0.0.1/");
