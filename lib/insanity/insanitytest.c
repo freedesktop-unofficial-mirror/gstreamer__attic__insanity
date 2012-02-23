@@ -19,6 +19,15 @@
  Free Software Foundation, Inc., 59 Temple Place - Suite 330,
  Boston, MA 02111-1307, USA.
 */
+
+/**
+ * SECTION:insanitytest
+ * @short_description: Basic Test
+ * @see_also: #InsanityThreadedTest
+ *
+ * %TODO.
+ */
+
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
@@ -73,7 +82,7 @@ static GParamSpec *properties[N_PROPERTIES] = { NULL, };
 #define UNLOCK(test) g_mutex_unlock((test)->priv->lock)
 #endif
 
-struct InsanityTestPrivateData
+struct _InsanityTestPrivateData
 {
   DBusConnection *conn;
 #ifdef USE_CPU_LOAD

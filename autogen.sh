@@ -129,4 +129,4 @@ echo "  autoconf"
 autoconf || exit 1
 
 cd $olddir
-$srcdir/configure --enable-maintainer-mode "$@" && echo
+$srcdir/configure --enable-maintainer-mode --enable-gtk-doc "$@" && echo

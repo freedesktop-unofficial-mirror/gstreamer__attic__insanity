@@ -1,6 +1,6 @@
 /* Insanity QA system
 
-       insanity.h
+       insanitythreadedtest.h
 
  Copyright (c) 2012, Collabora Ltd <slomo@collabora.co.uk>
 
@@ -29,18 +29,16 @@
 #include <insanity/insanitydefs.h>
 #include <insanity/insanitytest.h>
 
-struct InsanityThreadedTestPrivateData;
-typedef struct InsanityThreadedTestPrivateData InsanityThreadedTestPrivateData;
-
-struct InsanityThreadedTest;
-typedef struct InsanityThreadedTest InsanityThreadedTest;
+typedef struct _InsanityThreadedTest InsanityThreadedTest;
+typedef struct _InsanityThreadedTestClass InsanityThreadedTestClass;
+typedef struct _InsanityThreadedTestPrivateData InsanityThreadedTestPrivateData;
 
 /**
  * InsanityTest:
  *
  * The opaque #InsanityTest data structure.
  */
-struct InsanityThreadedTest {
+struct _InsanityThreadedTest {
   InsanityTest parent;
 
   /*< private >*/
@@ -57,7 +55,7 @@ struct InsanityThreadedTest {
  * Insanity threaded test class. Override the vmethods to customize
  * functionality.
  */
-struct InsanityThreadedTestClass
+struct _InsanityThreadedTestClass
 {
   InsanityTestClass parent_class;
 
@@ -66,7 +64,6 @@ struct InsanityThreadedTestClass
   /*< private >*/
   gpointer _insanity_reserved[INSANITY_PADDING];
 };
-typedef struct InsanityThreadedTestClass InsanityThreadedTestClass;
 
 InsanityThreadedTest *insanity_threaded_test_new(const char *name, const char *description, const char *full_description);
 

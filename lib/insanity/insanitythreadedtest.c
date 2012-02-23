@@ -19,6 +19,13 @@
  Free Software Foundation, Inc., 59 Temple Place - Suite 330,
  Boston, MA 02111-1307, USA.
 */
+/**
+ * SECTION:insanitythreadedtest
+ * @short_description: Threaded Test
+ * @see_also: #InsanityTest
+ *
+ * %TODO.
+ */
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -34,7 +41,7 @@ static guint test_signal;
 G_DEFINE_TYPE (InsanityThreadedTest, insanity_threaded_test,
     INSANITY_TYPE_TEST);
 
-struct InsanityThreadedTestPrivateData
+struct _InsanityThreadedTestPrivateData
 {
   GThread *thread;
 };

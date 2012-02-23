@@ -63,6 +63,13 @@ PKG_CHECK_MODULES(DBUS, dbus-1)
 dnl check for gobject-introspection
 GOBJECT_INTROSPECTION_CHECK([1.31.1])
 
+dnl check for gtk-doc
+GTK_DOC_CHECK([1.3])
+
+dnl Check for documentation xrefs
+GLIB_PREFIX="`$PKG_CONFIG --variable=prefix glib-2.0`"
+AC_SUBST(GLIB_PREFIX)
+
 AC_CONFIG_FILES(
   [Makefile]
   [lib/Makefile]
@@ -72,6 +79,10 @@ AC_CONFIG_FILES(
   [insanity/storage/Makefile]
   [web/Makefile]
   [tests/Makefile]
+  [docs/Makefile]
+  [docs/insanity/Makefile]
+  [docs/insanity/version.xml]
+  [docs/random/Makefile]
   [lib/insanity.pc]
   [lib/insanity-uninstalled.pc]
 )

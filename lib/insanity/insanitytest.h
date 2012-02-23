@@ -27,18 +27,16 @@
 #include <glib-object.h>
 #include <insanity/insanitydefs.h>
 
-struct InsanityTestPrivateData;
-typedef struct InsanityTestPrivateData InsanityTestPrivateData;
-
-struct InsanityTest;
-typedef struct InsanityTest InsanityTest;
+typedef struct _InsanityTest InsanityTest;
+typedef struct _InsanityTestClass InsanityTestClass;
+typedef struct _InsanityTestPrivateData InsanityTestPrivateData;
 
 /**
  * InsanityTest:
  *
  * The opaque #InsanityTest data structure.
  */
-struct InsanityTest {
+struct _InsanityTest {
   GObject parent;
 
   /*< private >*/
@@ -60,7 +58,7 @@ struct InsanityTest {
  *
  * Insanity test class. Override the vmethods to customize functionality.
  */
-struct InsanityTestClass
+struct _InsanityTestClass
 {
   GObjectClass parent_class;
 
@@ -74,8 +72,6 @@ struct InsanityTestClass
   /*< private >*/
   gpointer _insanity_reserved[INSANITY_PADDING];
 };
-typedef struct InsanityTestClass InsanityTestClass;
-
 
 /* Handy macros */
 #define INSANITY_TYPE_TEST                (insanity_test_get_type ())
