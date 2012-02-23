@@ -699,24 +699,6 @@ insanity_test_set_args (InsanityTest * test, DBusMessage * msg)
 
   UNLOCK (test);
 }
-struct finder_data
-{
-  const char *key;
-  GValue value;
-  void *userdata;
-};
-
-static int
-typed_finder (const char *key, const GValue * value, guintptr userdata)
-{
-  struct finder_data *fd = (struct finder_data *) userdata;
-
-  if (strcmp (key, fd->key))
-    return 0;
-  g_value_init (&fd->value, G_VALUE_TYPE (value));
-  g_value_copy (value, &fd->value);     /* src is first parm */
-  return 1;
-}
 
 /**
  * insanity_test_get_argument:
