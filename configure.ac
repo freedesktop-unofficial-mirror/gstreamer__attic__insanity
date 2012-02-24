@@ -28,6 +28,9 @@ dnl  6. If any interfaces have been removed since the last public release,
 dnl     then set AGE to 0.
 
 LIBINSANITY_SHARED_VERSION="0:0:0"
+AC_SUBST(LIBINSANITY_SHARED_VERSION)
+LIBINSANITY_API_VERSION=1.0
+AC_SUBST(LIBINSANITY_API_VERSION)
 
 AC_PROG_CC
 AC_PROG_CC_STDC

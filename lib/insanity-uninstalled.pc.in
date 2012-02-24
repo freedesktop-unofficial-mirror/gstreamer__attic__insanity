@@ -4,10 +4,10 @@ exec_prefix=
 libdir=${pcfiledir}/insanity
 includedir=${pcfiledir}
 
-Name: insanity
+Name: insanity-@LIBINSANITY_API_VERSION@
 Description: insanity is a library to help write tests (not installed)
 Version: @VERSION@
 Requires: glib-2.0 gobject-2.0
 Requires.private: gthread-2.0 dbus-1
-Libs: ${libdir}/.libs/libinsanity.la
+Libs: ${libdir}/.libs/libinsanity-@LIBINSANITY_API_VERSION@.la
 Cflags: -I${includedir}

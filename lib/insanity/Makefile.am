@@ -2,11 +2,11 @@ LIBTOOLFLAGS=--silent
 
 AM_CPPFLAGS=-I $(top_srcdir)/lib
 
-insanityincdir=$(includedir)/insanity
+insanityincdir=$(includedir)/insanity-@LIBINSANITY_API_VERSION@/insanity
 
-lib_LTLIBRARIES=libinsanity.la
+lib_LTLIBRARIES=libinsanity-@LIBINSANITY_API_VERSION@.la
 
-libinsanity_la_SOURCES=\
+libinsanity_@LIBINSANITY_API_VERSION@_la_SOURCES=\
   insanitytest.c \
   insanitythreadedtest.c
 
@@ -19,25 +19,25 @@ insanityinc_HEADERS=\
 noinst_HEADERS =\
   insanityprivate.h
 
-libinsanity_la_LDFLAGS = -no-undefined -export-symbols-regex \^insanity_.*
-libinsanity_la_LIBADD=$(GLIB_LIBS) $(GOBJECT_LIBS) $(GTHREAD_LIBS) $(DBUS_LIBS)
-libinsanity_la_CFLAGS=$(GLIB_CFLAGS) $(GOBJECT_CFLAGS) $(GTHREAD_CFLAGS) $(DBUS_CFLAGS)
+libinsanity_@LIBINSANITY_API_VERSION@_la_LDFLAGS = -version-info @LIBINSANITY_SHARED_VERSION@ -no-undefined -export-symbols-regex \^insanity_.*
+libinsanity_@LIBINSANITY_API_VERSION@_la_LIBADD=$(GLIB_LIBS) $(GOBJECT_LIBS) $(GTHREAD_LIBS) $(DBUS_LIBS)
+libinsanity_@LIBINSANITY_API_VERSION@_la_CFLAGS=$(GLIB_CFLAGS) $(GOBJECT_CFLAGS) $(GTHREAD_CFLAGS) $(DBUS_CFLAGS)
 
 if HAVE_INTROSPECTION
-BUILT_GIRSOURCES = Insanity-1.0.gir
+BUILT_GIRSOURCES = Insanity-@LIBINSANITY_API_VERSION@.gir
 
 gir_headers=$(patsubst %,$(srcdir)/%, $(insanityinc_HEADERS))
-gir_sources=$(patsubst %,$(srcdir)/%, $(libinsanity_la_SOURCES))
+gir_sources=$(patsubst %,$(srcdir)/%, $(libinsanity_@LIBINSANITY_API_VERSION@_la_SOURCES))
 
-Insanity-1.0.gir: $(INTROSPECTION_SCANNER) libinsanity.la
+Insanity-@LIBINSANITY_API_VERSION@.gir: $(INTROSPECTION_SCANNER) libinsanity.la
 	$(AM_V_GEN) $(INTROSPECTION_SCANNER) -v --namespace Insanity \
-		--nsversion=0.0.1 \
+		--nsversion=@LIBINSANITY_API_VERSION@ \
 		--warn-all \
 		-I$(top_srcdir)/lib \
 		-I$(top_builddir) \
 		-DIN_GOBJECT_INTROSPECTION=1 \
 		--c-include='insanity/insanity.h' \
-		--library=libinsanity.la \
+		--library=libinsanity-@LIBINSANITY_API_VERSION@.la \
 		--include=GLib-2.0 \
 		--include=GObject-2.0 \
 		--libtool="$(top_builddir)/libtool" \
@@ -45,7 +45,7 @@ Insanity-1.0.gir: $(INTROSPECTION_SCANNER) libinsanity.la
 		--pkg gobject-2.0 \
 		--pkg gmodule-no-export-2.0 \
 		--pkg gthread-2.0 \
-		--pkg-export insanity \
+		--pkg-export insanity-1.0 \
 		--output $@ \
 		$(gir_headers) \
 		$(gir_sources)
