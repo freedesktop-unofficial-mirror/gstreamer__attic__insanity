@@ -1295,6 +1295,7 @@ insanity_test_run (InsanityTest * test, int *argc, char ***argv)
           g_value_init (v, G_VALUE_TYPE (&value));
           g_value_copy (&value, v); /* src first */
           g_hash_table_insert (test->priv->args, key, v);
+          g_value_unset (&value);
         }
         else {
           g_free (key);
