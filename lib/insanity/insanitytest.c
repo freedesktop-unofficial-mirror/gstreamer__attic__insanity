@@ -1,6 +1,6 @@
 /* Insanity QA system
 
-       insanity.c
+       insanitytest.c
 
  Copyright (c) 2012, Collabora Ltd <vincent@collabora.co.uk>
 
