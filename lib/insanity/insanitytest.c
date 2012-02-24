@@ -53,9 +53,6 @@
 #include <sys/resource.h>
 #endif
 
-#define CHECK_STEP_NAME "insanity-generic-check"
-#define CHECK_STEP_DESC "Catch-all for insanity generic assert-like checks"
-
 enum
 {
   PROP_0,
@@ -106,7 +103,6 @@ struct _InsanityTestPrivateData
 #endif
   gboolean standalone;
   GHashTable *checklist_results;
-  gboolean check_validate_called;
 
   /* test metadata */
   char *test_name;
@@ -195,11 +191,6 @@ static void
 insanity_test_teardown (InsanityTest * test)
 {
   printf ("insanity_test_teardown\n");
-
-  /* If no check step failed, succeed it now */
-  if (!test->priv->check_validate_called) {
-    insanity_test_validate_step (test, CHECK_STEP_NAME, TRUE, NULL);
-  }
 }
 
 static void
@@ -1383,7 +1374,6 @@ insanity_test_init (InsanityTest * test)
       g_hash_table_new_full (&g_str_hash, &g_str_equal, &g_free, g_free);
   priv->checklist_results =
       g_hash_table_new_full (&g_str_hash, &g_str_equal, &g_free, &g_free);
-  priv->check_validate_called = FALSE;
 
   priv->test_name = NULL;
   priv->test_desc = NULL;
@@ -1398,9 +1388,6 @@ insanity_test_init (InsanityTest * test)
       g_hash_table_new_full (&g_str_hash, &g_str_equal, &g_free, g_free);
   priv->test_likely_errors =
       g_hash_table_new_full (&g_str_hash, &g_str_equal, &g_free, g_free);
-
-  /* add our internally predefined bits */
-  insanity_test_add_checklist_item (test, CHECK_STEP_NAME, CHECK_STEP_DESC, NULL);
 }
 
 static gboolean
@@ -1652,7 +1639,7 @@ insanity_test_add_output_file (InsanityTest * test, const char *label,
 /**
  * insanity_test_check:
  * @test: a #InsanityTest instance to operate on.
- * @step: (allow-none): an optional step label
+ * @step: a step label
  * @expr: an expression which should evaluate to FALSE (failed) or TRUE (passed)
  * @msg: a printf(3) format string, followed by optional arguments as per printf(3)
  *
@@ -1661,8 +1648,8 @@ insanity_test_add_output_file (InsanityTest * test, const char *label,
  * If all checks pass, or not checks are done, this step wil be
  * automatically validated at the end of a test.
  *
- * A step label may be specified. If one is, it must be one of the checklist
- * items that were predefined. If none is, an internal generic one will be used.
+ * A step label must specified, it must be one of the checklist items that were
+ * predefined.
  *
  * There are macros (only one at the moment, INSANITY_TEST_CHECK) which are higher
  * level than this function, and may be more suited to call instead.
@@ -1678,10 +1665,8 @@ gboolean insanity_test_check (InsanityTest *test, const char *step, gboolean exp
     va_start (ap, msg);
     fullmsg = g_strdup_vprintf (msg, ap);
     va_end (ap);
-    insanity_test_validate_step (test, step ? step : CHECK_STEP_NAME, FALSE, fullmsg);
+    insanity_test_validate_step (test, step, FALSE, fullmsg);
     g_free (fullmsg);
-    if (!step)
-      test->priv->check_validate_called = TRUE;
   }
   return expr;
 }

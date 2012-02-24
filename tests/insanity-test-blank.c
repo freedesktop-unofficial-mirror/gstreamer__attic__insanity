@@ -89,8 +89,13 @@ blank_test_test (InsanityTest * test)
   insanity_test_set_extra_info (test, "random-extra-info", &info); 
   g_value_unset (&info);
 
-  INSANITY_TEST_CHECK (test, NULL, 1 != 0);
+  if (!INSANITY_TEST_CHECK (test, "random-other-step", 1 != 0))
+    goto done;
 
+
+  insanity_test_validate_step (test, "random-other-step", TRUE, "Explanation of random-step failure");
+
+done:
   /* Must be called when the test is done */
   insanity_test_done (test);
 }
@@ -109,6 +114,8 @@ main (int argc, char **argv)
           "Sample test that does nothing", NULL));
 
   insanity_test_add_checklist_item (test, "random-step",
+      "Some random step, nothing much", NULL);
+  insanity_test_add_checklist_item (test, "random-other-step",
       "Some random step, nothing much", NULL);
   insanity_test_add_extra_info (test, "random-extra-info",
       "Some random extra info");
