@@ -339,8 +339,6 @@ void
 insanity_test_validate_step (InsanityTest * test, const char *name,
     gboolean success, const char *description)
 {
-  gboolean *b;
-
   g_return_if_fail (INSANITY_IS_TEST (test));
   g_return_if_fail (name != NULL);
   g_return_if_fail (check_valid_label (name));
@@ -363,9 +361,7 @@ insanity_test_validate_step (InsanityTest * test, const char *name,
         DBUS_TYPE_STRING, &desc, DBUS_TYPE_INVALID);
   }
 
-  b = g_malloc (sizeof (gboolean));
-  *b = success;
-  g_hash_table_insert (test->priv->checklist_results, g_strdup (name), b);
+  g_hash_table_insert (test->priv->checklist_results, g_strdup (name), (success ? ((gpointer) 1) : ((gpointer) 0)));
   UNLOCK (test);
 }
 
@@ -1205,7 +1201,7 @@ insanity_report_failed_tests (InsanityTest *test, gboolean verbose)
   /* Get all checklist items that were passed or failed */
   g_hash_table_iter_init (&i, test->priv->checklist_results);
   while (g_hash_table_iter_next (&i, &key, &value)) {
-    gboolean success = *(gboolean *)value;
+    gboolean success = (value != NULL);
     if (verbose)
       printf ("%s: %s\n", (const char *)key, success ? "PASS" : "FAIL");
     if (!success)
@@ -1215,7 +1211,7 @@ insanity_report_failed_tests (InsanityTest *test, gboolean verbose)
   /* Get all checklist items that were not passed nor failed */
   g_hash_table_iter_init (&i, test->priv->test_checklist);
   while (g_hash_table_iter_next (&i, &key, &value)) {
-    if (!g_hash_table_lookup (test->priv->checklist_results, key)) {
+    if (!g_hash_table_lookup_extended (test->priv->checklist_results, key, NULL, NULL)) {
       if (verbose)
         printf ("%s: SKIP\n", (const char *)key);
       ++failed;
@@ -1424,7 +1420,7 @@ insanity_test_init (InsanityTest * test)
   priv->filename_cache =
       g_hash_table_new_full (&g_str_hash, &g_str_equal, &g_free, g_free);
   priv->checklist_results =
-      g_hash_table_new_full (&g_str_hash, &g_str_equal, &g_free, &g_free);
+      g_hash_table_new_full (&g_str_hash, &g_str_equal, &g_free, NULL);
 
   priv->test_name = NULL;
   priv->test_desc = NULL;
