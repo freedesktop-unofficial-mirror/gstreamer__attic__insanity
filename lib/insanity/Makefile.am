@@ -29,7 +29,7 @@ BUILT_GIRSOURCES = Insanity-@LIBINSANITY_API_VERSION@.gir
 gir_headers=$(patsubst %,$(srcdir)/%, $(insanityinc_HEADERS))
 gir_sources=$(patsubst %,$(srcdir)/%, $(libinsanity_@LIBINSANITY_API_VERSION@_la_SOURCES))
 
-Insanity-@LIBINSANITY_API_VERSION@.gir: $(INTROSPECTION_SCANNER) libinsanity.la
+Insanity-@LIBINSANITY_API_VERSION@.gir: $(INTROSPECTION_SCANNER) libinsanity-@LIBINSANITY_API_VERSION@.la
 	$(AM_V_GEN) $(INTROSPECTION_SCANNER) -v --namespace Insanity \
 		--nsversion=@LIBINSANITY_API_VERSION@ \
 		--warn-all \
