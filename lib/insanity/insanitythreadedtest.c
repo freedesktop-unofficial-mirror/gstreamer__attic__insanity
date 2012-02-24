@@ -31,7 +31,8 @@
 #include "config.h"
 #endif
 
-#include <insanity/insanitythreadedtest.h>
+#include "insanitythreadedtest.h"
+#include "insanityprivate.h"
 
 #include <stdio.h>
 
@@ -129,7 +130,13 @@ insanity_threaded_test_class_init (InsanityThreadedTestClass * klass)
 InsanityThreadedTest *
 insanity_threaded_test_new (const char *name, const char *description, const char *full_description)
 {
-  InsanityThreadedTest *test = g_object_new (insanity_threaded_test_get_type (),
+  InsanityThreadedTest *test;
+    
+  g_return_val_if_fail (name != NULL, NULL);
+  g_return_val_if_fail (check_valid_label (name), NULL);
+  g_return_val_if_fail (description != NULL, NULL);
+
+  test = g_object_new (insanity_threaded_test_get_type (),
       "name", name, "desc", description, NULL);
   if (full_description)
     g_object_set (test, "full-desc", full_description, NULL);

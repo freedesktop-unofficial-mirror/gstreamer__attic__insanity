@@ -32,7 +32,8 @@
 #include "config.h"
 #endif
 
-#include <insanity/insanitytest.h>
+#include "insanitytest.h"
+#include "insanityprivate.h"
 
 #include <glib/gstdio.h>
 #include <dbus/dbus.h>
@@ -296,6 +297,33 @@ send_signal (DBusConnection * conn, const char *signal_name,
   return TRUE;
 }
 
+/* Only allow alphanumeric characters and dash */
+gboolean
+check_valid_label (const char *label)
+{
+  const gchar *p;
+
+  if (!label)
+    return FALSE;
+
+  if ((label[0] < 'A' || label[0] > 'Z') &&
+      (label[0] < 'a' || label[0] > 'z'))
+    return FALSE;
+
+  for (p = label; *p != 0; p++)
+    {
+      gchar c = *p;
+      
+      if (c != '-' &&
+	  (c < '0' || c > '9') &&
+	  (c < 'A' || c > 'Z') &&
+	  (c < 'a' || c > 'z'))
+	return FALSE;
+    }
+
+  return TRUE;
+}
+
 /**
  * insanity_test_validate_step:
  * @test: a #InsanityTest to operate on
@@ -312,6 +340,11 @@ insanity_test_validate_step (InsanityTest * test, const char *name,
     gboolean success, const char *description)
 {
   gboolean *b;
+
+  g_return_if_fail (INSANITY_IS_TEST (test));
+  g_return_if_fail (name != NULL);
+  g_return_if_fail (check_valid_label (name));
+  g_return_if_fail (g_hash_table_lookup (test->priv->test_checklist, name) != NULL);
 
   LOCK (test);
   if (test->priv->standalone) {
@@ -404,6 +437,11 @@ void
 insanity_test_set_extra_info (InsanityTest * test, const char *name,
     const GValue * data)
 {
+  g_return_if_fail (INSANITY_IS_TEST (test));
+  g_return_if_fail (name != NULL);
+  g_return_if_fail (check_valid_label (name));
+  g_return_if_fail (G_IS_VALUE (data));
+
   insanity_test_set_extra_info_internal (test, name, data, FALSE);
 }
 
@@ -432,6 +470,8 @@ gather_end_of_test_info (InsanityTest * test)
 void
 insanity_test_done (InsanityTest * test)
 {
+  g_return_if_fail (INSANITY_IS_TEST (test));
+
   LOCK (test);
   if (!test->priv->standalone) {
     send_signal (test->priv->conn, "remoteStopSignal", test->priv->name,
@@ -717,6 +757,11 @@ insanity_test_get_argument (InsanityTest * test, const char *key,
   const GValue *v;
   gboolean ret = FALSE;
 
+  g_return_val_if_fail (INSANITY_IS_TEST (test), FALSE);
+  g_return_val_if_fail (key != NULL, FALSE);
+  g_return_val_if_fail (check_valid_label (key), FALSE);
+  g_return_val_if_fail (value != NULL, FALSE);
+
   if (test->priv->args) {
     v = g_hash_table_lookup (test->priv->args, key);
     if (v) {
@@ -756,6 +801,10 @@ insanity_test_get_output_filename (InsanityTest * test, const char *key)
 {
   gpointer ptr;
   char *fn = NULL;
+
+  g_return_val_if_fail (INSANITY_IS_TEST (test), NULL);
+  g_return_val_if_fail (key != NULL, NULL);
+  g_return_val_if_fail (check_valid_label (key), NULL);
 
   LOCK (test);
 
@@ -1208,6 +1257,8 @@ insanity_test_run (InsanityTest * test, int *argc, char ***argv)
   GError *err = NULL;
   gboolean ret = TRUE;
 
+  g_return_val_if_fail (INSANITY_IS_TEST (test), FALSE);
+
   ctx = g_option_context_new (test->priv->test_desc);
   g_option_context_add_main_entries (ctx, options, NULL);
   if (!g_option_context_parse (ctx, argc, argv, &err)) {
@@ -1528,7 +1579,13 @@ InsanityTest *
 insanity_test_new (const char *name, const char *description,
     const char *full_description)
 {
-  InsanityTest *test = g_object_new (insanity_test_get_type (),
+  InsanityTest *test;
+  
+  g_return_val_if_fail (name != NULL, NULL);
+  g_return_val_if_fail (check_valid_label (name), NULL);
+  g_return_val_if_fail (description != NULL, NULL);
+
+  test = g_object_new (insanity_test_get_type (),
       "name", name, "desc", description, NULL);
   if (full_description)
     g_object_set (test, "full-desc", full_description, NULL);
@@ -1558,6 +1615,11 @@ void
 insanity_test_add_checklist_item (InsanityTest * test, const char *label,
     const char *description, const char *error_hint)
 {
+  g_return_if_fail (INSANITY_IS_TEST (test));
+  g_return_if_fail (label != NULL);
+  g_return_if_fail (check_valid_label (label));
+  g_return_if_fail (description != NULL);
+
   insanity_add_metadata_entry (test->priv->test_checklist, label, description);
   if (error_hint) {
     insanity_add_metadata_entry (test->priv->test_likely_errors, label,
@@ -1587,6 +1649,12 @@ insanity_test_add_argument (InsanityTest * test, const char *label,
 {
   Argument *arg;
 
+  g_return_if_fail (INSANITY_IS_TEST (test));
+  g_return_if_fail (label != NULL);
+  g_return_if_fail (check_valid_label (label));
+  g_return_if_fail (description != NULL);
+  g_return_if_fail (G_IS_VALUE (default_value));
+
   arg = g_slice_alloc0 (sizeof (Argument));
   arg->description = g_strdup (description);
   arg->full_description = full_description ? g_strdup (full_description) : NULL;
@@ -1610,6 +1678,11 @@ void
 insanity_test_add_extra_info (InsanityTest * test, const char *label,
     const char *description)
 {
+  g_return_if_fail (INSANITY_IS_TEST (test));
+  g_return_if_fail (label != NULL);
+  g_return_if_fail (check_valid_label (label));
+  g_return_if_fail (description != NULL);
+
   insanity_add_metadata_entry (test->priv->test_extra_infos, label,
       description);
 }
@@ -1632,6 +1705,11 @@ void
 insanity_test_add_output_file (InsanityTest * test, const char *label,
     const char *description)
 {
+  g_return_if_fail (INSANITY_IS_TEST (test));
+  g_return_if_fail (label != NULL);
+  g_return_if_fail (check_valid_label (label));
+  g_return_if_fail (description != NULL);
+
   insanity_add_metadata_entry (test->priv->test_output_files, label,
       description);
 }
@@ -1660,6 +1738,11 @@ gboolean insanity_test_check (InsanityTest *test, const char *step, gboolean exp
 {
   char *fullmsg;
   va_list ap;
+
+  g_return_val_if_fail (INSANITY_IS_TEST (test), FALSE);
+  g_return_val_if_fail (step != NULL, FALSE);
+  g_return_val_if_fail (check_valid_label (step), FALSE);
+  g_return_val_if_fail (g_hash_table_lookup (test->priv->test_checklist, step) != NULL, FALSE);
 
   if (!expr) {
     va_start (ap, msg);
