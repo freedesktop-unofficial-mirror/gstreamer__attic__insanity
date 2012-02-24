@@ -1718,6 +1718,7 @@ insanity_test_add_output_file (InsanityTest * test, const char *label,
  * @step: a step label
  * @expr: an expression which should evaluate to FALSE (failed) or TRUE (passed)
  * @msg: a printf(3) format string, followed by optional arguments as per printf(3)
+ * @...: the parameters to insert into the format string
  *
  * This function checks whether an expression evaluates to 0 or not,
  * and, if false, invalidates the "insanity-check" step.
