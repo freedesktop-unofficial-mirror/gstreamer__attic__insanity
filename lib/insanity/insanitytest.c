@@ -994,7 +994,7 @@ listen (InsanityTest * test, const char *bus_address, const char *uuid)
     if (dbus_message_is_method_call (msg, "org.freedesktop.DBus.Introspectable",
             "Introspect")) {
       char *introspect_response =
-          malloc (strlen (introspect_response_template) + strlen (uuid) + 1);
+          g_malloc (strlen (introspect_response_template) + strlen (uuid) + 1);
       sprintf (introspect_response, introspect_response_template, uuid);
       reply = dbus_message_new_method_return (msg);
       dbus_message_iter_init_append (reply, &args);
@@ -1004,7 +1004,7 @@ listen (InsanityTest * test, const char *bus_address, const char *uuid)
         dbus_message_unref (reply);
         goto msg_error;
       }
-      free (introspect_response);
+      g_free (introspect_response);
       if (!dbus_connection_send (conn, reply, &serial)) {
         fprintf (stderr, "Out Of Memory!\n");
         dbus_message_unref (reply);
