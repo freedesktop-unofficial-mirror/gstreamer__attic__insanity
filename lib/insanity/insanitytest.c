@@ -1064,7 +1064,7 @@ insanity_test_write_metadata (InsanityTest * test)
   char *name, *desc;
 
   g_object_get (G_OBJECT (test), "name", &name, NULL);
-  g_object_get (G_OBJECT (test), "desc", &desc, NULL);
+  g_object_get (G_OBJECT (test), "description", &desc, NULL);
 
   fprintf (f, "Insanity test metadata:\n");
   fprintf (f, "{\n");
