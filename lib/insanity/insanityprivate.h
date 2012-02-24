@@ -23,6 +23,12 @@
 #ifndef INSANITY_PRIVATE_H_GUARD
 #define INSANITY_PRIVATE_H_GUARD
 
+#include <glib.h>
+
+G_BEGIN_DECLS
+
 gboolean check_valid_label (const char *label);
+
+G_END_DECLS
 
 #endif

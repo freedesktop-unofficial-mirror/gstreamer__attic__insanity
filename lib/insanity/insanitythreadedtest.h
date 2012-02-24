@@ -29,6 +29,8 @@
 #include <insanity/insanitydefs.h>
 #include <insanity/insanitytest.h>
 
+G_BEGIN_DECLS
+
 typedef struct _InsanityThreadedTest InsanityThreadedTest;
 typedef struct _InsanityThreadedTestClass InsanityThreadedTestClass;
 typedef struct _InsanityThreadedTestPrivateData InsanityThreadedTestPrivateData;
@@ -76,6 +78,8 @@ InsanityThreadedTest *insanity_threaded_test_new(const char *name, const char *d
 #define INSANITY_THREADED_TEST_GET_CLASS(obj)      (G_TYPE_INSTANCE_GET_CLASS ((obj), INSANITY_TYPE_THREADED_TEST, InsanityThreadedTestClass))
 
 GType insanity_threaded_test_get_type (void);
+
+G_END_DECLS
 
 #endif
 

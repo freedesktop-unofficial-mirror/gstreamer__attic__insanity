@@ -27,6 +27,8 @@
 #include <glib-object.h>
 #include <insanity/insanitydefs.h>
 
+G_BEGIN_DECLS
+
 typedef struct _InsanityTest InsanityTest;
 typedef struct _InsanityTestClass InsanityTestClass;
 typedef struct _InsanityTestPrivateData InsanityTestPrivateData;
@@ -99,6 +101,8 @@ gboolean insanity_test_check (InsanityTest *test, const char *step, gboolean exp
 #define INSANITY_TEST_CHECK(test, step, expr) insanity_test_check(test, step, (expr), "%s:%u: check failed: %s", __FILE__, __LINE__, #expr)
 
 gboolean insanity_test_run(InsanityTest *test, int *argc, char ***argv);
+
+G_END_DECLS
 
 #endif
 
