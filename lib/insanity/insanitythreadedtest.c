@@ -139,10 +139,10 @@ insanity_threaded_test_new (const char *name, const char *description, const cha
 
   if (full_description)
     test = g_object_new (INSANITY_TYPE_THREADED_TEST,
-        "name", name, "desc", description, "full-desc", full_description, NULL);
+        "name", name, "description", description, "full-description", full_description, NULL);
   else
     test = g_object_new (INSANITY_TYPE_THREADED_TEST,
-        "name", name, "desc", description, NULL);
+        "name", name, "description", description, NULL);
 
   return test;
 }

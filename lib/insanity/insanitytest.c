@@ -58,8 +58,8 @@ enum
 {
   PROP_0,
   PROP_NAME,
-  PROP_DESC,
-  PROP_FULL_DESC,
+  PROP_DESCRIPTION,
+  PROP_FULL_DESCRIPTION,
   N_PROPERTIES
 };
 
@@ -1463,12 +1463,12 @@ insanity_test_set_property (GObject * gobject,
         g_free (test->priv->test_name);
       test->priv->test_name = g_strdup (g_value_get_string (value));
       break;
-    case PROP_DESC:
+    case PROP_DESCRIPTION:
       if (test->priv->test_desc)
         g_free (test->priv->test_desc);
       test->priv->test_desc = g_strdup (g_value_get_string (value));
       break;
-    case PROP_FULL_DESC:
+    case PROP_FULL_DESCRIPTION:
       if (test->priv->test_full_desc)
         g_free (test->priv->test_full_desc);
       test->priv->test_full_desc = g_strdup (g_value_get_string (value));
@@ -1490,10 +1490,10 @@ insanity_test_get_property (GObject * gobject,
     case PROP_NAME:
       g_value_set_string (value, test->priv->test_name);
       break;
-    case PROP_DESC:
+    case PROP_DESCRIPTION:
       g_value_set_string (value, test->priv->test_desc);
       break;
-    case PROP_FULL_DESC:
+    case PROP_FULL_DESCRIPTION:
       g_value_set_string (value, test->priv->test_full_desc);
       break;
     default:
@@ -1522,11 +1522,11 @@ insanity_test_class_init (InsanityTestClass * klass)
   properties[PROP_NAME] =
       g_param_spec_string ("name", "Name", "Name of the test", NULL,
       G_PARAM_READWRITE | G_PARAM_CONSTRUCT_ONLY | G_PARAM_STATIC_STRINGS);
-  properties[PROP_DESC] =
-      g_param_spec_string ("desc", "Description", "Description of the test",
+  properties[PROP_DESCRIPTION] =
+      g_param_spec_string ("description", "Description", "Description of the test",
       NULL, G_PARAM_READWRITE | G_PARAM_CONSTRUCT_ONLY | G_PARAM_STATIC_STRINGS);
-  properties[PROP_FULL_DESC] =
-      g_param_spec_string ("full-desc", "Full description",
+  properties[PROP_FULL_DESCRIPTION] =
+      g_param_spec_string ("full-description", "Full description",
       "Full description of the test", NULL, G_PARAM_READWRITE | G_PARAM_CONSTRUCT_ONLY | G_PARAM_STATIC_STRINGS);
 
   g_object_class_install_properties (gobject_class, N_PROPERTIES, properties);
@@ -1583,10 +1583,10 @@ insanity_test_new (const char *name, const char *description,
 
   if (full_description)
     test = g_object_new (INSANITY_TYPE_TEST,
-        "name", name, "desc", description, "full-desc", full_description, NULL);
+        "name", name, "description", description, "full-description", full_description, NULL);
   else
     test = g_object_new (INSANITY_TYPE_TEST,
-        "name", name, "desc", description, NULL);
+        "name", name, "description", description, NULL);
   return test;
 }
 
