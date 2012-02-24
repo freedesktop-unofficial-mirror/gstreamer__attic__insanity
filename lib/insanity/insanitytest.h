@@ -77,8 +77,8 @@ struct _InsanityTestClass
 #define INSANITY_TYPE_TEST                (insanity_test_get_type ())
 #define INSANITY_TEST(obj)                (G_TYPE_CHECK_INSTANCE_CAST ((obj), INSANITY_TYPE_TEST, InsanityTest))
 #define INSANITY_TEST_CLASS(c)            (G_TYPE_CHECK_CLASS_CAST ((c), INSANITY_TYPE_TEST, InsanityTestClass))
-#define IS_INSANITY_TEST(obj)             (G_TYPE_CHECK_TYPE ((obj), INSANITY_TYPE_TEST))
-#define IS_INSANITY_TEST_CLASS(c)         (G_TYPE_CHECK_CLASS_TYPE ((c), INSANITY_TYPE_TEST))
+#define INSANITY_IS_TEST(obj)             (G_TYPE_CHECK_INSTANCE_TYPE ((obj), INSANITY_TYPE_TEST))
+#define INSANITY_IS_TEST_CLASS(c)         (G_TYPE_CHECK_CLASS_TYPE ((c), INSANITY_TYPE_TEST))
 #define INSANITY_TEST_GET_CLASS(obj)      (G_TYPE_INSTANCE_GET_CLASS ((obj), INSANITY_TYPE_TEST, InsanityTestClass))
 
 GType insanity_test_get_type (void);
