@@ -1521,13 +1521,13 @@ insanity_test_class_init (InsanityTestClass * klass)
 
   properties[PROP_NAME] =
       g_param_spec_string ("name", "Name", "Name of the test", NULL,
-      G_PARAM_READWRITE);
+      G_PARAM_READWRITE | G_PARAM_CONSTRUCT_ONLY | G_PARAM_STATIC_STRINGS);
   properties[PROP_DESC] =
       g_param_spec_string ("desc", "Description", "Description of the test",
-      NULL, G_PARAM_READWRITE);
+      NULL, G_PARAM_READWRITE | G_PARAM_CONSTRUCT_ONLY | G_PARAM_STATIC_STRINGS);
   properties[PROP_FULL_DESC] =
       g_param_spec_string ("full-desc", "Full description",
-      "Full description of the test", NULL, G_PARAM_READWRITE);
+      "Full description of the test", NULL, G_PARAM_READWRITE | G_PARAM_CONSTRUCT_ONLY | G_PARAM_STATIC_STRINGS);
 
   g_object_class_install_properties (gobject_class, N_PROPERTIES, properties);
 
@@ -1581,10 +1581,12 @@ insanity_test_new (const char *name, const char *description,
   g_return_val_if_fail (check_valid_label (name), NULL);
   g_return_val_if_fail (description != NULL, NULL);
 
-  test = g_object_new (insanity_test_get_type (),
-      "name", name, "desc", description, NULL);
   if (full_description)
-    g_object_set (test, "full-desc", full_description, NULL);
+    test = g_object_new (INSANITY_TYPE_TEST,
+        "name", name, "desc", description, "full-desc", full_description, NULL);
+  else
+    test = g_object_new (INSANITY_TYPE_TEST,
+        "name", name, "desc", description, NULL);
   return test;
 }
 

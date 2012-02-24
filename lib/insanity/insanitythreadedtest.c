@@ -136,9 +136,13 @@ insanity_threaded_test_new (const char *name, const char *description, const cha
   g_return_val_if_fail (check_valid_label (name), NULL);
   g_return_val_if_fail (description != NULL, NULL);
 
-  test = g_object_new (insanity_threaded_test_get_type (),
-      "name", name, "desc", description, NULL);
+
   if (full_description)
-    g_object_set (test, "full-desc", full_description, NULL);
+    test = g_object_new (INSANITY_TYPE_THREADED_TEST,
+        "name", name, "desc", description, "full-desc", full_description, NULL);
+  else
+    test = g_object_new (INSANITY_TYPE_THREADED_TEST,
+        "name", name, "desc", description, NULL);
+
   return test;
 }
