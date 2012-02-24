@@ -314,7 +314,7 @@ check_valid_label (const char *label)
     {
       gchar c = *p;
       
-      if (c != '-' &&
+      if (c != '-' && c != '.' &&
 	  (c < '0' || c > '9') &&
 	  (c < 'A' || c > 'Z') &&
 	  (c < 'a' || c > 'z'))
