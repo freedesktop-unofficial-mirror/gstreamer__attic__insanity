@@ -254,7 +254,7 @@ static const char *introspect_response_template =
   "    </method>\n"
   "  </interface>\n"
   "  <interface name=\"" INSANITY_TEST_INTERFACE "\">\n"
-  "    <method name=\"remoteSetUp\"> </method>\n"
+  "    <method name=\"remoteSetUp\"> <arg direction=\"in\" type=\"a{sv}\" /> </method>\n"
   "    <method name=\"remoteStart\"> <arg direction=\"in\" type=\"a{sv}\" /> </method>\n"
   "    <method name=\"remoteStop\"> </method>\n"
   "    <method name=\"remoteTearDown\"> </method>\n"
@@ -847,6 +847,7 @@ insanity_test_get_output_filename (InsanityTest * test, const char *key)
 static void
 insanity_test_dbus_handler_remoteSetup (InsanityTest * test, DBusMessage * msg)
 {
+  insanity_test_set_args (test, msg);
   on_setup (test);
 }
 
