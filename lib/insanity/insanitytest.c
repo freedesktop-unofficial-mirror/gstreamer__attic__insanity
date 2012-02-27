@@ -250,14 +250,33 @@ static const char *introspect_response_template =
   "<node name=\"/net/gstreamer/Insanity/Test/Test%s\">\n"
   "  <interface name=\"org.freedesktop.DBus.Introspectable\">\n"
   "    <method name=\"Introspect\">\n"
-  "      <arg direction=\"out\" type=\"s\" />\n"
+  "      <arg name=\"xml_data\" direction=\"out\" type=\"s\" />\n"
   "    </method>\n"
   "  </interface>\n"
   "  <interface name=\"" INSANITY_TEST_INTERFACE "\">\n"
-  "    <method name=\"remoteSetUp\"> <arg direction=\"in\" type=\"a{sv}\" /> </method>\n"
-  "    <method name=\"remoteStart\"> <arg direction=\"in\" type=\"a{sv}\" /> </method>\n"
-  "    <method name=\"remoteStop\"> </method>\n"
-  "    <method name=\"remoteTearDown\"> </method>\n"
+  "    <method name=\"remoteSetUp\">\n"
+  "      <arg name=\"arguments\" direction=\"in\" type=\"a{sv}\" />\n"
+  "    </method>\n"
+  "    <method name=\"remoteStart\">\n"
+  "      <arg name=\"arguments\" direction=\"in\" type=\"a{sv}\" />\n"
+  "    </method>\n"
+  "    <method name=\"remoteStop\">\n"
+  "    </method>\n"
+  "    <method name=\"remoteTearDown\">\n"
+  "    </method>\n"
+  "    <signal name=\"remoteReadySignal\">\n"
+  "    </signal>\n"
+  "    <signal name=\"remoteStopSignal\">\n"
+  "    </signal>\n"
+  "    <signal name=\"remoteValidateStepSignal\">\n"
+  "      <arg name=\"name\" type=\"s\" />\n"
+  "      <arg name=\"success\" type=\"b\" />\n"
+  "      <arg name=\"description\" type=\"s\" />\n"
+  "    </signal>\n"
+  "    <signal name=\"remoteExtraInfoSignal\">\n"
+  "      <arg name=\"name\" type=\"s\" />\n"
+  "      <arg name=\"value\" type=\"v\" />\n"
+  "    </signal>\n"
   "  </interface>\n"
   "</node>\n";
 
@@ -275,16 +294,67 @@ send_signal (DBusConnection * conn, const char *signal_name,
     fprintf (stderr, "Message Null\n");
     return FALSE;
   }
+
   if (type != DBUS_TYPE_INVALID) {
+    int iter_type = type;
+    DBusMessageIter iter;
+
     va_start (ap, type);
-    if (!dbus_message_append_args_valist (msg, type, ap)) {
-      fprintf (stderr, "Out Of Memory!\n");
-      va_end (ap);
-      dbus_message_unref (msg);
-      return FALSE;
+
+    dbus_message_iter_init_append (msg, &iter);
+
+    while (iter_type != DBUS_TYPE_INVALID) {
+      if (dbus_type_is_basic (iter_type)) {
+        const void *value;
+        
+        value = va_arg (ap, const void *);
+        if (!dbus_message_iter_append_basic (&iter, iter_type, value)) {
+          fprintf (stderr, "Out Of Memory!\n");
+          va_end (ap);
+          goto fail;
+        }
+      } else if (iter_type == DBUS_TYPE_VARIANT) {
+        DBusMessageIter sub;
+        int variant_type;
+        const void *value;
+
+        variant_type = va_arg (ap, int);
+        value = va_arg (ap, const void *);
+
+        if (!dbus_type_is_basic (variant_type)) {
+          fprintf (stderr, "Invalid or unsupported DBus type %d\n", type);
+          va_end (ap);
+          goto fail;
+        }
+        if (!dbus_message_iter_open_container (&iter, DBUS_TYPE_VARIANT, dbus_message_type_to_string (variant_type), &sub)) {
+          fprintf (stderr, "Out Of Memory!\n");
+          va_end (ap);
+          goto fail;
+        }
+
+        if (!dbus_message_iter_append_basic (&iter, variant_type, value)) {
+          fprintf (stderr, "Out Of Memory!\n");
+          dbus_message_iter_close_container (&iter, &sub);
+          va_end (ap);
+          goto fail;
+        }
+
+        if (!dbus_message_iter_close_container (&iter, &sub)) {
+          fprintf (stderr, "Out Of Memory!\n");
+          va_end (ap);
+          goto fail;
+        }
+      } else {
+        fprintf (stderr, "Invalid or unsupported DBus type %d\n", type);
+        va_end (ap);
+        goto fail;
+      }
+
+      iter_type = va_arg (ap, int);
     }
     va_end (ap);
   }
+
   if (!dbus_connection_send (conn, msg, &serial)) {
     fprintf (stderr, "Out Of Memory!\n");
     dbus_message_unref (msg);
@@ -295,6 +365,11 @@ send_signal (DBusConnection * conn, const char *signal_name,
   dbus_message_unref (msg);
 
   return TRUE;
+
+fail:
+
+  dbus_message_unref (msg);
+  return FALSE;
 }
 
 /* Only allow alphanumeric characters and dash */
@@ -408,7 +483,7 @@ insanity_test_set_extra_info_internal (InsanityTest * test, const char *name,
 
   if (dataptr) {
     send_signal (test->priv->conn, "remoteExtraInfoSignal", test->priv->name,
-        DBUS_TYPE_STRING, &name, dbus_type, dataptr, DBUS_TYPE_INVALID);
+        DBUS_TYPE_STRING, &name, DBUS_TYPE_VARIANT, dbus_type, dataptr, DBUS_TYPE_INVALID);
   } else {
     char *s = g_strdup_value_contents (data);
     fprintf (stderr, "Unsupported extra info: %s\n", s);
