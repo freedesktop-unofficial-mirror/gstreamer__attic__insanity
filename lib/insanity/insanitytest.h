@@ -87,7 +87,7 @@ GType insanity_test_get_type (void);
 
 InsanityTest *insanity_test_new(const char *name, const char *description, const char *full_description);
 void insanity_test_add_checklist_item(InsanityTest *test, const char *label, const char *description, const char *error_hint);
-void insanity_test_add_argument(InsanityTest *test, const char *label, const char *description, const char *full_description, const GValue *default_value);
+void insanity_test_add_argument(InsanityTest *test, const char *label, const char *description, const char *full_description, gboolean global, const GValue *default_value);
 void insanity_test_add_output_file(InsanityTest *test, const char *label, const char *description);
 void insanity_test_add_extra_info(InsanityTest *test, const char *label, const char *description);
 

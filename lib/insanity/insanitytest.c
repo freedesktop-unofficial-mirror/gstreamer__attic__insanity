@@ -1633,19 +1633,26 @@ insanity_test_add_checklist_item (InsanityTest * test, const char *label,
  * @label: the new argument's name
  * @description: a one line description of that argument
  * @full_description: (allow-none): an optional longer description of that argument
+ * @global: if this is a global argument
  * @default_value: the default value for this parameter if not supplied at runtime
  *
  * This function adds an argument declaration to the test.
  *
- * Arguments are paramters which can be passed to the test, and which value
+ * Arguments are parameters which can be passed to the test, and which value
  * may be queried at runtime with insanity_test_get_argument. Arguments may
  * be changed every time a test is started, so should be inspected each time
  * the start function is called.
+ *
+ * If @global is %TRUE the argument is available in InsanityTest::setup and
+ * between InsanityTest::start and InsanityTest::stop and will never change.
+ * On the other hand if @global is %FALSE the argument is not available in
+ * InsanityTest::setup but between InsanityTest::start and InsanityTest::stop
+ * and can have a different value for every call of InsanityTest::start.
  */
 void
 insanity_test_add_argument (InsanityTest * test, const char *label,
     const char *description, const char *full_description,
-    const GValue *default_value)
+    gboolean global, const GValue *default_value)
 {
   Argument *arg;
 

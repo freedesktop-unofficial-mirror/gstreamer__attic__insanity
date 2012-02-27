@@ -123,7 +123,7 @@ main (int argc, char **argv)
   g_value_init (&def, G_TYPE_STRING);
   g_value_set_string (&def, "http://127.0.0.1/");
   insanity_test_add_argument (test, "uri", "URI description",
-      "URI full description", &def);
+      "URI full description", TRUE, &def);
   g_value_unset (&def);
   insanity_test_add_output_file (test, "dummy-output-file", "dummy output file");
 
