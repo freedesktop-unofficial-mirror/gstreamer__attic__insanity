@@ -76,11 +76,15 @@ static GParamSpec *properties[N_PROPERTIES] = { NULL, };
 #endif
 
 #ifdef USE_NEW_GLIB_MUTEX_API
-#define LOCK(test) g_mutex_lock(&((test)->priv->lock))
-#define UNLOCK(test) g_mutex_unlock(&((test)->priv->lock))
+#define LOCK(test) g_mutex_lock(&(test)->priv->lock)
+#define UNLOCK(test) g_mutex_unlock(&(test)->priv->lock)
+#define WAIT(test) g_cond_wait(&(test)->priv->cond, &(test)->priv->lock)
+#define SIGNAL(test) g_cond_signal(&(test)->priv->cond)
 #else
 #define LOCK(test) g_mutex_lock((test)->priv->lock)
 #define UNLOCK(test) g_mutex_unlock((test)->priv->lock)
+#define WAIT(test) g_cond_wait((test)->priv->cond, (test)->priv->lock)
+#define SIGNAL(test) g_cond_signal((test)->priv->cond)
 #endif
 
 struct _InsanityTestPrivateData
@@ -93,14 +97,15 @@ struct _InsanityTestPrivateData
   char *name;
   GHashTable *args;
   int cpu_load;
-  gboolean done;
   gboolean exit;
   GHashTable *filename_cache;
   char *tmpdir;
 #ifdef USE_NEW_GLIB_MUTEX_API
   GMutex lock;
+  GCond cond;
 #else
   GMutex *lock;
+  GCond *cond;
 #endif
   gboolean standalone;
   GHashTable *checklist_results;
@@ -550,7 +555,7 @@ insanity_test_done (InsanityTest * test)
     send_signal (test->priv->conn, "remoteStopSignal", test->priv->name,
         DBUS_TYPE_INVALID);
   }
-  test->priv->done = TRUE;
+  SIGNAL (test);
   UNLOCK (test);
 }
 
@@ -1057,7 +1062,6 @@ listen (InsanityTest * test, const char *bus_address, const char *uuid)
   insanity_test_connect (test, conn, uuid);
 
   /* loop, testing for new messages */
-  test->priv->done = FALSE;
   test->priv->exit = FALSE;
   while (1) {
     /* barely blocking update of dbus */
@@ -1400,15 +1404,9 @@ insanity_test_run (InsanityTest * test, int *argc, char ***argv)
 
     if (on_setup (test)) {
       if (on_start (test)) {
-        while (1) {
-          gboolean done;
-          LOCK (test);
-          done = test->priv->done;
-          UNLOCK (test);
-          if (done)
-            break;
-          g_usleep (100);
-        }
+        LOCK (test);
+        WAIT (test);
+        UNLOCK (test);
       }
       on_stop (test);
       on_teardown (test);
@@ -1488,8 +1486,10 @@ insanity_test_finalize (GObject * gobject)
   g_hash_table_destroy (priv->test_likely_errors);
 #ifdef USE_NEW_GLIB_MUTEX_API
   g_mutex_clear (&priv->lock);
+  g_cond_clear (&priv->cond);
 #else
   g_mutex_destroy (priv->lock);
+  g_cond_free (priv->cond);
 #endif
   G_OBJECT_CLASS (insanity_test_parent_class)->finalize (gobject);
 }
@@ -1502,8 +1502,10 @@ insanity_test_init (InsanityTest * test)
 
 #ifdef USE_NEW_GLIB_MUTEX_API
   g_mutex_init (&priv->lock);
+  g_cond_init (&priv->cond);
 #else
   priv->lock = g_mutex_new ();
+  priv->cond = g_cond_new ();
 #endif
   test->priv = priv;
   priv->conn = NULL;
@@ -1512,7 +1514,6 @@ insanity_test_init (InsanityTest * test)
   priv->cpu_load = -1;
   priv->standalone = TRUE;
   priv->tmpdir = NULL;
-  priv->done = FALSE;
   priv->exit = FALSE;
   priv->filename_cache =
       g_hash_table_new_full (&g_str_hash, &g_str_equal, &g_free, g_free);
