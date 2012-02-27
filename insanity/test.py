@@ -400,6 +400,8 @@ class Test(gobject.GObject):
         # if we still have the timeoutid, we didn't timeout
         notimeout = False
         if self._testtimeoutid:
+            gobject.source_remove(self._testtimeoutid)
+            self._testtimeoutid = 0
             notimeout = True
         self.validateStep("no-timeout", notimeout)
 
