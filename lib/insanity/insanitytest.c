@@ -129,6 +129,7 @@ struct _InsanityTestPrivateData
 };
 
 typedef struct Argument {
+  gboolean global;
   char *description;
   GValue default_value;
   char *full_description;
@@ -875,6 +876,15 @@ insanity_test_get_argument (InsanityTest * test, const char *key,
   g_return_val_if_fail (check_valid_label (key), FALSE);
   g_return_val_if_fail (value != NULL, FALSE);
 
+  LOCK (test);
+
+  arg = g_hash_table_lookup (test->priv->test_arguments, key);
+
+  if (arg && !arg->global && test->priv->runlevel != rl_started && test->priv->runlevel != rl_setup) {
+    fprintf (stderr, "Non-global argument \'%s' requested but not set up yet\n", key);
+    goto done;
+  }
+
   if (test->priv->args) {
     v = g_hash_table_lookup (test->priv->args, key);
     if (v) {
@@ -885,7 +895,6 @@ insanity_test_get_argument (InsanityTest * test, const char *key,
   }
 
   if (!ret) {
-    arg = g_hash_table_lookup (test->priv->test_arguments, key);
     if (arg) {
       g_value_init (value, G_VALUE_TYPE (&arg->default_value));
       g_value_copy (&arg->default_value, value);
@@ -897,6 +906,7 @@ insanity_test_get_argument (InsanityTest * test, const char *key,
     fprintf (stderr, "Argument %s not found\n", key);
   }
 
+done:
   UNLOCK (test);
 
   return ret;
@@ -1174,7 +1184,12 @@ output_table (InsanityTest * test, FILE * f, GHashTable * table,
   fprintf (f, ",\n  \"%s\": {\n", name);
   g_hash_table_iter_init (&it, table);
   while (g_hash_table_iter_next (&it, (gpointer) & label, (gpointer) & data)) {
-    fprintf (f, "%s    \"%s\" : \"%s\"", comma, label, (*getname)(data));
+    const char * str_value = (*getname)(data);
+
+    if (!str_value)
+      continue;
+
+    fprintf (f, "%s    \"%s\" : \"%s\"", comma, label, str_value);
     comma = ",\n";
   }
   fprintf (f, "\n  }", name);
@@ -1192,6 +1207,16 @@ get_argument_desc (void *ptr)
   return ((Argument *)ptr)->description;
 }
 
+static const char *
+get_global_argument_desc (void *ptr)
+{
+  Argument *a = ptr;
+
+  if (!a->global)
+    return NULL;
+  return a->description;
+}
+
 static void
 insanity_test_write_metadata (InsanityTest * test)
 {
@@ -1207,6 +1232,7 @@ insanity_test_write_metadata (InsanityTest * test)
   fprintf (f, "  \"__description__\": \"%s\"", desc);
   output_table (test, f, test->priv->test_checklist, "__checklist__", &get_raw_string);
   output_table (test, f, test->priv->test_arguments, "__arguments__", &get_argument_desc);
+  output_table (test, f, test->priv->test_arguments, "__global_arguments__", &get_global_argument_desc);
   output_table (test, f, test->priv->test_extra_infos, "__extra_infos__", &get_raw_string);
   output_table (test, f, test->priv->test_output_files, "__output_files__", &get_raw_string);
   output_table (test, f, test->priv->test_likely_errors, "__likely_errors__", &get_raw_string);
@@ -1795,6 +1821,7 @@ insanity_test_add_argument (InsanityTest * test, const char *label,
   g_return_if_fail (G_IS_VALUE (default_value));
 
   arg = g_slice_alloc0 (sizeof (Argument));
+  arg->global = global;
   arg->description = g_strdup (description);
   arg->full_description = full_description ? g_strdup (full_description) : NULL;
   g_value_init (&arg->default_value, G_VALUE_TYPE (default_value));
