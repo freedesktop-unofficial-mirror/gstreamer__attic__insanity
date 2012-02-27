@@ -113,6 +113,8 @@ class DBusTest(Test, dbus.service.Object):
         self._subprocessspawntime = 0
         self._subprocessconnecttime = 0
         self._pid = 0
+        
+        self._remotetimeoutid = 0
 
     # Test class overrides
 
@@ -246,21 +248,28 @@ class DBusTest(Test, dbus.service.Object):
     def _voidRemoteCallBackHandler(self):
         pass
 
-    def _voidRemoteSetUpCallBackHandler(self):
-        self._remotetimeoutid = gobject.timeout_add(self._timeout * 1000,
-                                                    self._remoteSetUpTimeoutCb)
+    def _voidRemoteSetUpCallBackHandler(self, success):
+        if success:
+            self._remotetimeoutid = gobject.timeout_add(self._timeout * 1000,
+                                                        self._remoteSetUpTimeoutCb)
+        else:
+            error("FATAL : Failed to setup test")
+            self.tearDown()
 
-    def _voidRemoteStartCallBackHandler(self):
-        self._remotetimeoutid = gobject.timeout_add(self._timeout * 1000,
-                                                    self._remoteStartTimeoutCb)
-
+    def _voidRemoteStartCallBackHandler(self, success):
+        if success:
+            self._remotetimeoutid = gobject.timeout_add(self._timeout * 1000,
+                                                        self._remoteStartTimeoutCb)
+        else:
+            error("FATAL : Failed to start test")
+            self.tearDown()
 
     def _voidRemoteErrBackHandler(self, exc, caller=None, fatal=True):
         error("%r : %s", caller, exc)
         if fatal:
             warning("FATAL : aborting test")
             # a fatal error happened, DIVE DIVE DIVE !
-            self.teardown()
+            self.tearDown()
 
     def _voidRemoteSetUpErrBackHandler(self, exc):
         self._voidRemoteErrBackHandler(exc, "remoteSetUp")
