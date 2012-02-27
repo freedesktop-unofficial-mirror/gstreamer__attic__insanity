@@ -23,6 +23,8 @@
 #ifndef INSANITY_DEFS_H_GUARD
 #define INSANITY_DEFS_H_GUARD
 
+#include <glib.h>
+
 G_BEGIN_DECLS
 
 #define INSANITY_PADDING 8
