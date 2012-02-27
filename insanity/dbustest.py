@@ -65,6 +65,12 @@ class DBusTest(Test, dbus.service.Object):
     "cpu-load" : "CPU load in percent (can exceed 100% on multi core systems)" # TODO: move to C
     }
 
+    __test_arguments__ = {
+    "bus_address":"The private DBus bus address",
+    "outputfiles":"Dictionary of output files",
+    "timeout":"Timeout value for the test in seconds"
+    }
+
     __async_setup__ = True
     ## Needed for dbus
     __metaclass__ = dbus.gobject_service.ExportedGObjectType
@@ -278,7 +284,9 @@ class DBusTest(Test, dbus.service.Object):
         # call remote instance "remoteSetUp()"
         if not self._remoteinstance:
             return
-        self._remoteinstance.remoteSetUp(self.args,
+
+        args = dict((k, v) for k, v in self.args.items() if k in self._metadata.getFullGlobalArgumentList())
+        self._remoteinstance.remoteSetUp(args,
                                          reply_handler=self._voidRemoteSetUpCallBackHandler,
                                          error_handler=self._voidRemoteSetUpErrBackHandler)
 

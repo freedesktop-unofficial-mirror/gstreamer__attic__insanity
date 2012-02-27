@@ -89,6 +89,7 @@ class TestMetadata():
         self.__test_description__ = self.get_metadata (metadata, "__description__")
         self.__test_full_description__ = self.get_metadata (metadata, "__full_description__")
         self.__test_arguments__ = self.get_metadata (metadata, "__arguments__")
+        self.__test_global_arguments__ = self.get_metadata (metadata, "__global_arguments__")
         self.__test_output_files__ = self.get_metadata (metadata, "__output_files__")
         self.__test_checklist__ = self.get_metadata (metadata, "__checklist__")
         self.__test_extra_infos__ = self.get_metadata (metadata, "__extra_infos__")
@@ -130,6 +131,22 @@ class TestMetadata():
         dc = self.__test_class__.getClassFullArgumentList()
         if self.__test_arguments__ != None:
             dc.update(self.__test_arguments__)
+        return dc
+
+    def getFullGlobalArgumentList(self):
+        """
+        Returns the full list of global arguments with descriptions.
+
+        The format of the returned argument dictionnary is:
+        key : argument name
+        value : tuple of :
+            * short description
+            * default value
+            * extended description (Can be None)
+        """
+        dc = self.__test_class__.getClassFullGlobalArgumentList()
+        if self.__test_global_arguments__ != None:
+            dc.update(self.__test_global_arguments__)
         return dc
 
     def getFullExtraInfoList(self):

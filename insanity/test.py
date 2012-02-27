@@ -548,6 +548,26 @@ class Test(gobject.GObject):
         return dc
 
     @classmethod
+    def getClassFullGlobalArgumentList(cls):
+        """
+        Returns the full list of global arguments with descriptions.
+
+        The format of the returned argument dictionnary is:
+        key : argument name
+        value : tuple of :
+            * short description
+            * default value
+            * extended description (Can be None)
+        """
+        dc = {}
+        for cl in cls.mro():
+            if "__test_arguments__" in cls.__dict__:
+                dc.update(cl.__test_arguments__)
+            if cl == Test:
+                break
+        return dc
+
+    @classmethod
     def getClassFullExtraInfoList(cls):
         """
         Returns the full list of extra info with descriptions.
