@@ -87,6 +87,12 @@ static GParamSpec *properties[N_PROPERTIES] = { NULL, };
 #define SIGNAL(test) g_cond_signal((test)->priv->cond)
 #endif
 
+typedef enum RunLevel {
+  rl_idle,
+  rl_setup,
+  rl_started
+} RunLevel;
+
 struct _InsanityTestPrivateData
 {
   DBusConnection *conn;
@@ -109,6 +115,7 @@ struct _InsanityTestPrivateData
 #endif
   gboolean standalone;
   GHashTable *checklist_results;
+  RunLevel runlevel;
 
   /* test metadata */
   char *test_name;
@@ -576,6 +583,9 @@ on_setup (InsanityTest * test)
 {
   gboolean ret = TRUE;
 
+  if (test->priv->runlevel != rl_idle)
+    return FALSE;
+
   g_signal_emit (test, setup_signal, 0, &ret);
 
   LOCK (test);
@@ -592,6 +602,7 @@ on_setup (InsanityTest * test)
     }
   }
 
+  test->priv->runlevel = rl_setup;
   return ret;
 }
 
@@ -600,24 +611,35 @@ on_start (InsanityTest * test)
 {
   gboolean ret = TRUE;
 
+  if (test->priv->runlevel != rl_setup)
+    return FALSE;
+
   g_signal_emit (test, start_signal, 0, &ret);
+  test->priv->runlevel = rl_started;
   return ret;
 }
 
 static void
 on_stop (InsanityTest * test)
 {
+  if (test->priv->runlevel != rl_started)
+    return;
+
   g_signal_emit (test, stop_signal, 0, NULL);
 
   if (!test->priv->standalone) {
     send_signal (test->priv->conn, "remoteReadySignal", test->priv->name,
         DBUS_TYPE_INVALID);
   }
+  test->priv->runlevel = rl_setup;
 }
 
 static void
 on_teardown (InsanityTest * test)
 {
+  if (test->priv->runlevel != rl_setup)
+    return;
+
   LOCK (test);
   gather_end_of_test_info (test);
   UNLOCK (test);
@@ -625,6 +647,7 @@ on_teardown (InsanityTest * test)
   g_signal_emit (test, teardown_signal, 0, NULL);
 
   LOCK (test);
+  test->priv->runlevel = rl_idle;
   test->priv->exit = TRUE;
   UNLOCK (test);
 }
@@ -1527,6 +1550,7 @@ insanity_test_init (InsanityTest * test)
   priv->standalone = TRUE;
   priv->tmpdir = NULL;
   priv->exit = FALSE;
+  priv->runlevel = rl_idle;
   priv->filename_cache =
       g_hash_table_new_full (&g_str_hash, &g_str_equal, &g_free, g_free);
   priv->checklist_results =
