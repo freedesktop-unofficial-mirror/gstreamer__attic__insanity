@@ -322,24 +322,36 @@ send_signal (DBusConnection * conn, const char *signal_name,
         }
       } else if (iter_type == DBUS_TYPE_VARIANT) {
         DBusMessageIter sub;
-        int variant_type;
+        DBusSignatureIter siter;
+        const char * variant_type;
+        int variant_type_id;
         const void *value;
 
-        variant_type = va_arg (ap, int);
+        variant_type = va_arg (ap, const char *);
         value = va_arg (ap, const void *);
 
-        if (!dbus_type_is_basic (variant_type)) {
-          fprintf (stderr, "Invalid or unsupported DBus type %d\n", type);
+        if (!dbus_signature_validate_single (variant_type, NULL)) {
+          fprintf (stderr, "Invalid or unsupported DBus type \'%s\'\n", variant_type);
           va_end (ap);
           goto fail;
         }
-        if (!dbus_message_iter_open_container (&iter, DBUS_TYPE_VARIANT, dbus_message_type_to_string (variant_type), &sub)) {
+
+        dbus_signature_iter_init (&siter, variant_type);
+        variant_type_id = dbus_signature_iter_get_current_type (&siter);
+
+        if (!dbus_type_is_basic (variant_type_id)) {
+          fprintf (stderr, "Invalid or unsupported DBus type \'%s\'\n", variant_type);
+          va_end (ap);
+          goto fail;
+        }
+
+        if (!dbus_message_iter_open_container (&iter, DBUS_TYPE_VARIANT, variant_type, &sub)) {
           fprintf (stderr, "Out Of Memory!\n");
           va_end (ap);
           goto fail;
         }
 
-        if (!dbus_message_iter_append_basic (&iter, variant_type, value)) {
+        if (!dbus_message_iter_append_basic (&sub, variant_type_id, value)) {
           fprintf (stderr, "Out Of Memory!\n");
           dbus_message_iter_close_container (&iter, &sub);
           va_end (ap);
@@ -452,7 +464,7 @@ insanity_test_set_extra_info_internal (InsanityTest * test, const char *name,
     const GValue * data, gboolean locked)
 {
   GType glib_type;
-  int dbus_type;
+  const char* dbus_type;
   dbus_int32_t int32_value;
   dbus_int64_t int64_value;
   const char *string_value;
@@ -473,15 +485,15 @@ insanity_test_set_extra_info_internal (InsanityTest * test, const char *name,
   glib_type = G_VALUE_TYPE (data);
   if (glib_type == G_TYPE_INT) {
     int32_value = g_value_get_int (data);
-    dbus_type = DBUS_TYPE_INT32;
+    dbus_type = "i";
     dataptr = &int32_value;
   } else if (glib_type == G_TYPE_INT64) {
     int64_value = g_value_get_int64 (data);
-    dbus_type = DBUS_TYPE_INT64;
+    dbus_type = "l";
     dataptr = &int64_value;
   } else if (glib_type == G_TYPE_STRING) {
     string_value = g_value_get_string (data);
-    dbus_type = DBUS_TYPE_STRING;
+    dbus_type = "s";
     dataptr = &string_value;
   } else {
     /* Add more if needed, there doesn't seem to be a glib "glib to dbus" conversion public API,
