@@ -114,8 +114,6 @@ class DBusTest(Test, dbus.service.Object):
         self._subprocessconnecttime = 0
         self._pid = 0
         
-        self._remotetimeoutid = 0
-
     # Test class overrides
 
     def test(self):
@@ -202,10 +200,6 @@ class DBusTest(Test, dbus.service.Object):
                 self.validateStep("subprocess-exited-normally", self._returncode == 0)
                 self.extraInfo("subprocess-return-code", self._returncode)
 
-        if self._remotetimeoutid:
-            gobject.source_remove(self._remotetimeoutid)
-            self._remotetimedout = False
-            self._remotetimeoutid = 0
         Test.tearDown(self)
 
     def stop(self):
@@ -249,18 +243,12 @@ class DBusTest(Test, dbus.service.Object):
         pass
 
     def _voidRemoteSetUpCallBackHandler(self, success):
-        if success:
-            self._remotetimeoutid = gobject.timeout_add(self._timeout * 1000,
-                                                        self._remoteSetUpTimeoutCb)
-        else:
+        if not success:
             error("FATAL : Failed to setup test")
             self.tearDown()
 
     def _voidRemoteStartCallBackHandler(self, success):
-        if success:
-            self._remotetimeoutid = gobject.timeout_add(self._timeout * 1000,
-                                                        self._remoteStartTimeoutCb)
-        else:
+        if not success:
             error("FATAL : Failed to start test")
             self.tearDown()
 
@@ -336,7 +324,6 @@ class DBusTest(Test, dbus.service.Object):
 
     def _remoteStopCb(self):
         info("%s", self.uuid)
-        self.validateStep("no-timeout", True)
         self.stop()
 
     def _remoteValidateStepCb(self, step, validate, desc):
@@ -346,20 +333,6 @@ class DBusTest(Test, dbus.service.Object):
     def _remoteExtraInfoCb(self, key, value):
         info("%s key:%s value:%r", self.uuid, key, value)
         self.extraInfo(unwrap(key), unwrap(value))
-
-    ## Remote DBUS calls
-    def _remoteSetUpTimeoutCb(self):
-        debug("%s", self.uuid)
-        self.validateStep("no-timeout", False)
-        self._remotetimeoutid = 0
-        return False
-
-    def _remoteStartTimeoutCb(self):
-        debug("%s", self.uuid)
-        self.validateStep("no-timeout", False)
-        self.remoteTearDown()
-        self._remotetimeoutid = 0
-        return False
 
     ## DBUS Signals for proxies
 
