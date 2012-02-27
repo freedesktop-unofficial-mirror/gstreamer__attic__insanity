@@ -255,9 +255,11 @@ static const char *introspect_response_template =
   "  </interface>\n"
   "  <interface name=\"" INSANITY_TEST_INTERFACE "\">\n"
   "    <method name=\"remoteSetUp\">\n"
+  "      <arg name=\"success\" direction=\"out\" type=\"b\" />\n"
   "      <arg name=\"arguments\" direction=\"in\" type=\"a{sv}\" />\n"
   "    </method>\n"
   "    <method name=\"remoteStart\">\n"
+  "      <arg name=\"success\" direction=\"out\" type=\"b\" />\n"
   "      <arg name=\"arguments\" direction=\"in\" type=\"a{sv}\" />\n"
   "    </method>\n"
   "    <method name=\"remoteStop\">\n"
@@ -920,28 +922,44 @@ insanity_test_get_output_filename (InsanityTest * test, const char *key)
 }
 
 static void
-insanity_test_dbus_handler_remoteSetup (InsanityTest * test, DBusMessage * msg)
+insanity_test_dbus_handler_remoteSetup (InsanityTest * test, DBusMessage * msg, DBusMessage *reply)
 {
+  DBusMessageIter iter;
+  gboolean ret;
+
   insanity_test_set_args (test, msg);
-  on_setup (test);
+  ret = on_setup (test);
+
+  dbus_message_iter_init_append (reply, &iter);
+  if (!dbus_message_iter_append_basic (&iter, DBUS_TYPE_BOOLEAN, &ret)) {
+    fprintf (stderr, "Out Of Memory!\n");
+  }
 }
 
 static void
-insanity_test_dbus_handler_remoteStart (InsanityTest * test, DBusMessage * msg)
+insanity_test_dbus_handler_remoteStart (InsanityTest * test, DBusMessage * msg, DBusMessage *reply)
 {
+  DBusMessageIter iter;
+  gboolean ret;
+
   insanity_test_set_args (test, msg);
-  on_start (test);
+  ret = on_start (test);
+
+  dbus_message_iter_init_append (reply, &iter);
+  if (!dbus_message_iter_append_basic (&iter, DBUS_TYPE_BOOLEAN, &ret)) {
+    fprintf (stderr, "Out Of Memory!\n");
+  }
 }
 
 static void
-insanity_test_dbus_handler_remoteStop (InsanityTest * test, DBusMessage * msg)
+insanity_test_dbus_handler_remoteStop (InsanityTest * test, DBusMessage * msg, DBusMessage *reply)
 {
   (void) msg;
   on_stop (test);
 }
 
 static void
-insanity_test_dbus_handler_remoteTearDown (InsanityTest * test, DBusMessage * msg)
+insanity_test_dbus_handler_remoteTearDown (InsanityTest * test, DBusMessage * msg, DBusMessage *reply)
 {
   (void) msg;
   on_teardown (test);
@@ -950,7 +968,7 @@ insanity_test_dbus_handler_remoteTearDown (InsanityTest * test, DBusMessage * ms
 static const struct
 {
   const char *method;
-  void (*handler) (InsanityTest *, DBusMessage *);
+  void (*handler) (InsanityTest *, DBusMessage *, DBusMessage *);
 } dbus_test_handlers[] = {
   { "remoteSetUp", &insanity_test_dbus_handler_remoteSetup },
   { "remoteStart", &insanity_test_dbus_handler_remoteStart },
@@ -969,6 +987,10 @@ insanity_call_interface (InsanityTest * test, DBusMessage * msg)
     if (!strcmp (method, dbus_test_handlers[n].method)) {
       dbus_uint32_t serial = 0;
       DBusMessage *reply = dbus_message_new_method_return (msg);
+
+      if (dbus_test_handlers[n].handler)
+        (*dbus_test_handlers[n].handler) (test, msg, reply);
+
       if (!dbus_connection_send (test->priv->conn, reply, &serial)) {
         fprintf (stderr, "Out Of Memory!\n");
       }
@@ -977,8 +999,6 @@ insanity_call_interface (InsanityTest * test, DBusMessage * msg)
       }
       dbus_message_unref (reply);
 
-      if (dbus_test_handlers[n].handler)
-        (*dbus_test_handlers[n].handler) (test, msg);
       return TRUE;
     }
   }
