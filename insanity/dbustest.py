@@ -329,8 +329,6 @@ class DBusTest(Test, dbus.service.Object):
     ## callbacks from remote signals
     def _remoteReadyCb(self):
         info("%s", self.uuid)
-        # increment timeout by 5s
-        self._timeout += 5
         if self.args:
             self.start()
         else:
