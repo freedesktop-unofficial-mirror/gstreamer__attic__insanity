@@ -363,43 +363,6 @@ class DBusTest(Test, dbus.service.Object):
         self._remotetimeoutid = 0
         return False
 
-    def remoteTest(self):
-        """
-        Remote-side test() method.
-
-        Subclasses should implement this method and chain up to the parent
-        remoteTest() method at the *beginning* of their implementation.
-        """
-        info("%s", self.uuid)
-        # add a timeout
-        #self._remotetimeoutid = gobject.timeout_add(self._timeout * 1000,
-        #                                            self._remoteTestTimeoutCb)
-
-    def remoteStop(self):
-        info("%s", self.uuid)
-        # because of being asynchronous, we call remoteTearDown first
-        #self.tearDown()
-        #Test.stop(self)
-
-    def remoteTearDown(self):
-        """
-        Remote-side tearDown() method.
-
-        Subclasses wishing to clean up their tests or collect information to
-        send at the end, should implement this in their subclass and chain up
-        to the parent remoteTearDown() at the *beginning of their
-        implementation.
-
-        If the parent method returns False, return False straight-away
-        """
-        if self._remote_tearing_down:
-            return False
-        self._remote_tearing_down = True
-        info("%s remoteTimeoutId:%r", self.uuid, self._remotetimeoutid)
-
-        return True
-
-
     ## DBUS Signals for proxies
 
     def _newRemoteTest(self, testrun, uuid):
