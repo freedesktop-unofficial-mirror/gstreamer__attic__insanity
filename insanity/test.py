@@ -76,18 +76,21 @@ class Test(gobject.GObject):
     """
 
     __test_arguments__ = {
-        "instance-name": ("Name assigned by parent.", "",
-            "Used to identify similar subtests within a scenario."),
-        "expected-failures": ("List of dicts documenting expected failures.",
-            [],
-            """Must be of the form:
-            [{
-                "arguments": {argname: [broken_value, ...], ...},
-                "results": {checkitemname: ['0' or 'None'], ...},
-            }, ...],
-            If the test's arguments all match values in arguments, and the
-            result of the check matches one in "results", mark the failure as
-            expected."""),
+        "instance-name": {
+            "global": True,
+            "description" : "Name assigned by parent.",
+            "full_description": "Used to identify similar subtests within a scenario.",
+            "type": "s",
+            "default_value": ""
+        },
+
+        "expected-failures": {
+            "global": False,
+            "description": "List of expected failing checkpoints",
+            "full_description": "Comma separated string of expected failing checkpoints",
+            "type": "s",
+            "default_value": None
+        }
         }
     """
     Dictionnary of arguments this test can take.
@@ -100,9 +103,12 @@ class Test(gobject.GObject):
     """
 
     __test_checklist__ = {
-        "test-started": "The test started",
-        "no-timeout": "The test didn't timeout",
-        "no-unexpected-failures": "All failed checks were expected.",
+        "test-started": {
+            "description": "The test started"},
+        "no-timeout": {
+            "description": "The test didn't timeout"},
+        "no-unexpected-failures": {
+            "description": "All failed checks were expected."},
         }
     """
     Dictionnary of check items this test will validate.
@@ -113,15 +119,6 @@ class Test(gobject.GObject):
     key : name of the check item
     value :
          * short description of the check item
-    """
-
-    __test_likely_errors__ = {}
-    """
-    Dictionary of likely error causes for check items for which
-    a likely error cause can be assumed.
-
-    key : name of the check item
-    value : short description of the likely error cause
     """
 
     __test_timeout__ = 15
@@ -548,26 +545,6 @@ class Test(gobject.GObject):
         return dc
 
     @classmethod
-    def getClassFullGlobalArgumentList(cls):
-        """
-        Returns the full list of global arguments with descriptions.
-
-        The format of the returned argument dictionnary is:
-        key : argument name
-        value : tuple of :
-            * short description
-            * default value
-            * extended description (Can be None)
-        """
-        dc = {}
-        for cl in cls.mro():
-            if "__test_arguments__" in cls.__dict__:
-                dc.update(cl.__test_arguments__)
-            if cl == Test:
-                break
-        return dc
-
-    @classmethod
     def getClassFullExtraInfoList(cls):
         """
         Returns the full list of extra info with descriptions.
@@ -748,7 +725,7 @@ class Test(gobject.GObject):
 
         Returns None if no explanation is available.
         """
-        return self.__test_likely_errors__.get(checkitem, None)
+        return self.__test_checklist__.get(checkitem, None).get("likely_error", None)
 
     def getTestName(self):
         return self.__test_name__

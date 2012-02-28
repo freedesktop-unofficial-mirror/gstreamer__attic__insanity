@@ -51,12 +51,15 @@ class DBusTest(Test, dbus.service.Object):
     __test_description__ = """Base class for distributed tests using DBUS"""
 
     __test_checklist__ = {
-    "dbus-process-spawned":
-    "The DBus child process spawned itself",
-    "dbus-process-connected":
-    "The DBus child process connected properly to the private Bus",
-    "subprocess-exited-normally":
-    "The subprocess returned a null exit code (success)"
+    "dbus-process-spawned": {
+        "description": "The DBus child process spawned itself"
+    },
+    "dbus-process-connected": {
+        "description": "The DBus child process connected properly to the private Bus"
+    },
+    "subprocess-exited-normally": {
+        "description": "The subprocess returned a null exit code (success)"
+    }
     }
 
     __test_extra_infos__ = {
@@ -66,9 +69,11 @@ class DBusTest(Test, dbus.service.Object):
     }
 
     __test_arguments__ = {
-    "bus_address":"The private DBus bus address",
-    "outputfiles":"Dictionary of output files",
-    "timeout":"Timeout value for the test in seconds"
+    "bus_address": {
+        "global": True,
+        "description": "The private DBus bus address",
+	"type": "s"
+    }
     }
 
     __async_setup__ = True
@@ -287,7 +292,8 @@ class DBusTest(Test, dbus.service.Object):
         if not self._remoteinstance:
             return
 
-        args = dict((k, v) for k, v in self.args.items() if k in self._metadata.getFullGlobalArgumentList())
+        args = dict((k, v) for k, v in self.args.items() if (k == "outputfiles" or (k in self.getFullArgumentList() and self.getFullArgumentList()[k]["global"] == True)))
+
         self._remoteinstance.remoteSetUp(args,
                                          reply_handler=self._voidRemoteSetUpCallBackHandler,
                                          error_handler=self._voidRemoteSetUpErrBackHandler)
@@ -318,7 +324,6 @@ class DBusTest(Test, dbus.service.Object):
         try:
             self.args = self._test_arguments.next().copy()
             self.args["bus_address"] = self._bus_address
-            self.args["timeout"] = self._timeout
             if self._outputfiles:
                 self.args["outputfiles"] = self.getOutputFiles()
         except:

@@ -114,7 +114,6 @@ struct _InsanityTestPrivateData
   GHashTable *test_arguments;
   GHashTable *test_extra_infos;
   GHashTable *test_output_files;
-  GHashTable *test_likely_errors;
 
   /* timeout for standalone mode */
   gint timeout;
@@ -176,12 +175,28 @@ WAIT_TIMEOUT (InsanityTest * test)
 }
 #endif
 
-typedef struct Argument {
+typedef struct _Argument {
   gboolean global;
   char *description;
   GValue default_value;
   char *full_description;
 } Argument;
+
+typedef struct _ChecklistItem {
+  char *description;
+  char *likely_error;
+} ChecklistItem;
+
+static void
+free_checklist_item (void *ptr)
+{
+  ChecklistItem *i = ptr;
+
+  g_free (i->description);
+  g_free (i->likely_error);
+
+  g_slice_free1 (sizeof (ChecklistItem), ptr);
+}
 
 static void
 free_argument (void *ptr)
@@ -1254,7 +1269,7 @@ output_table (InsanityTest * test, FILE * f, GHashTable * table,
     fprintf (f, "%s    \"%s\" : \"%s\"", comma, label, str_value);
     comma = ",\n";
   }
-  fprintf (f, "\n  }", name);
+  fprintf (f, "\n  }");
 }
 
 static const char *
@@ -1264,19 +1279,88 @@ get_raw_string (void *ptr)
 }
 
 static const char *
-get_argument_desc (void *ptr)
+get_argument_type_char (const GValue *v)
 {
-  return ((Argument *)ptr)->description;
+  if (G_VALUE_HOLDS_STRING (v))
+    return "s";
+  else if (G_VALUE_HOLDS_INT (v))
+    return "i";
+  else if (G_VALUE_HOLDS_UINT (v))
+    return "u";
+  else if (G_VALUE_HOLDS_INT64 (v))
+    return "I";
+  else if (G_VALUE_HOLDS_UINT64 (v))
+    return "U";
+  else if (G_VALUE_HOLDS_DOUBLE (v))
+    return "d";
+  else if (G_VALUE_HOLDS_BOOLEAN (v))
+    return "b";
+  else
+    g_assert_not_reached ();
+
+  return NULL;
 }
 
-static const char *
-get_global_argument_desc (void *ptr)
+static void
+output_checklist_table (InsanityTest * test, FILE * f)
 {
-  Argument *a = ptr;
+  GHashTableIter it;
+  const char *label, *comma = "";
+  void *data;
 
-  if (!a->global)
-    return NULL;
-  return a->description;
+  if (g_hash_table_size (test->priv->test_checklist) == 0)
+    return;
+
+  fprintf (f, ",\n  \"__checklist__\": {\n");
+  g_hash_table_iter_init (&it, test->priv->test_checklist);
+  while (g_hash_table_iter_next (&it, (gpointer) & label, (gpointer) & data)) {
+    ChecklistItem *i = data;
+
+    fprintf (f, "%s    \"%s\" : \n", comma, label);
+    fprintf (f, "    {\n");
+    fprintf (f, "        \"description\" : \"%s\",\n", i->description);
+    fprintf (f, "        \"likely_error\" : \"%s\"\n", i->likely_error);
+    fprintf (f, "    }");
+
+    comma = ",\n";
+  }
+  fprintf (f, "\n  }");
+}
+
+static void
+output_arguments_table (InsanityTest * test, FILE * f)
+{
+  GHashTableIter it;
+  const char *label, *comma = "";
+  void *data;
+
+  if (g_hash_table_size (test->priv->test_arguments) == 0)
+    return;
+
+  fprintf (f, ",\n  \"__arguments__\": {\n");
+  g_hash_table_iter_init (&it, test->priv->test_arguments);
+  while (g_hash_table_iter_next (&it, (gpointer) & label, (gpointer) & data)) {
+    Argument *a = data;
+    char *default_value;
+    
+    if (G_VALUE_HOLDS_STRING (&a->default_value))
+      default_value = g_value_dup_string (&a->default_value);
+    else
+      default_value = g_strdup_value_contents (&a->default_value);
+
+    fprintf (f, "%s    \"%s\" : \n", comma, label);
+    fprintf (f, "    {\n");
+    fprintf (f, "        \"global\" : %s\n,", (a->global ? "true" : "false"));
+    fprintf (f, "        \"description\" : \"%s\",\n", a->description);
+    fprintf (f, "        \"full_description\" : \"%s\",\n", a->full_description);
+    fprintf (f, "        \"type\" : \"%s\",\n", get_argument_type_char (&a->default_value));
+    fprintf (f, "        \"default_value\" : \"%s\"\n", default_value);
+    fprintf (f, "    }");
+    g_free (default_value);
+
+    comma = ",\n";
+  }
+  fprintf (f, "\n  }");
 }
 
 static void
@@ -1292,12 +1376,10 @@ insanity_test_write_metadata (InsanityTest * test)
   fprintf (f, "{\n");
   fprintf (f, "  \"__name__\": \"%s\",\n", name);
   fprintf (f, "  \"__description__\": \"%s\"", desc);
-  output_table (test, f, test->priv->test_checklist, "__checklist__", &get_raw_string);
-  output_table (test, f, test->priv->test_arguments, "__arguments__", &get_argument_desc);
-  output_table (test, f, test->priv->test_arguments, "__global_arguments__", &get_global_argument_desc);
+  output_checklist_table (test, f);
+  output_arguments_table (test, f);
   output_table (test, f, test->priv->test_extra_infos, "__extra_infos__", &get_raw_string);
   output_table (test, f, test->priv->test_output_files, "__output_files__", &get_raw_string);
-  output_table (test, f, test->priv->test_likely_errors, "__likely_errors__", &get_raw_string);
   fprintf (f, "\n}\n");
 
   g_free (name);
@@ -1618,7 +1700,6 @@ insanity_test_finalize (GObject * gobject)
   g_hash_table_destroy (priv->test_arguments);
   g_hash_table_destroy (priv->test_extra_infos);
   g_hash_table_destroy (priv->test_output_files);
-  g_hash_table_destroy (priv->test_likely_errors);
 #ifdef USE_NEW_GLIB_MUTEX_API
   g_mutex_clear (&priv->lock);
   g_cond_clear (&priv->cond);
@@ -1660,14 +1741,12 @@ insanity_test_init (InsanityTest * test)
   priv->test_desc = NULL;
   priv->test_full_desc = NULL;
   priv->test_checklist =
-      g_hash_table_new_full (&g_str_hash, &g_str_equal, &g_free, g_free);
+      g_hash_table_new_full (&g_str_hash, &g_str_equal, &g_free, &free_checklist_item);
   priv->test_arguments =
       g_hash_table_new_full (&g_str_hash, &g_str_equal, &g_free, &free_argument);
   priv->test_extra_infos =
       g_hash_table_new_full (&g_str_hash, &g_str_equal, &g_free, g_free);
   priv->test_output_files =
-      g_hash_table_new_full (&g_str_hash, &g_str_equal, &g_free, g_free);
-  priv->test_likely_errors =
       g_hash_table_new_full (&g_str_hash, &g_str_equal, &g_free, g_free);
 
   priv->timeout = TEST_TIMEOUT;
@@ -1849,16 +1928,18 @@ void
 insanity_test_add_checklist_item (InsanityTest * test, const char *label,
     const char *description, const char *error_hint)
 {
+  ChecklistItem *i;
+
   g_return_if_fail (INSANITY_IS_TEST (test));
   g_return_if_fail (label != NULL);
   g_return_if_fail (check_valid_label (label));
   g_return_if_fail (description != NULL);
 
-  insanity_add_metadata_entry (test->priv->test_checklist, label, description);
-  if (error_hint) {
-    insanity_add_metadata_entry (test->priv->test_likely_errors, label,
-        error_hint);
-  }
+  i = g_slice_new (ChecklistItem);
+  i->description = g_strdup (description);
+  i->likely_error = g_strdup (error_hint);
+
+  g_hash_table_insert (test->priv->test_checklist, g_strdup (label), i);
 }
 
 /**

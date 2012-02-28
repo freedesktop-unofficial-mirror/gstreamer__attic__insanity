@@ -115,9 +115,9 @@ main (int argc, char **argv)
           "Sample test that does nothing", "some longer description"));
 
   insanity_test_add_checklist_item (test, "random-step",
-      "Some random step, nothing much", NULL);
+      "Some random step, nothing much", "Probably something wrong here");
   insanity_test_add_checklist_item (test, "random-other-step",
-      "Some random step, nothing much", NULL);
+      "Some random step, nothing much", "Not going to happen");
   insanity_test_add_extra_info (test, "random-extra-info",
       "Some random extra info");
 
@@ -126,6 +126,13 @@ main (int argc, char **argv)
   insanity_test_add_argument (test, "uri", "URI description",
       "URI full description", TRUE, &def);
   g_value_unset (&def);
+
+  g_value_init (&def, G_TYPE_INT);
+  g_value_set_int (&def, 123);
+  insanity_test_add_argument (test, "some-int", "Some random integer",
+      "Some integer here", TRUE, &def);
+  g_value_unset (&def);
+
   insanity_test_add_output_file (test, "dummy-output-file", "dummy output file");
 
   g_signal_connect_after (test, "setup", G_CALLBACK (&blank_test_setup), 0);
