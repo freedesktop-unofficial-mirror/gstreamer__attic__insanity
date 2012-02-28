@@ -725,7 +725,7 @@ class Test(gobject.GObject):
 
         Returns None if no explanation is available.
         """
-        return self.__test_checklist__.get(checkitem, None).get("likely_error", None)
+        return self.getFullCheckList().get(checkitem, None).get("likely_error", None)
 
     def getTestName(self):
         return self.__test_name__
