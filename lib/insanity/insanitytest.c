@@ -1398,6 +1398,21 @@ insanity_report_failed_tests (InsanityTest *test, gboolean verbose)
   return failed;
 }
 
+static gboolean
+insanity_test_run_standalone (InsanityTest * test)
+{
+  if (on_setup (test)) {
+    if (on_start (test)) {
+      LOCK (test);
+      WAIT (test);
+      UNLOCK (test);
+    }
+    on_stop (test);
+    on_teardown (test);
+  }
+  return (insanity_report_failed_tests (test, TRUE) == 0);
+}
+
 /**
  * insanity_test_run:
  * @test: a #InsanityTest to operate on
@@ -1477,16 +1492,7 @@ insanity_test_run (InsanityTest * test, int *argc, char ***argv)
       }
     }
 
-    if (on_setup (test)) {
-      if (on_start (test)) {
-        LOCK (test);
-        WAIT (test);
-        UNLOCK (test);
-      }
-      on_stop (test);
-      on_teardown (test);
-    }
-    ret = (insanity_report_failed_tests (test, TRUE) == 0);
+    ret = insanity_test_run_standalone (test);
   }
 
   else if (opt_run && opt_uuid) {
