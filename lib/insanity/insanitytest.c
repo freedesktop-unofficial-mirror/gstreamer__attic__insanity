@@ -116,6 +116,8 @@ struct _InsanityTestPrivateData
   GHashTable *test_output_files;
   GHashTable *test_likely_errors;
 
+  /* timeout for standalone mode */
+  gint timeout;
   gint64 timeout_end_time;
 };
 
@@ -128,16 +130,21 @@ struct _InsanityTestPrivateData
 static inline gboolean
 WAIT_TIMEOUT (InsanityTest * test)
 {
-  gint64 current_time;
-  gboolean signalled;
+  if (test->priv->timeout > 0) {
+    gint64 current_time;
+    gboolean signalled;
 
-  do {
-    test->priv->timeout_end_time = g_get_monotonic_time () + TEST_TIMEOUT * G_TIME_SPAN_SECOND;
-    signalled = g_cond_wait_until (&test->priv->cond, &test->priv->lock, test->priv->timeout_end_time);
-    current_time = g_get_monotonic_time ();
-  } while (!signalled && current_time < test->priv->timeout_end_time);
+    do {
+      test->priv->timeout_end_time = g_get_monotonic_time () + test->priv->timeout * G_TIME_SPAN_SECOND;
+      signalled = g_cond_wait_until (&test->priv->cond, &test->priv->lock, test->priv->timeout_end_time);
+      current_time = g_get_monotonic_time ();
+    } while (!signalled && current_time < test->priv->timeout_end_time);
 
-  return !signalled;
+    return !signalled;
+ } else {
+   g_cond_wait (&test->priv->cond, &test->priv->lock);
+   return FALSE;
+ }
 }
 #else
 #define LOCK(test) g_mutex_lock((test)->priv->lock)
@@ -148,19 +155,24 @@ WAIT_TIMEOUT (InsanityTest * test)
 static inline gboolean
 WAIT_TIMEOUT (InsanityTest * test)
 {
-  gint64 current_time;
-  GTimeVal tmp;
-  gboolean signalled;
+  if (test->priv->timeout > 0) {
+    gint64 current_time;
+    GTimeVal tmp;
+    gboolean signalled;
 
-  do {
-    test->priv->timeout_end_time = g_get_monotonic_time () + TEST_TIMEOUT * G_TIME_SPAN_SECOND;
-    tmp.tv_sec = test->priv->timeout_end_time / G_USEC_PER_SEC;
-    tmp.tv_usec = test->priv->timeout_end_time % G_USEC_PER_SEC;
-    signalled = g_cond_timed_wait (&test->priv->cond, &test->priv->lock, &tmp);
-    current_time = g_get_monotonic_time ();
-  } while (!signalled && current_time < test->priv->timeout_end_time);
+    do {
+      test->priv->timeout_end_time = g_get_monotonic_time () + test->priv->timeout * G_TIME_SPAN_SECOND;
+      tmp.tv_sec = test->priv->timeout_end_time / G_USEC_PER_SEC;
+      tmp.tv_usec = test->priv->timeout_end_time % G_USEC_PER_SEC;
+      signalled = g_cond_timed_wait (test->priv->cond, test->priv->lock, &tmp);
+      current_time = g_get_monotonic_time ();
+    } while (!signalled && current_time < test->priv->timeout_end_time);
 
-  return !signalled;
+    return !signalled;
+  } else {
+    g_cond_wait (test->priv->cond, test->priv->mutex);
+    return FALSE;
+  }
 }
 #endif
 
@@ -589,7 +601,7 @@ insanity_test_ping (InsanityTest * test)
   if (!test->priv->standalone) {
     send_signal (test->priv->conn, "remotePingSignal", test->priv->name, DBUS_TYPE_INVALID);
   } else {
-    test->priv->timeout_end_time = g_get_monotonic_time () + TEST_TIMEOUT * G_TIME_SPAN_SECOND;
+    test->priv->timeout_end_time = g_get_monotonic_time () + test->priv->timeout * G_TIME_SPAN_SECOND;
   }
 }
 
@@ -1471,10 +1483,12 @@ insanity_test_run (InsanityTest * test, int *argc, char ***argv)
   const char *opt_uuid = NULL;
   gboolean opt_run = FALSE;
   gboolean opt_metadata = FALSE;
+  gint opt_timeout = TEST_TIMEOUT;
   const GOptionEntry options[] = {
     {"run", 0, 0, G_OPTION_ARG_NONE, &opt_run, "Run the test standalone", NULL},
     {"insanity-metadata", 0, 0, G_OPTION_ARG_NONE, &opt_metadata, "Output test metadata", NULL},
     {"dbus-uuid", 0, 0, G_OPTION_ARG_STRING, &opt_uuid, "Set D-Bus uuid", "UUID"},
+    {"timeout", 0, 0, G_OPTION_ARG_INT, &opt_timeout, "Test timeout in standalone mode (<= 0 to disable)", NULL},
     {NULL}
   };
   GOptionContext *ctx;
@@ -1500,6 +1514,8 @@ insanity_test_run (InsanityTest * test, int *argc, char ***argv)
   }
   else if (opt_run && !opt_uuid) {
     int n;
+
+    test->priv->timeout = opt_timeout;
 
     /* Load any command line output files and arguments */
     test->priv->args = g_hash_table_new_full (&g_str_hash, &g_str_equal, &g_free, &free_gvalue);
@@ -1653,6 +1669,8 @@ insanity_test_init (InsanityTest * test)
       g_hash_table_new_full (&g_str_hash, &g_str_equal, &g_free, g_free);
   priv->test_likely_errors =
       g_hash_table_new_full (&g_str_hash, &g_str_equal, &g_free, g_free);
+
+  priv->timeout = TEST_TIMEOUT;
 }
 
 static gboolean
