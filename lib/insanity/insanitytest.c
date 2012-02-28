@@ -292,6 +292,8 @@ static const char *introspect_response_template =
   "      <arg name=\"name\" type=\"s\" />\n"
   "      <arg name=\"value\" type=\"v\" />\n"
   "    </signal>\n"
+  "    <signal name=\"remotePingSignal\">\n"
+  "    </signal>\n"
   "  </interface>\n"
   "</node>\n";
 
@@ -541,6 +543,16 @@ insanity_test_set_extra_info (InsanityTest * test, const char *name,
   g_return_if_fail (G_IS_VALUE (data));
 
   insanity_test_set_extra_info_internal (test, name, data, FALSE);
+}
+
+void
+insanity_test_ping (InsanityTest * test)
+{
+  printf ("insanity_test_ping\n");
+
+  if (!test->priv->standalone) {
+    send_signal (test->priv->conn, "remotePingSignal", test->priv->name, DBUS_TYPE_INVALID);
+  }
 }
 
 static void
@@ -1502,8 +1514,6 @@ insanity_test_run (InsanityTest * test, int *argc, char ***argv)
 
   return ret;
 }
-
-
 
 G_DEFINE_TYPE (InsanityTest, insanity_test, G_TYPE_OBJECT);
 

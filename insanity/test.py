@@ -712,6 +712,15 @@ class Test(gobject.GObject):
         self._asynctimeout = timeout
         return True
 
+    def ping(self):
+        """
+        Reset any pending timeouts because the test is still alive
+        """
+        if self._asynctimeoutid:
+            self._asynctimeouttime = time.time() + self._asynctimeout
+        if self._testtimeouttime:
+            self._testtimeouttime = time.time() + self._timeout
+
     def addMonitor(self, monitor, monitorargs=None):
         """
         Add a monitor to this test instance.

@@ -214,6 +214,9 @@ class DBusTest(Test, dbus.service.Object):
         self._prepareArguments()
         Test.stop(self)
 
+    def ping(self):
+        Test.ping(self)
+
     def get_remote_launcher_args(self):
         """
         Subclasses should return the name and arguments of the remote
@@ -278,7 +281,6 @@ class DBusTest(Test, dbus.service.Object):
         self._voidRemoteErrBackHandler(exc, "remoteTearDown", fatal=False)
 
 
-
     ## Proxies for remote DBUS calls
     def callRemoteSetUp(self):
         # call remote instance "remoteSetUp()"
@@ -325,6 +327,7 @@ class DBusTest(Test, dbus.service.Object):
     ## callbacks from remote signals
     def _remoteReadyCb(self):
         info("%s", self.uuid)
+        self.ping()
         if self.args:
             self.start()
         else:
@@ -332,15 +335,22 @@ class DBusTest(Test, dbus.service.Object):
 
     def _remoteStopCb(self):
         info("%s", self.uuid)
+        self.ping()
         self.stop()
 
     def _remoteValidateStepCb(self, step, validate, desc):
         info("%s step:%s : %r", self.uuid, step, validate)
+        self.ping()
         self.validateStep(unwrap(step), validate, desc)
 
     def _remoteExtraInfoCb(self, key, value):
         info("%s key:%s value:%r", self.uuid, key, value)
+        self.ping()
         self.extraInfo(unwrap(key), unwrap(value))
+
+    def _remotePingCb(self):
+        info("%s", self.uuid)
+        self.ping()
 
     ## DBUS Signals for proxies
 
@@ -379,6 +389,8 @@ class DBusTest(Test, dbus.service.Object):
                                                    self._remoteValidateStepCb)
             self._remoteinstance.connect_to_signal("remoteExtraInfoSignal",
                                                    self._remoteExtraInfoCb)
+            self._remoteinstance.connect_to_signal("remotePingSignal",
+                                                   self._remotePingCb)
             self.callRemoteSetUp()
         except:
             exception("Exception raised when creating remote instance !")

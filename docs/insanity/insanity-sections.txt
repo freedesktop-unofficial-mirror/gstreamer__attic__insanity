@@ -30,6 +30,7 @@ insanity_test_set_extra_info
 insanity_test_validate_step
 INSANITY_TEST_CHECK
 insanity_test_check
+insanity_test_ping
 insanity_test_done
 <SUBSECTION Standard>
 INSANITY_TEST

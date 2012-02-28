@@ -92,6 +92,8 @@ blank_test_test (InsanityTest * test)
   if (!INSANITY_TEST_CHECK (test, "random-other-step", 1 != 0))
     goto done;
 
+  insanity_test_ping (test);
+
 
   insanity_test_validate_step (test, "random-other-step", TRUE, "Explanation of random-step failure");
 
