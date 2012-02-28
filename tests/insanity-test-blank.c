@@ -94,7 +94,6 @@ blank_test_test (InsanityTest * test)
 
   insanity_test_ping (test);
 
-
   insanity_test_validate_step (test, "random-other-step", TRUE, "Explanation of random-step failure");
 
 done:

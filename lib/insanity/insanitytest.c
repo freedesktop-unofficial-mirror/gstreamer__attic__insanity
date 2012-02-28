@@ -46,13 +46,14 @@
 /* TODO:
   - logs ?
   - gather timings at every step validated ?
-  - implement timeouts
 */
 
 #ifdef USE_CPU_LOAD
 #include <sys/time.h>
 #include <sys/resource.h>
 #endif
+
+#define TEST_TIMEOUT (15)
 
 enum
 {
@@ -73,18 +74,6 @@ static GParamSpec *properties[N_PROPERTIES] = { NULL, };
 
 #if GLIB_CHECK_VERSION(2,30,2)
 #define USE_NEW_GLIB_MUTEX_API
-#endif
-
-#ifdef USE_NEW_GLIB_MUTEX_API
-#define LOCK(test) g_mutex_lock(&(test)->priv->lock)
-#define UNLOCK(test) g_mutex_unlock(&(test)->priv->lock)
-#define WAIT(test) g_cond_wait(&(test)->priv->cond, &(test)->priv->lock)
-#define SIGNAL(test) g_cond_signal(&(test)->priv->cond)
-#else
-#define LOCK(test) g_mutex_lock((test)->priv->lock)
-#define UNLOCK(test) g_mutex_unlock((test)->priv->lock)
-#define WAIT(test) g_cond_wait((test)->priv->cond, (test)->priv->lock)
-#define SIGNAL(test) g_cond_signal((test)->priv->cond)
 #endif
 
 typedef enum RunLevel {
@@ -126,7 +115,54 @@ struct _InsanityTestPrivateData
   GHashTable *test_extra_infos;
   GHashTable *test_output_files;
   GHashTable *test_likely_errors;
+
+  gint64 timeout_end_time;
 };
+
+#ifdef USE_NEW_GLIB_MUTEX_API
+#define LOCK(test) g_mutex_lock(&(test)->priv->lock)
+#define UNLOCK(test) g_mutex_unlock(&(test)->priv->lock)
+#define WAIT(test) g_cond_wait(&(test)->priv->cond, &(test)->priv->lock)
+#define SIGNAL(test) g_cond_signal(&(test)->priv->cond)
+
+static inline gboolean
+WAIT_TIMEOUT (InsanityTest * test)
+{
+  gint64 current_time;
+  gboolean signalled;
+
+  do {
+    test->priv->timeout_end_time = g_get_monotonic_time () + TEST_TIMEOUT * G_TIME_SPAN_SECOND;
+    signalled = g_cond_wait_until (&test->priv->cond, &test->priv->lock, test->priv->timeout_end_time);
+    current_time = g_get_monotonic_time ();
+  } while (!signalled && current_time < test->priv->timeout_end_time);
+
+  return !signalled;
+}
+#else
+#define LOCK(test) g_mutex_lock((test)->priv->lock)
+#define UNLOCK(test) g_mutex_unlock((test)->priv->lock)
+#define WAIT(test) g_cond_wait((test)->priv->cond, (test)->priv->lock)
+#define SIGNAL(test) g_cond_signal((test)->priv->cond)
+
+static inline gboolean
+WAIT_TIMEOUT (InsanityTest * test)
+{
+  gint64 current_time;
+  GTimeVal tmp;
+  gboolean signalled;
+
+  do {
+    test->priv->timeout_end_time = g_get_monotonic_time () + TEST_TIMEOUT * G_TIME_SPAN_SECOND;
+    tmp.tv_sec = test->priv->timeout_end_time / G_USEC_PER_SEC;
+    tmp.tv_usec = test->priv->timeout_end_time % G_USEC_PER_SEC;
+    signalled = g_cond_timed_wait (&test->priv->cond, &test->priv->lock, &tmp);
+    current_time = g_get_monotonic_time ();
+  } while (!signalled && current_time < test->priv->timeout_end_time);
+
+  return !signalled;
+}
+#endif
 
 typedef struct Argument {
   gboolean global;
@@ -552,6 +588,8 @@ insanity_test_ping (InsanityTest * test)
 
   if (!test->priv->standalone) {
     send_signal (test->priv->conn, "remotePingSignal", test->priv->name, DBUS_TYPE_INVALID);
+  } else {
+    test->priv->timeout_end_time = g_get_monotonic_time () + TEST_TIMEOUT * G_TIME_SPAN_SECOND;
   }
 }
 
@@ -1401,16 +1439,18 @@ insanity_report_failed_tests (InsanityTest *test, gboolean verbose)
 static gboolean
 insanity_test_run_standalone (InsanityTest * test)
 {
+  gboolean timeout = FALSE;
+
   if (on_setup (test)) {
     if (on_start (test)) {
       LOCK (test);
-      WAIT (test);
+      timeout = WAIT_TIMEOUT (test);
       UNLOCK (test);
     }
     on_stop (test);
     on_teardown (test);
   }
-  return (insanity_report_failed_tests (test, TRUE) == 0);
+  return (!timeout && insanity_report_failed_tests (test, TRUE) == 0);
 }
 
 /**
