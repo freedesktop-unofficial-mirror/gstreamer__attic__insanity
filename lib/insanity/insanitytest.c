@@ -1416,6 +1416,8 @@ insanity_test_run (InsanityTest * test, int *argc, char ***argv)
 
   g_return_val_if_fail (INSANITY_IS_TEST (test), FALSE);
 
+  g_set_prgname ((*argv)[0]);
+
   ctx = g_option_context_new (test->priv->test_desc);
   g_option_context_add_main_entries (ctx, options, NULL);
   if (!g_option_context_parse (ctx, argc, argv, &err)) {
