@@ -1302,7 +1302,7 @@ class DBStorage(DataStorage, AsyncStorage):
             fdesc.strip()
         args = testinstance.getFullArgumentList()
         if args:
-            args = dict([(key, val[0]) for key,val in args.iteritems()])
+            args = dict([(key, val["description"]) for key,val in args.iteritems()])
         checklist = testinstance.getFullCheckList()
         extrainfo = testinstance.getFullExtraInfoList()
         outputfiles = testinstance.getFullOutputFilesList()
