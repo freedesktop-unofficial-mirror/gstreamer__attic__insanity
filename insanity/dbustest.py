@@ -299,7 +299,6 @@ class DBusTest(Test, dbus.service.Object):
                                          error_handler=self._voidRemoteSetUpErrBackHandler)
 
     def callRemoteStart(self):
-	print self.getOutputFiles()
         # call remote instance "remoteStart()"
         if not self._remoteinstance:
             return
