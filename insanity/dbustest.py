@@ -292,17 +292,18 @@ class DBusTest(Test, dbus.service.Object):
         if not self._remoteinstance:
             return
 
-        args = dict((k, v) for k, v in self.args.items() if (k == "outputfiles" or (k in self.getFullArgumentList() and self.getFullArgumentList()[k]["global"] == True)))
+        args = dict((k, v) for k, v in self.args.items() if (k in self.getFullArgumentList() and self.getFullArgumentList()[k]["global"] == True))
 
-        self._remoteinstance.remoteSetUp(args,
+        self._remoteinstance.remoteSetUp(args, self.getOutputFiles(),
                                          reply_handler=self._voidRemoteSetUpCallBackHandler,
                                          error_handler=self._voidRemoteSetUpErrBackHandler)
 
     def callRemoteStart(self):
+	print self.getOutputFiles()
         # call remote instance "remoteStart()"
         if not self._remoteinstance:
             return
-        self._remoteinstance.remoteStart(self.args,
+        self._remoteinstance.remoteStart(self.args, self.getOutputFiles(),
                                          reply_handler=self._voidRemoteStartCallBackHandler,
                                          error_handler=self._voidRemoteStartErrBackHandler)
 
@@ -324,8 +325,6 @@ class DBusTest(Test, dbus.service.Object):
         try:
             self.args = self._test_arguments.next().copy()
             self.args["bus_address"] = self._bus_address
-            if self._outputfiles:
-                self.args["outputfiles"] = self.getOutputFiles()
         except:
             self.args = None
 

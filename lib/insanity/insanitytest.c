@@ -333,10 +333,12 @@ static const char *introspect_response_template =
   "    <method name=\"remoteSetUp\">\n"
   "      <arg name=\"success\" direction=\"out\" type=\"b\" />\n"
   "      <arg name=\"arguments\" direction=\"in\" type=\"a{sv}\" />\n"
+  "      <arg name=\"outputfiles\" direction=\"in\" type=\"a{ss}\" />\n"
   "    </method>\n"
   "    <method name=\"remoteStart\">\n"
   "      <arg name=\"success\" direction=\"out\" type=\"b\" />\n"
   "      <arg name=\"arguments\" direction=\"in\" type=\"a{sv}\" />\n"
+  "      <arg name=\"outputfiles\" direction=\"in\" type=\"a{ss}\" />\n"
   "    </method>\n"
   "    <method name=\"remoteStop\">\n"
   "    </method>\n"
@@ -865,18 +867,6 @@ arg_converter (const char *key, const GValue * value, guintptr userdata)
   const Argument *arg;
   GValue *v;
 
-  /* outputfiles is special, a list of key/values */
-  if (!strcmp (key, "outputfiles")) {
-    DBusMessageIter *array;
-    if (G_VALUE_TYPE (value) != G_TYPE_POINTER) {
-      return 0;
-    }
-
-    array = (DBusMessageIter *) g_value_get_pointer (value);
-    foreach_dbus_array (array, &output_filename_converter, userdata);
-    return 0;
-  }
-
   arg = g_hash_table_lookup (test->priv->test_arguments, key);
   if (!arg) {
     /* fprintf (stderr, "Key '%s' is not a declared argument, ignored\n", key); */
@@ -913,15 +903,30 @@ insanity_test_set_args (InsanityTest * test, DBusMessage * msg)
     test->priv->args = NULL;
   }
 
+  g_hash_table_remove_all (test->priv->filename_cache);
+
   if (msg) {
     int ret;
     DBusMessageIter iter;
 
     dbus_message_iter_init (msg, &iter);
 
+    /* arguments */
     test->priv->args = g_hash_table_new_full (&g_str_hash, &g_str_equal, &g_free, &free_gvalue);
     ret = foreach_dbus_array (&iter, &arg_converter, (guintptr) test);
-    if (ret <= 0) {
+    if (ret < 0) {
+      UNLOCK (test);
+      return;
+    }
+
+    /* output files */
+    if (!dbus_message_iter_next (&iter)) {
+      UNLOCK (test);
+      return;
+    }
+
+    ret = foreach_dbus_array (&iter, &output_filename_converter, (guintptr) test);
+    if (ret < 0) {
       UNLOCK (test);
       return;
     }

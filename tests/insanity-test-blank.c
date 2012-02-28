@@ -42,18 +42,9 @@ blank_test_start (InsanityTest * test)
     g_value_unset (&value);
   }
 
-#if 0
-  value = zero;
-  if (insanity_test_get_argument (test, "test-argument", &value)) {
-    const char *ta = g_value_get_string (&value);
-    printf ("test-argument: %s\n", ta);
-    g_value_unset (&value);
-  }
-
   const char *fn =
       insanity_test_get_output_filename (test, "dummy-output-file");
   printf ("fn: %s\n", fn);
-#endif
 
   (void) test;
   printf ("blank_test_start\n");
