@@ -72,13 +72,39 @@ class DBusTest(Test, dbus.service.Object):
     "bus_address": {
         "global": True,
         "description": "The private DBus bus address",
-	"type": "s"
+        "type": "s"
     }
     }
 
     __async_setup__ = True
     ## Needed for dbus
     __metaclass__ = dbus.gobject_service.ExportedGObjectType
+
+    def _parse_test_arguments(self, test_arguments):
+        parsed_arguments = {}
+        metadata_arguments = self.getFullArgumentList()
+
+        for (k, v) in test_arguments.items():
+            if not k in metadata_arguments:
+                continue
+            t = metadata_arguments[k]["type"]
+
+            if t == "i":
+                parsed_arguments[k] = dbus.Int32(int(v))
+            elif t == "I":
+                parsed_arguments[k] = dbus.Int64(int(v))
+            elif t == "u":
+                parsed_arguments[k] = dbus.UInt32(int(v))
+            elif t == "U":
+                parsed_arguments[k] = dbus.UInt64(int(v))
+            elif t == "s":
+                parsed_arguments[k] = v
+            elif t == "d":
+                parsed_arguments[k] = float(v)
+            elif t == "b":
+                parsed_arguments[k] = (v == "True" or v == "true" or v == "TRUE" or v == "1")
+
+        return parsed_arguments
 
     def __init__(self, bus=None, bus_address="", metadata = None, execcmd = None,
                  test_arguments = None, env=None, *args, **kwargs):
@@ -293,6 +319,7 @@ class DBusTest(Test, dbus.service.Object):
             return
 
         args = dict((k, v) for k, v in self.args.items() if (k in self.getFullArgumentList() and self.getFullArgumentList()[k]["global"] == True))
+        args = self._parse_test_arguments(args)
 
         self._remoteinstance.remoteSetUp(args, self.getOutputFiles(),
                                          reply_handler=self._voidRemoteSetUpCallBackHandler,
@@ -302,6 +329,8 @@ class DBusTest(Test, dbus.service.Object):
         # call remote instance "remoteStart()"
         if not self._remoteinstance:
             return
+
+        self.args = self._parse_test_arguments(self.args)
         self._remoteinstance.remoteStart(self.args, self.getOutputFiles(),
                                          reply_handler=self._voidRemoteStartCallBackHandler,
                                          error_handler=self._voidRemoteStartErrBackHandler)

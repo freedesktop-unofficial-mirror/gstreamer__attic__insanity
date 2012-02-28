@@ -46,6 +46,13 @@ blank_test_start (InsanityTest * test)
       insanity_test_get_output_filename (test, "dummy-output-file");
   printf ("fn: %s\n", fn);
 
+  value = zero;
+  if (insanity_test_get_argument (test, "some-int", &value)) {
+    gint i = g_value_get_int (&value);
+    printf ("some-int: %d\n", i);
+    g_value_unset (&value);
+  }
+
   (void) test;
   printf ("blank_test_start\n");
 
