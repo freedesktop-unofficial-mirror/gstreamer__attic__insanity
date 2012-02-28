@@ -72,7 +72,7 @@ static guint test_signal;
 static guint teardown_signal;
 static GParamSpec *properties[N_PROPERTIES] = { NULL, };
 
-#if GLIB_CHECK_VERSION(2,30,2)
+#if GLIB_CHECK_VERSION(2,31,0)
 #define USE_NEW_GLIB_MUTEX_API
 #endif
 
@@ -169,7 +169,7 @@ WAIT_TIMEOUT (InsanityTest * test)
 
     return !signalled;
   } else {
-    g_cond_wait (test->priv->cond, test->priv->mutex);
+    g_cond_wait (test->priv->cond, test->priv->lock);
     return FALSE;
   }
 }
@@ -1709,7 +1709,7 @@ insanity_test_finalize (GObject * gobject)
   g_mutex_clear (&priv->lock);
   g_cond_clear (&priv->cond);
 #else
-  g_mutex_destroy (priv->lock);
+  g_mutex_free (priv->lock);
   g_cond_free (priv->cond);
 #endif
   G_OBJECT_CLASS (insanity_test_parent_class)->finalize (gobject);
