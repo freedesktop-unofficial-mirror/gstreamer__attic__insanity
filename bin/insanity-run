@@ -44,6 +44,7 @@ from insanity.storage.sqlite import SQLiteStorage
 from insanity.generators.filesystem import FileSystemGenerator, URIFileSystemGenerator
 from insanity.generators.playlist import PlaylistGenerator
 from insanity.generators.external import ExternalGenerator
+from insanity.generators.constant import ConstantGenerator
 
 class Client(CommandLineTesterClient):
 
@@ -254,6 +255,8 @@ def main():
             gen_class = PlaylistGenerator
         elif gen_name == "external":
             gen_class = ExternalGenerator
+        elif gen_name == "constant":
+            gen_class = ConstantGenerator
         else:
             args_help()
             sys.exit(1)
@@ -263,6 +266,8 @@ def main():
                 gen = gen_class(location=gen_args)
             elif gen_class == ExternalGenerator:
                 gen = gen_class(command=gen_args)
+            elif gen_class == ConstantGenerator:
+                gen = gen_class(constant=gen_args)
             else:
                 gen = gen_class(paths=[gen_args])
         else:
