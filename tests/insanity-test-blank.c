@@ -84,7 +84,7 @@ blank_test_test (InsanityTest * test)
   insanity_test_validate_step (test, "random-step", TRUE, "Explanation of random-step failure");
   g_value_init (&info, G_TYPE_STRING);
   g_value_set_string (&info, "Foo");
-  insanity_test_set_extra_info (test, "random-extra-info", &info); 
+  insanity_test_set_extra_info (test, "random-extra-info", &info);
   g_value_unset (&info);
 
   if (!INSANITY_TEST_CHECK (test, "random-other-step", 1 != 0))
