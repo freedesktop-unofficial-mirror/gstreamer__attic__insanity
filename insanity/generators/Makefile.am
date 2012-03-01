@@ -1,4 +1,4 @@
-modules = __init__ filesystem playlist external
+modules = __init__ constant filesystem playlist external
 
 # dummy - this is just for automake to copy py-compile, as it won't do it
 # if it doesn't see anything in a PYTHON variable. KateDJ is Python, but
