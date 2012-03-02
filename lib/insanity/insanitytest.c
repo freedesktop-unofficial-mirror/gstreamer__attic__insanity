@@ -245,7 +245,6 @@ static gboolean
 insanity_test_setup (InsanityTest * test)
 {
   (void) test;
-  printf ("insanity_test_setup\n");
   return TRUE;
 }
 
@@ -253,7 +252,6 @@ static gboolean
 insanity_test_start (InsanityTest * test)
 {
   (void) test;
-  printf ("insanity_test_start\n");
   return TRUE;
 }
 
@@ -261,13 +259,12 @@ static void
 insanity_test_stop (InsanityTest * test)
 {
   (void) test;
-  printf ("insanity_test_stop\n");
 }
 
 static void
 insanity_test_teardown (InsanityTest * test)
 {
-  printf ("insanity_test_teardown\n");
+  (void) test;
 }
 
 static void
