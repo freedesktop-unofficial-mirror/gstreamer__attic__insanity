@@ -62,8 +62,6 @@ insanity_threaded_test_start (InsanityTest * itest)
 {
   InsanityThreadedTest *test = INSANITY_THREADED_TEST (itest);
 
-  printf ("insanity_threaded_test_start\n");
-
   if (!INSANITY_TEST_CLASS (insanity_threaded_test_parent_class)->start (itest))
     return FALSE;
 
@@ -84,7 +82,6 @@ static void
 insanity_threaded_test_test (InsanityThreadedTest * test)
 {
   (void) test;
-  printf ("insanity_test\n");
 }
 
 static void
