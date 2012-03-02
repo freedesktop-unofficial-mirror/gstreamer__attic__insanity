@@ -210,6 +210,7 @@ def execcmd_help():
 
 def main():
 
+    error = False
     parser = OptionParser()
     (options, args) = parser.parse_args(sys.argv[1:])
 
@@ -276,12 +277,17 @@ def main():
         test_arguments[arg_name] = gen
 
     test_run = TestRun(maxnbtests=1, workingdir=options.output, execcmd=options.execcmd)
-    test_run.addTest(test, test_arguments)
+    try:
+        test_run.addTest(test, test_arguments)
+    except:
+        error = True
 
     client = Client()
     client.setStorage(storage)
     client.addTestRun(test_run)
     client.run()
+    return error
 
 if __name__ == "__main__":
-    main()
+    if main():
+        sys.exit(1)
