@@ -279,7 +279,8 @@ def main():
     test_run = TestRun(maxnbtests=1, workingdir=options.output, execcmd=options.execcmd)
     try:
         test_run.addTest(test, test_arguments)
-    except:
+    except Exception, e:
+        print 'Error: exception adding test: ', e
         error = True
 
     client = Client()
