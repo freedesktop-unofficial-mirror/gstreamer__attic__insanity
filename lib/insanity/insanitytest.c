@@ -1320,9 +1320,11 @@ output_checklist_table (InsanityTest * test, FILE * f)
 
     fprintf (f, "%s    \"%s\" : \n", comma, label);
     fprintf (f, "    {\n");
-    fprintf (f, "        \"description\" : \"%s\",\n", i->description);
-    fprintf (f, "        \"likely_error\" : \"%s\"\n", i->likely_error);
-    fprintf (f, "    }");
+    fprintf (f, "        \"description\" : \"%s\"", i->description);
+    if (i->likely_error) {
+      fprintf (f, ",\n        \"likely_error\" : \"%s\"", i->likely_error);
+    }
+    fprintf (f, "\n    }");
 
     comma = ",\n";
   }
@@ -1352,7 +1354,7 @@ output_arguments_table (InsanityTest * test, FILE * f)
 
     fprintf (f, "%s    \"%s\" : \n", comma, label);
     fprintf (f, "    {\n");
-    fprintf (f, "        \"global\" : %s\n,", (a->global ? "true" : "false"));
+    fprintf (f, "        \"global\" : %s,\n", (a->global ? "true" : "false"));
     fprintf (f, "        \"description\" : \"%s\",\n", a->description);
     fprintf (f, "        \"full_description\" : \"%s\",\n", a->full_description);
     fprintf (f, "        \"type\" : \"%s\",\n", get_argument_type_char (&a->default_value));
