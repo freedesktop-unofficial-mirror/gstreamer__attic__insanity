@@ -478,7 +478,7 @@ class PythonDBusTest(DBusTest):
         if self._execcmd == None:
             rootdir = os.path.split(os.path.dirname(os.path.abspath(__file__)))[0]
             path = self._metadata.__test_filename__
-            return [path, self.uuid]
+            return [path, "--run", "--dbus-uuid="+self.uuid]
         execcmd = self._execcmd
         execcmd = re.sub("%t", self._metadata.__test_filename__, execcmd, 0)
         args = "--run --dbus-uuid=" + self.uuid
