@@ -45,6 +45,8 @@ blank_test_start (InsanityTest * test)
   const char *fn =
       insanity_test_get_output_filename (test, "dummy-output-file");
   printf ("fn: %s\n", fn);
+  fn = insanity_test_get_output_filename (test, "dummy-output-file-global");
+  printf ("fn-global: %s\n", fn);
 
   value = zero;
   if (insanity_test_get_argument (test, "some-int", &value)) {
@@ -131,7 +133,8 @@ main (int argc, char **argv)
       "Some integer here", TRUE, &def);
   g_value_unset (&def);
 
-  insanity_test_add_output_file (test, "dummy-output-file", "dummy output file");
+  insanity_test_add_output_file (test, "dummy-output-file", "dummy output file", FALSE);
+  insanity_test_add_output_file (test, "dummy-output-file-global", "dummy output file", TRUE);
 
   g_signal_connect_after (test, "setup", G_CALLBACK (&blank_test_setup), 0);
   g_signal_connect_after (test, "start", G_CALLBACK (&blank_test_start), 0);

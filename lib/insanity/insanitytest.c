@@ -187,6 +187,21 @@ typedef struct _ChecklistItem {
   char *likely_error;
 } ChecklistItem;
 
+typedef struct _OutputFileItem {
+  char *description;
+  gboolean global;
+} OutputFileItem;
+
+static void
+free_output_file_item (void *ptr)
+{
+  OutputFileItem *of = ptr;
+
+  g_free (of->description);
+
+  g_slice_free1 (sizeof (OutputFileItem), ptr);
+}
+
 static void
 free_checklist_item (void *ptr)
 {
@@ -1368,6 +1383,32 @@ output_arguments_table (InsanityTest * test, FILE * f)
 }
 
 static void
+output_output_files_table (InsanityTest * test, FILE * f)
+{
+  GHashTableIter it;
+  const char *label, *comma = "";
+  void *data;
+
+  if (g_hash_table_size (test->priv->test_output_files) == 0)
+    return;
+
+  fprintf (f, ",\n  \"__output_files__\": {\n");
+  g_hash_table_iter_init (&it, test->priv->test_output_files);
+  while (g_hash_table_iter_next (&it, (gpointer) & label, (gpointer) & data)) {
+    OutputFileItem *of = data;
+    
+    fprintf (f, "%s    \"%s\" : \n", comma, label);
+    fprintf (f, "    {\n");
+    fprintf (f, "        \"description\" : \"%s\",\n", of->description);
+    fprintf (f, "        \"global\" : %s\n", (of->global ? "true" : "false"));
+    fprintf (f, "    }");
+
+    comma = ",\n";
+  }
+  fprintf (f, "\n  }");
+}
+
+static void
 insanity_test_write_metadata (InsanityTest * test)
 {
   FILE *f = stdout;
@@ -1383,7 +1424,7 @@ insanity_test_write_metadata (InsanityTest * test)
   output_checklist_table (test, f);
   output_arguments_table (test, f);
   output_table (test, f, test->priv->test_extra_infos, "__extra_infos__", &get_raw_string);
-  output_table (test, f, test->priv->test_output_files, "__output_files__", &get_raw_string);
+  output_output_files_table (test, f);
   fprintf (f, "\n}\n");
 
   g_free (name);
@@ -1751,7 +1792,7 @@ insanity_test_init (InsanityTest * test)
   priv->test_extra_infos =
       g_hash_table_new_full (&g_str_hash, &g_str_equal, &g_free, g_free);
   priv->test_output_files =
-      g_hash_table_new_full (&g_str_hash, &g_str_equal, &g_free, g_free);
+      g_hash_table_new_full (&g_str_hash, &g_str_equal, &g_free, &free_output_file_item);
 
   priv->timeout = TEST_TIMEOUT;
 }
@@ -2019,6 +2060,7 @@ insanity_test_add_extra_info (InsanityTest * test, const char *label,
  * @test: a #InsanityTest instance to operate on.
  * @label: the new output file's name
  * @description: a one line description of that file's purpose
+ * @global: %TRUE if the filename should be shared among iterations, %FALSE otherwise
  *
  * This function adds an output file declaration to the test.
  *
@@ -2027,18 +2069,26 @@ insanity_test_add_extra_info (InsanityTest * test, const char *label,
  * using insanity_test_get_output_filename, open it, and write
  * to it. After the test has finished, these files will be
  * either collected, deleted, or left for the user as requested.
+ * A global output file will keep the same name for all invocations,
+ * whereas a non global one will have a different name for each
+ * invokation.
  */
 void
 insanity_test_add_output_file (InsanityTest * test, const char *label,
-    const char *description)
+    const char *description, gboolean global)
 {
+  OutputFileItem *of;
+
   g_return_if_fail (INSANITY_IS_TEST (test));
   g_return_if_fail (label != NULL);
   g_return_if_fail (check_valid_label (label));
   g_return_if_fail (description != NULL);
 
-  insanity_add_metadata_entry (test->priv->test_output_files, label,
-      description);
+  of = g_slice_new (OutputFileItem);
+  of->description = g_strdup (description);
+  of->global = global;
+
+  g_hash_table_insert (test->priv->test_output_files, g_strdup (label), of);
 }
 
 /**

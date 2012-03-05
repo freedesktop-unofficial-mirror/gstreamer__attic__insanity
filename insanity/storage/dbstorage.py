@@ -958,7 +958,7 @@ class DBStorage(DataStorage, AsyncStorage):
                                      test.getTestName())
         self.__storeTestExtraInfoDict(tid, test.getIterationExtraInfo(iteration),
                                      test.getTestName())
-        self.__storeTestOutputFileDict(tid, test.getOutputFiles(),
+        self.__storeTestOutputFileDict(tid, test.getIterationOutputFiles(iteration),
                                       test.getTestName())
         self.__storeTestErrorExplanationDict(tid, test.getErrorExplanations(),
                                              test.getTestName())
