@@ -58,10 +58,11 @@ class GtkTesterClient(TesterClient):
 
         self.runner.handle_testrun_done(testrun)
 
-    def handle_single_test_start(self, testrun, test):
+    def handle_single_test_start(self, testrun, test, iteration):
 
         self.runner.handle_test_started(test)
-        test.connect("check", self.handle_test_check)
+        if iteration == 1:
+            test.connect("check", self.handle_test_check)
 
     def handle_single_test_done(self, testrun, test):
 

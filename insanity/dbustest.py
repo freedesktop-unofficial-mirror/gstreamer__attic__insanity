@@ -353,6 +353,7 @@ class DBusTest(Test, dbus.service.Object):
         try:
             self.args = self._test_arguments.next().copy()
             self.args["bus_address"] = self._bus_address
+            self.prepareIteration(self.args)
         except:
             self.args = None
 

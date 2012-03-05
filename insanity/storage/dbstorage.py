@@ -152,8 +152,12 @@ class DBStorage(DataStorage, AsyncStorage):
         self.__endTestRun(testrun)
 
     @queuemethod
-    def newTestStarted(self, testrun, test, commit=True):
-        self.__newTestStarted(testrun, test, commit)
+    def newTestStarted(self, testrun, test, iteration, commit=True):
+        self.__newTestStarted(testrun, test, iteration, commit)
+
+    @queuemethod
+    def newTestStopped(self, testrun, test, iteration, commit=True):
+        self.__newTestStopped(testrun, test, iteration, commit)
 
     @queuemethod
     def newTestFinished(self, testrun, test):
@@ -912,7 +916,7 @@ class DBStorage(DataStorage, AsyncStorage):
                                    (testrunid, testtype),
                                    commit=commit)
 
-    def __newTestStarted(self, testrun, test, commit=True):
+    def __newTestStarted(self, testrun, test, iteration, commit=True):
         from insanity.test import Test
         if not isinstance(test, Test):
             raise TypeError("test isn't a Test instance !")
@@ -925,6 +929,49 @@ class DBStorage(DataStorage, AsyncStorage):
                                           testtid, commit)
         debug("got testid %d", testid)
         self.__tests[test] = testid
+
+    def __newTestStopped(self, testrun, test, iteration, parentid=None):
+        if not testrun in self.__testruns.keys():
+            debug("different testrun, starting new one")
+            self.__startNewTestRun(testrun, None)
+
+        if not self.__tests.has_key(test):
+            debug("we don't have test yet, starting that one")
+            self.__newTestStarted(testrun, test, 1, commit=False)
+
+        tid = self.__tests[test]
+        debug("test:%r:%d", test, tid)
+
+        from insanity.scenario import Scenario
+        # if it's a scenario, fill up the subtests
+        if isinstance(test, Scenario):
+            debug("test is a scenario, adding subtests")
+            for sub in test.tests:
+                self.__newTestFinished(testrun, sub, parentid=tid)
+            debug("done adding subtests")
+            self._ExecuteCommit("""UPDATE test SET isscenario=1 WHERE id=?""", (tid, ))
+
+        # store the dictionnaries
+        self.__storeTestArgumentsDict(tid, test.getIterationArguments(iteration),
+                                     test.getTestName())
+        self.__storeTestCheckListList(tid, test.getIterationCheckList(iteration),
+                                     test.getTestName())
+        self.__storeTestExtraInfoDict(tid, test.getIterationExtraInfo(iteration),
+                                     test.getTestName())
+        self.__storeTestOutputFileDict(tid, test.getOutputFiles(),
+                                      test.getTestName())
+        self.__storeTestErrorExplanationDict(tid, test.getErrorExplanations(),
+                                             test.getTestName())
+
+        # finally update the test
+        updatestr = "UPDATE test SET resultpercentage=?, parentid=? WHERE id=?"
+        resultpercentage = test.getSuccessPercentage()
+        self._ExecuteCommit(updatestr, (resultpercentage, parentid, tid))
+
+        # and on to the monitors
+        for monitor in test._monitorinstances:
+            self.__storeMonitor(monitor, tid, self.__testruns[testrun])
+        debug("done adding information for test %d", tid)
 
 
     def __rawStoreMonitor(self, testid, monitortype, monitorname,
@@ -964,47 +1011,7 @@ class DBStorage(DataStorage, AsyncStorage):
 
     def __newTestFinished(self, testrun, test, parentid=None):
         debug("testrun:%r, test:%r", testrun, test)
-        if not testrun in self.__testruns.keys():
-            debug("different testrun, starting new one")
-            self.__startNewTestRun(testrun, None)
-
-        if not self.__tests.has_key(test):
-            debug("we don't have test yet, starting that one")
-            self.__newTestStarted(testrun, test, commit=False)
-
-        tid = self.__tests[test]
-        debug("test:%r:%d", test, tid)
-
-        from insanity.scenario import Scenario
-        # if it's a scenario, fill up the subtests
-        if isinstance(test, Scenario):
-            debug("test is a scenario, adding subtests")
-            for sub in test.tests:
-                self.__newTestFinished(testrun, sub, parentid=tid)
-            debug("done adding subtests")
-            self._ExecuteCommit("""UPDATE test SET isscenario=1 WHERE id=?""", (tid, ))
-
-        # store the dictionnaries
-        self.__storeTestArgumentsDict(tid, test.getArguments(),
-                                     test.getTestName())
-        self.__storeTestCheckListList(tid, test.getCheckList(),
-                                     test.getTestName())
-        self.__storeTestExtraInfoDict(tid, test.getExtraInfo(),
-                                     test.getTestName())
-        self.__storeTestOutputFileDict(tid, test.getOutputFiles(),
-                                      test.getTestName())
-        self.__storeTestErrorExplanationDict(tid, test.getErrorExplanations(),
-                                             test.getTestName())
-
-        # finally update the test
-        updatestr = "UPDATE test SET resultpercentage=?, parentid=? WHERE id=?"
-        resultpercentage = test.getSuccessPercentage()
-        self._ExecuteCommit(updatestr, (resultpercentage, parentid, tid))
-
-        # and on to the monitors
-        for monitor in test._monitorinstances:
-            self.__storeMonitor(monitor, tid, self.__testruns[testrun])
-        debug("done adding information for test %d", tid)
+        pass
 
 
     def __getTestClassMapping(self, testtype, dictname):

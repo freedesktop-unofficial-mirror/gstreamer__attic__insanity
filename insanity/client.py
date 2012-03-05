@@ -339,12 +339,12 @@ class CommandLineTesterClient(TesterClient):
                 print stub, "  %s : %s\t\t%s" % (arg, fa[arg][0], ta[arg])
             # print results from test
             print stub, "Results"
-            tc = test.getCheckList()
+            tc = test.getIterationCheckList(1) # TODO! iterations
             fc = test.getFullCheckList()
             for step,val in tc:
                 print stub, "  %30s:%10s\t\t%s" % (step, val, fc[step])
 
-            infos = test.getExtraInfo()
+            infos = test.getIterationExtraInfo(1) # TODO! iterations
             if infos:
                 print stub, "Extra information:"
             for extra in infos:

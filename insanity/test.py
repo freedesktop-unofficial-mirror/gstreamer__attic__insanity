@@ -169,7 +169,11 @@ class Test(gobject.GObject):
     __gsignals__ = {
         "start" : (gobject.SIGNAL_RUN_LAST,
                    gobject.TYPE_NONE,
-                   ()),
+                   (gobject.TYPE_INT,)),
+
+        "stop" : (gobject.SIGNAL_RUN_LAST,
+                   gobject.TYPE_NONE,
+                   (gobject.TYPE_INT,)),
 
         "done" : (gobject.SIGNAL_RUN_LAST,
                   gobject.TYPE_NONE,
@@ -197,6 +201,10 @@ class Test(gobject.GObject):
         self._asynctimeout = asynctimeout or self.__async_setup_timeout__
         self._running = False
         self.arguments = utils.unicode_dict(kwargs)
+        self.iteration_arguments = {}
+        self.iteration_checklist = {}
+        self.iteration_extrainfo = {}
+        self._iteration = 0
         self._stopping = False
 
         # list of actual check items
@@ -401,6 +409,9 @@ class Test(gobject.GObject):
             self._testtimeoutid = 0
             notimeout = True
         self.validateStep("no-timeout", notimeout)
+        self.iteration_checklist[self._iteration] = self._checklist
+        self.iteration_extrainfo[self._iteration] = self._extrainfo
+        self.emit("stop", self._iteration)
 
     def start(self):
         """
@@ -410,6 +421,17 @@ class Test(gobject.GObject):
         """
         # if we were doing async setup, remove asyncsetup timeout
         self._stopping = False
+        self._iteration = self._iteration + 1
+
+        # Upon first start, we save checklist, etc so they can be copied
+        # as base for each successive iteration, while keeping the state
+        # acquired in setup
+        if self._iteration == 1:
+            self._base_checklist = self._checklist[:]
+            self._base_extrainfo = self._extrainfo.copy()
+        self._checklist = self._base_checklist[:]
+        self._extrainfo = self._base_extrainfo.copy()
+
         if self.__async_setup__:
             if self._asynctimeoutid:
                 gobject.source_remove(self._asynctimeoutid)
@@ -418,7 +440,7 @@ class Test(gobject.GObject):
             self.extraInfo("test-setup-duration",
                            int((curtime - self._teststarttime) * 1000))
         self._running = True
-        self.emit("start")
+        self.emit("start", self._iteration)
         self.validateStep("test-started")
         # start timeout for test !
         self._testtimeouttime = time.time() + self._timeout
@@ -570,7 +592,7 @@ class Test(gobject.GObject):
                 break
         return dc
 
-    def getCheckList(self):
+    def getIterationCheckList(self,iteration):
         """
         Returns the instance checklist as a list of tuples of:
         * checkitem name
@@ -589,12 +611,12 @@ class Test(gobject.GObject):
                 unexpected_failures.append(key)
                 return self.FAILURE
 
-        d = dict((k, to_enum(k, v)) for k, v in self._checklist)
+        d = dict((k, to_enum(k, v)) for k, v in self.iteration_checklist[iteration])
         d["no-unexpected-failures"] = 1
 
         for k in allk:
             if k not in d:
-                if self.isExpectedResult(k, self.SKIPPED, self._extrainfo):
+                if self.isExpectedResult(k, self.SKIPPED, self.iteration_extrainfo[iteration]):
                     d[k] = self.EXPECTED_FAILURE
                 else:
                     unexpected_failures.append(k)
@@ -607,7 +629,11 @@ class Test(gobject.GObject):
 
         return d.items()
 
-    def getArguments(self):
+    def prepareIteration(self,args):
+        # arguments are prepared before starting
+        self.iteration_arguments[self._iteration + 1] = args
+
+    def getIterationArguments(self,iteration):
         """
         Returns the list of arguments for the given test
         """
@@ -615,25 +641,31 @@ class Test(gobject.GObject):
         # Hide expected-failures from the storage backend.
         validkeys.pop("expected-failures", [])
         res = {}
-        for key in self.arguments.iterkeys():
+        args = self.iteration_arguments[iteration]
+        for key in args.iterkeys():
             if key in validkeys:
-                res[key] = self.arguments[key]
+                res[key] = args[key]
         return res
 
     def getSuccessPercentage(self):
         """
         Returns the success rate of this instance as a float
         """
-        ckl = self.getCheckList()
-        nbsteps = len(self._possiblechecklist)
-        nbsucc = len([step for step, val in ckl if val == True])
-        return (100.0 * nbsucc) / nbsteps
+        total_nbsteps = 0
+        total_nbsucc = 0
+        for iteration in self.iteration_checklist:
+            ckl = self.getIterationCheckList(iteration)
+            nbsteps = len(self._possiblechecklist)
+            nbsucc = len([step for step, val in ckl if val == True])
+            total_nbsteps = total_nbsteps + nbsteps
+            total_nbsucc = total_nbsucc + nbsucc
+        return (100.0 * total_nbsucc) / total_nbsteps
 
-    def getExtraInfo(self):
+    def getIterationExtraInfo(self,iteration):
         """
         Returns the extra-information dictionnary
         """
-        return self._extrainfo
+        return self.iteration_extrainfo[iteration]
 
     def getOutputFiles(self):
         """

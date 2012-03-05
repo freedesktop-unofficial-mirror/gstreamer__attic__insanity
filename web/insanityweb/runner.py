@@ -68,9 +68,10 @@ class Client(TesterClient):
         debug("Test run done")
         self.runner.test_run_done()
 
-    def single_test_start_cb(self, run, test):
-        debug("Test started: " + repr(test))
-        test.connect('check', self.test_check_cb)
+    def single_test_start_cb(self, run, test, iteration):
+        if iteration == 1:
+            debug("Test started: " + repr(test))
+            test.connect('check', self.test_check_cb)
 
     def single_test_done_cb(self, run, test):
         debug("Test done: " + repr(test))

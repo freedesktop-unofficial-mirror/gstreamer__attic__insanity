@@ -84,9 +84,15 @@ class DataStorage(object):
         # mark the testrun as closed and done
         raise NotImplementedError
 
-    def newTestStarted(self, testrun, test):
+    def newTestStarted(self, testrun, test, iteration):
         """Inform the DataStorage that the given test has started for the
-        given testrun."""
+        given testrun, for the iterationth time."""
+        # create new entry in tests table
+        raise NotImplementedError
+
+    def newTestStopped(self, testrun, test, iteration):
+        """Inform the DataStorage that the given test has stopped for the
+        given testrun, for the iterationth time."""
         # create new entry in tests table
         raise NotImplementedError
 

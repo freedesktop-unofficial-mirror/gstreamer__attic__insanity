@@ -84,7 +84,10 @@ class TestRun(gobject.GObject):
                               (gobject.TYPE_PYOBJECT, )),
         "single-test-start" : (gobject.SIGNAL_RUN_LAST,
                               gobject.TYPE_NONE,
-                              (gobject.TYPE_PYOBJECT, )),
+                              (gobject.TYPE_PYOBJECT, gobject.TYPE_INT)),
+        "single-test-stop" : (gobject.SIGNAL_RUN_LAST,
+                              gobject.TYPE_NONE,
+                              (gobject.TYPE_PYOBJECT, gobject.TYPE_INT)),
 
         # new-remote-test (uuid)
         #  emitted when a new test has appeared on the private bus
@@ -222,13 +225,18 @@ class TestRun(gobject.GObject):
         self._storage.startNewTestRun(self, self._clientid)
         self._runNextBatch()
 
-    def _singleTestStart(self, test):
-        info("test %r started", test)
-        self.emit("single-test-start", test)
-        self._storage.newTestStarted(self, test)
+    def _singleTestStart(self, test, iteration):
+        info("test %r started (%d)", test, iteration)
+        self.emit("single-test-start", test, iteration)
+        self._storage.newTestStarted(self, test, iteration)
+
+    def _singleTestStop(self, test, iteration):
+        info("test %r stopped (%d)", test, iteration)
+        self.emit("single-test-stop", test, iteration)
+        self._storage.newTestStopped(self, test, iteration)
 
     def _singleTestDone(self, test):
-        info("Done with test %r , success rate %02f%%",
+        info("test %r done, success rate %02f%%",
              test, test.getSuccessPercentage())
         self.emit("single-test-done", test)
         # FIXME : Improvement : disconnect all signals from that test
@@ -266,6 +274,7 @@ class TestRun(gobject.GObject):
                 test.addMonitor(*monitor)
 
         test.connect("start", self._singleTestStart)
+        test.connect("stop", self._singleTestStop)
         test.connect("done", self._singleTestDone)
         test.connect("check", self._singleTestCheck)
 
