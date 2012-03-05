@@ -1196,7 +1196,10 @@ class DBStorage(DataStorage, AsyncStorage):
             res = self._FetchAll(fullsearch, (containerid, ))
         else:
             res = self._FetchAll(normalsearch, (containerid, ))
-        return dict(res)
+        d = {}
+        for key, value in res:
+            d[key] = value
+        return d
 
     def __getDict(self, tablename, containerid, txtonly=False,
                  intonly=False):
@@ -1313,6 +1316,8 @@ class DBStorage(DataStorage, AsyncStorage):
         checklist = testinstance.getFullCheckList()
         extrainfo = testinstance.getFullExtraInfoList()
         outputfiles = testinstance.getFullOutputFilesList()
+        if outputfiles:
+            outputfiles = dict([(key, val["description"]) for key,val in outputfiles.iteritems()])
         parent = None
 
         self.__rawInsertTestClassInfo(ctype=ctype, description=desc,
