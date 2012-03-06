@@ -97,9 +97,13 @@ struct _InsanityTestPrivateData
   char *tmpdir;
 #ifdef USE_NEW_GLIB_MUTEX_API
   GMutex lock;
+
+  GMutex signal_lock;
   GCond cond;
 #else
   GMutex *lock;
+
+  GMutex *signal_lock;
   GCond *cond;
 #endif
   gboolean standalone;
@@ -123,7 +127,9 @@ struct _InsanityTestPrivateData
 #ifdef USE_NEW_GLIB_MUTEX_API
 #define LOCK(test) g_mutex_lock(&(test)->priv->lock)
 #define UNLOCK(test) g_mutex_unlock(&(test)->priv->lock)
-#define WAIT(test) g_cond_wait(&(test)->priv->cond, &(test)->priv->lock)
+
+#define LOCK_SIGNAL(test) g_mutex_lock(&(test)->priv->signal_lock)
+#define UNLOCK_SIGNAL(test) g_mutex_unlock(&(test)->priv->signal_lock)
 #define SIGNAL(test) g_cond_signal(&(test)->priv->cond)
 
 static inline gboolean
@@ -135,20 +141,22 @@ WAIT_TIMEOUT (InsanityTest * test)
 
     do {
       test->priv->timeout_end_time = g_get_monotonic_time () + test->priv->timeout * G_TIME_SPAN_SECOND;
-      signalled = g_cond_wait_until (&test->priv->cond, &test->priv->lock, test->priv->timeout_end_time);
+      signalled = g_cond_wait_until (&test->priv->cond, &test->priv->signal_lock, test->priv->timeout_end_time);
       current_time = g_get_monotonic_time ();
     } while (!signalled && current_time < test->priv->timeout_end_time);
 
     return !signalled;
  } else {
-   g_cond_wait (&test->priv->cond, &test->priv->lock);
+   g_cond_wait (&test->priv->cond, &test->priv->signal_lock);
    return FALSE;
  }
 }
 #else
 #define LOCK(test) g_mutex_lock((test)->priv->lock)
 #define UNLOCK(test) g_mutex_unlock((test)->priv->lock)
-#define WAIT(test) g_cond_wait((test)->priv->cond, (test)->priv->lock)
+
+#define LOCK_SIGNAL(test) g_mutex_lock((test)->priv->signal_lock)
+#define UNLOCK_SIGNAL(test) g_mutex_unlock((test)->priv->signal_lock)
 #define SIGNAL(test) g_cond_signal((test)->priv->cond)
 
 static inline gboolean
@@ -163,13 +171,13 @@ WAIT_TIMEOUT (InsanityTest * test)
       test->priv->timeout_end_time = g_get_monotonic_time () + test->priv->timeout * G_TIME_SPAN_SECOND;
       tmp.tv_sec = test->priv->timeout_end_time / G_USEC_PER_SEC;
       tmp.tv_usec = test->priv->timeout_end_time % G_USEC_PER_SEC;
-      signalled = g_cond_timed_wait (test->priv->cond, test->priv->lock, &tmp);
+      signalled = g_cond_timed_wait (test->priv->cond, test->priv->signal_lock, &tmp);
       current_time = g_get_monotonic_time ();
     } while (!signalled && current_time < test->priv->timeout_end_time);
 
     return !signalled;
   } else {
-    g_cond_wait (test->priv->cond, test->priv->lock);
+    g_cond_wait (test->priv->cond, test->priv->signal_lock);
     return FALSE;
   }
 }
@@ -666,8 +674,11 @@ insanity_test_done (InsanityTest * test)
     send_signal (test->priv->conn, "remoteStopSignal", test->priv->name,
         DBUS_TYPE_INVALID);
   }
-  SIGNAL (test);
   UNLOCK (test);
+
+  LOCK_SIGNAL (test);
+  SIGNAL (test);
+  UNLOCK_SIGNAL (test);
 }
 
 static gboolean
@@ -1581,11 +1592,11 @@ insanity_test_run_standalone (InsanityTest * test)
   gboolean timeout = FALSE;
 
   if (on_setup (test)) {
+    LOCK_SIGNAL (test);
     if (on_start (test)) {
-      LOCK (test);
       timeout = WAIT_TIMEOUT (test);
-      UNLOCK (test);
     }
+    UNLOCK_SIGNAL (test);
     on_stop (test);
     on_teardown (test);
   }
@@ -1747,9 +1758,11 @@ insanity_test_finalize (GObject * gobject)
   g_hash_table_destroy (priv->test_output_files);
 #ifdef USE_NEW_GLIB_MUTEX_API
   g_mutex_clear (&priv->lock);
+  g_mutex_clear (&priv->signal_lock);
   g_cond_clear (&priv->cond);
 #else
   g_mutex_free (priv->lock);
+  g_mutex_free (priv->signal_lock);
   g_cond_free (priv->cond);
 #endif
   G_OBJECT_CLASS (insanity_test_parent_class)->finalize (gobject);
@@ -1763,9 +1776,11 @@ insanity_test_init (InsanityTest * test)
 
 #ifdef USE_NEW_GLIB_MUTEX_API
   g_mutex_init (&priv->lock);
+  g_mutex_init (&priv->signal_lock);
   g_cond_init (&priv->cond);
 #else
   priv->lock = g_mutex_new ();
+  priv->signal_lock = g_mutex_new ();
   priv->cond = g_cond_new ();
 #endif
   test->priv = priv;
