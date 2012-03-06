@@ -1382,7 +1382,7 @@ output_arguments_table (InsanityTest * test, FILE * f)
     fprintf (f, "    {\n");
     fprintf (f, "        \"global\" : %s,\n", (a->global ? "true" : "false"));
     fprintf (f, "        \"description\" : \"%s\",\n", a->description);
-    fprintf (f, "        \"full_description\" : \"%s\",\n", a->full_description);
+    fprintf (f, "        \"full_description\" : \"%s\",\n", a->full_description ? a->full_description : a->description);
     fprintf (f, "        \"type\" : \"%s\",\n", get_argument_type_char (&a->default_value));
     fprintf (f, "        \"default_value\" : \"%s\"\n", default_value);
     fprintf (f, "    }");
