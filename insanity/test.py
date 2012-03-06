@@ -652,6 +652,8 @@ class Test(gobject.GObject):
         # Hide expected-failures from the storage backend.
         validkeys.pop("expected-failures", [])
         res = {}
+        if not iteration in self.iteration_arguments:
+            return res
         args = self.iteration_arguments[iteration]
         for key in args.iterkeys():
             if key in validkeys:
