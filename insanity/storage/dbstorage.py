@@ -1314,6 +1314,8 @@ class DBStorage(DataStorage, AsyncStorage):
         if args:
             args = dict([(key, val["description"]) for key,val in args.iteritems()])
         checklist = testinstance.getFullCheckList()
+        if checklist:
+            checklist = dict([(key, val["description"]) for key,val in checklist.iteritems()])
         extrainfo = testinstance.getFullExtraInfoList()
         outputfiles = testinstance.getFullOutputFilesList()
         if outputfiles:
