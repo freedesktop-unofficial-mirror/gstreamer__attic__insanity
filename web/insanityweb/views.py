@@ -88,7 +88,7 @@ def matrix_view(request, testrun_id):
         v = Test.objects.values_list("type",flat=True).filter(id__in=(x.id for x in res)).distinct()
 
         # get the TestClassInfo for the available tests
-        testtypes = TestClassInfo.objects.select_related(depth=1).filter(id__in=v)
+        testtypes = set([x.type for x in res])
 
         for t in testtypes:
             query = [x for x in res if x.type == t]
