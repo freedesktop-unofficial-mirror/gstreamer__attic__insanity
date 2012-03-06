@@ -120,7 +120,7 @@ def matrix_view(request, testrun_id):
                 if not x.containerid in extras.keys():
                     extras[x.containerid] = [x]
                 else:
-                    extras[x.conatinerid].append(x)
+                    extras[x.containerid].append(x)
 
             tests.append({"type":t,
                           "tests":query,
