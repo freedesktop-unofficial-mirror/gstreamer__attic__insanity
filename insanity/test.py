@@ -672,6 +672,8 @@ class Test(gobject.GObject):
             nbsucc = len([step for step, val in ckl if val == True])
             total_nbsteps = total_nbsteps + nbsteps
             total_nbsucc = total_nbsucc + nbsucc
+        if total_nbsteps == 0:
+            return 0.0
         return (100.0 * total_nbsucc) / total_nbsteps
 
     def getIterationExtraInfo(self,iteration):
