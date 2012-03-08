@@ -534,6 +534,9 @@ insanity_test_validate_step (InsanityTest * test, const char *name,
   g_return_if_fail (g_hash_table_lookup (test->priv->test_checklist, name) != NULL);
 
   LOCK (test);
+
+  insanity_test_ping (test);
+
   if (test->priv->standalone) {
     if (description) {
       printf("step: %s: %s (%s)\n", name, success ? "PASS" : "FAIL",
@@ -627,6 +630,7 @@ insanity_test_set_extra_info (InsanityTest * test, const char *name,
   g_return_if_fail (check_valid_label (name));
   g_return_if_fail (G_IS_VALUE (data));
 
+  insanity_test_ping (test);
   insanity_test_set_extra_info_internal (test, name, data, FALSE);
 }
 
