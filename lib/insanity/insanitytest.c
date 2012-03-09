@@ -109,6 +109,7 @@ struct _InsanityTestPrivateData
   gboolean standalone;
   GHashTable *checklist_results;
   RunLevel runlevel;
+  gboolean verbose;
 
   /* test metadata */
   char *test_name;
@@ -686,10 +687,15 @@ insanity_test_done (InsanityTest * test)
 static gboolean
 on_setup (InsanityTest * test)
 {
+  GValue verbose = {0};
   gboolean ret = TRUE;
 
   if (test->priv->runlevel != rl_idle)
     return FALSE;
+
+  insanity_test_get_argument (test, "verbose", &verbose);
+  test->priv->verbose = g_value_get_boolean (&verbose);
+  g_value_unset (&verbose);
 
   g_signal_emit (test, setup_signal, 0, &ret);
 
@@ -1775,6 +1781,7 @@ insanity_test_init (InsanityTest * test)
 {
   InsanityTestPrivateData *priv = G_TYPE_INSTANCE_GET_PRIVATE (test,
       INSANITY_TYPE_TEST, InsanityTestPrivateData);
+  GValue vdef = {0};
 
 #ifdef USE_NEW_GLIB_MUTEX_API
   g_mutex_init (&priv->lock);
@@ -1812,6 +1819,11 @@ insanity_test_init (InsanityTest * test)
       g_hash_table_new_full (&g_str_hash, &g_str_equal, &g_free, &free_output_file_item);
 
   priv->timeout = TEST_TIMEOUT;
+
+  g_value_init (&vdef, G_TYPE_BOOLEAN);
+  g_value_set_boolean (&vdef, FALSE);
+  insanity_test_add_argument (test, "verbose", "Output extra information on stdout", NULL, TRUE, &vdef);
+  g_value_unset (&vdef);
 }
 
 static gboolean
@@ -2147,5 +2159,36 @@ gboolean insanity_test_check (InsanityTest *test, const char *step, gboolean exp
     g_free (fullmsg);
   }
   return expr;
+}
+
+/**
+ * insanity_test_printf:
+ * @test: a #InsanityTest instance to operate on.
+ * @format: a printf(3) format string, followed by optional arguments as per printf(3)
+ * @...: the parameters to insert into the format string
+ *
+ * This function outputs messages on stdout when some conditions are met.
+ * The semantics of these messages may be debugging, or informative, but
+ * which are not intended to be stored. If you want a message to be stored,
+ * use a extra-info string for this.
+ *
+ * Currently, the output conditions are:
+ *  - the test is running in standalone mode
+ *  - the verbose property is set to TRUE
+ *
+ * These conditions may change to match a "when it makes sense" ideal.
+ */
+void insanity_test_printf (InsanityTest *test, const char *format,...)
+{
+  va_list ap;
+
+  if (!test->priv->standalone)
+    return;
+  if (!test->priv->verbose)
+    return;
+
+  va_start (ap, format);
+  vprintf(format, ap);
+  va_end (ap);
 }
 

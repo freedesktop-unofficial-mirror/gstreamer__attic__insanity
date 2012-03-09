@@ -101,6 +101,8 @@ void insanity_test_ping(InsanityTest *test);
 gboolean insanity_test_check (InsanityTest *test, const char *step, gboolean expr, const char *msg,...);
 #define INSANITY_TEST_CHECK(test, step, expr) insanity_test_check(test, step, (expr), "%s:%u: check failed: %s", __FILE__, __LINE__, #expr)
 
+void insanity_test_printf (InsanityTest *test, const char *format,...);
+
 gboolean insanity_test_run(InsanityTest *test, int *argc, char ***argv);
 
 G_END_DECLS
