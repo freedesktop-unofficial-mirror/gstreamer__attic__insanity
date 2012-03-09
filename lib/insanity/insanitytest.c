@@ -637,8 +637,6 @@ insanity_test_set_extra_info (InsanityTest * test, const char *name,
 void
 insanity_test_ping (InsanityTest * test)
 {
-  printf ("insanity_test_ping\n");
-
   if (!test->priv->standalone) {
     send_signal (test->priv->conn, "remotePingSignal", test->priv->name, DBUS_TYPE_INVALID);
   } else {
