@@ -25,6 +25,7 @@ External process generator
 
 import os.path
 import subprocess
+import signal
 
 from insanity.generator import Generator
 from insanity.log import debug, info, exception
@@ -79,11 +80,24 @@ class ExternalGenerator(Generator):
         if process.stderr:
             process.stderr.close()
 
+        def timeout_handler(signum, frame):
+            raise Exception()
+ 
+        old_handler = signal.signal(signal.SIGALRM, timeout_handler) 
+        signal.alarm(5)
+
         lines=[]
-        line=process.stdout.readline()
-        while line:
-            lines.append(line)
+        try:
             line=process.stdout.readline()
+            while line:
+                lines.append(line)
+                line=process.stdout.readline()
+        except:
+            exception("Timeout running external generator '%r'", self.command)
+            pass
+        finally:
+            signal.signal(signal.SIGALRM, old_handler)
+        signal.alarm(0)
         process.stdout.close()
 
         info("Returning %d lines" % len(lines))
