@@ -514,6 +514,16 @@ check_valid_label (const char *label)
   return TRUE;
 }
 
+static void
+insanity_test_ping_unlocked (InsanityTest * test)
+{
+  if (!test->priv->standalone) {
+    send_signal (test->priv->conn, "remotePingSignal", test->priv->name, DBUS_TYPE_INVALID);
+  } else {
+    test->priv->timeout_end_time = g_get_monotonic_time () + test->priv->timeout * G_TIME_SPAN_SECOND;
+  }
+}
+
 /**
  * insanity_test_validate_step:
  * @test: a #InsanityTest to operate on
@@ -536,7 +546,7 @@ insanity_test_validate_step (InsanityTest * test, const char *name,
 
   LOCK (test);
 
-  insanity_test_ping (test);
+  insanity_test_ping_unlocked (test);
 
   if (test->priv->standalone) {
     if (description) {
@@ -638,11 +648,11 @@ insanity_test_set_extra_info (InsanityTest * test, const char *name,
 void
 insanity_test_ping (InsanityTest * test)
 {
-  if (!test->priv->standalone) {
-    send_signal (test->priv->conn, "remotePingSignal", test->priv->name, DBUS_TYPE_INVALID);
-  } else {
-    test->priv->timeout_end_time = g_get_monotonic_time () + test->priv->timeout * G_TIME_SPAN_SECOND;
-  }
+  g_return_if_fail (INSANITY_IS_TEST (test));
+
+  LOCK(test);
+  insanity_test_ping_unlocked (test);
+  UNLOCK(test);
 }
 
 static void
@@ -690,19 +700,24 @@ on_setup (InsanityTest * test)
   GValue verbose = {0};
   gboolean ret = TRUE;
 
-  if (test->priv->runlevel != rl_idle)
+  LOCK (test);
+  if (test->priv->runlevel != rl_idle) {
+    UNLOCK (test);
     return FALSE;
+  }
+  UNLOCK (test);
 
   insanity_test_get_argument (test, "verbose", &verbose);
+  LOCK (test);
   test->priv->verbose = g_value_get_boolean (&verbose);
+  UNLOCK (test);
   g_value_unset (&verbose);
 
   g_signal_emit (test, setup_signal, 0, &ret);
 
   LOCK (test);
-  insanity_test_record_start_time (test);
-  UNLOCK (test);
 
+  insanity_test_record_start_time (test);
   if (!test->priv->standalone) {
     if (!ret) {
       send_signal (test->priv->conn, "remoteStopSignal", test->priv->name,
@@ -714,6 +729,7 @@ on_setup (InsanityTest * test)
   }
 
   test->priv->runlevel = rl_setup;
+  UNLOCK (test);
   return ret;
 }
 
@@ -738,11 +754,13 @@ on_stop (InsanityTest * test)
 
   g_signal_emit (test, stop_signal, 0, NULL);
 
+  LOCK (test);
   if (!test->priv->standalone) {
     send_signal (test->priv->conn, "remoteReadySignal", test->priv->name,
         DBUS_TYPE_INVALID);
   }
   test->priv->runlevel = rl_setup;
+  UNLOCK (test);
 }
 
 static void
@@ -1154,12 +1172,14 @@ insanity_call_interface (InsanityTest * test, DBusMessage * msg)
       if (dbus_test_handlers[n].handler)
         (*dbus_test_handlers[n].handler) (test, msg, reply);
 
+      LOCK (test);
       if (!dbus_connection_send (test->priv->conn, reply, &serial)) {
         fprintf (stderr, "Out Of Memory!\n");
       }
       else {
         dbus_connection_flush (test->priv->conn);
       }
+      UNLOCK (test);
       dbus_message_unref (reply);
 
       return TRUE;
@@ -1222,15 +1242,20 @@ listen (InsanityTest * test, const char *bus_address, const char *uuid)
   /* loop, testing for new messages */
   test->priv->exit = FALSE;
   while (1) {
+    LOCK (test);
     /* barely blocking update of dbus */
-    dbus_connection_read_write (conn, 10);
+    dbus_connection_read_write (conn, 1);
 
-    if (test->priv->exit)
+    if (test->priv->exit) {
+      UNLOCK (test);
       break;
+    }
 
     /* see if we have a message to handle */
     msg = dbus_connection_pop_message (conn);
+    UNLOCK (test);
     if (NULL == msg) {
+      g_usleep (10000); /* Not good */
       continue;
     }
 #if 0
@@ -1259,12 +1284,15 @@ listen (InsanityTest * test, const char *bus_address, const char *uuid)
         goto msg_error;
       }
       g_free (introspect_response);
+      LOCK (test);
       if (!dbus_connection_send (conn, reply, &serial)) {
+        UNLOCK (test);
         fprintf (stderr, "Out Of Memory!\n");
         dbus_message_unref (reply);
         goto msg_error;
       }
       dbus_connection_flush (conn);
+      UNLOCK (test);
       dbus_message_unref (reply);
     } else if (!strcmp (dbus_message_get_interface (msg),
             INSANITY_TEST_INTERFACE)) {
