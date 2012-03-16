@@ -26,6 +26,7 @@ Test metadata class
 import os
 import sys
 import subprocess
+import signal
 import json
 from insanity.log import error, warning, debug, info, exception
 
@@ -58,16 +59,31 @@ class TestMetadata():
         if process.stderr:
             process.stderr.close()
 
+        def timeout_handler(signum, frame):
+            raise Exception()
+ 
+        old_handler = signal.signal(signal.SIGALRM, timeout_handler) 
+        signal.alarm(5)
+
         lines=""
-        line=process.stdout.readline()
-        if not line or not 'Insanity test metadata:\n' in line:
-             info('No magic, not a test')
-             process.stdout.close()
-             return False
-        line=process.stdout.readline()
-        while line:
-            lines = lines + line
-            line = process.stdout.readline()
+        try:
+            line=process.stdout.readline()
+            if not line or not 'Insanity test metadata:\n' in line:
+                 info('No magic, not a test')
+                 process.stdout.close()
+                 return False
+            line=process.stdout.readline()
+            while line:
+                lines = lines + line
+                line = process.stdout.readline()
+        except:
+            process.stdout.close()
+            signal.signal(signal.SIGALRM, old_handler)
+            exception("Timeout running possible test '%r'", filename)
+            return FALSE
+        signal.signal(signal.SIGALRM, old_handler)
+        signal.alarm(0)
+
         process.stdout.close()
 
         try:
