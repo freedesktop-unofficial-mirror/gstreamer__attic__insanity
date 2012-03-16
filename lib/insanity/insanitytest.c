@@ -1781,6 +1781,7 @@ insanity_test_finalize (GObject * gobject)
   }
   g_hash_table_destroy (priv->checklist_results);
   if (priv->tmpdir) {
+    /* Will fail if there are files left, this is expected */
     g_rmdir (priv->tmpdir);
     g_free (priv->tmpdir);
   }
