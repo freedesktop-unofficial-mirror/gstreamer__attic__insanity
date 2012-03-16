@@ -45,6 +45,7 @@ from insanity.generators.filesystem import FileSystemGenerator, URIFileSystemGen
 from insanity.generators.playlist import PlaylistGenerator
 from insanity.generators.external import ExternalGenerator
 from insanity.generators.constant import ConstantGenerator
+from insanity.monitor import ValgrindMemCheckMonitor, GDBMonitor
 
 class Client(CommandLineTesterClient):
 
@@ -91,14 +92,6 @@ class OptionParser(optparse.OptionParser):
                         help="test or scenario to run (pass help for list of tests)",
                         metavar="TESTNAME",
                         default=None)
-        self.add_option("-e",
-                        "--execcmd",
-                        dest="execcmd",
-                        type="string",
-                        action="store",
-                        help="set the exec command line (pass help for examples)",
-                        metavar="EXEC",
-                        default="%t %a")
         self.add_option("-a",
                         "--args",
                         dest="args",
@@ -106,6 +99,23 @@ class OptionParser(optparse.OptionParser):
                         action="store",
                         help="set test arguments (pass help for list of arguments)",
                         metavar="SPEC",
+                        default=None)
+        self.add_option("--gdb",
+                        dest="gdb",
+                        action="store_true",
+                        help="Use gdb to gather a stack trace after a crash",
+                        default=None)
+        self.add_option("--valgrind",
+                        dest="valgrind",
+                        action="store_true",
+                        help="run tests on valgrind",
+                        default=None)
+        self.add_option("--valgrind-supp",
+                        dest="supp",
+                        type="string",
+                        action="append",
+                        help="add a valgrind suppression file to use",
+                        metavar="SUPP",
                         default=None)
 
     def parse_args(self, *a, **kw):
@@ -197,17 +207,6 @@ def args_help():
     print "  uri:playlist:/home/user/playlist.txt"
     print "  uri:external:\"find `pwd` | sed -e s:^:file\\\://:\""
 
-def execcmd_help():
-    print "Usage for --execcmd (-e) option:"
-    print "  <FORMAT-STRING>"
-    print "Escape sequences in this string will be replaced by:"
-    print "  %t     the test binary"
-    print "  %a     the arguments list"
-    print "Examples:"
-    print "  valgrind --leak-check=full %t %a"
-    print "Default"
-    print "  %t %a"
-
 def main():
 
     error = False
@@ -222,10 +221,6 @@ def main():
         args_help()
         sys.exit(1)
 
-    if options.execcmd == "help":
-        execcmd_help()
-        sys.exit(1)
-
     insanity.utils.scan_for_tests(options.tests)
 
     if options.test == "help":
@@ -236,6 +231,23 @@ def main():
         sys.exit(1)
 
     test = insanity.utils.get_test_metadata(options.test)
+
+    # our monitors
+    monitors = []
+
+    if options.gdb:
+        gdbscriptfile = os.path.join(os.path.dirname(os.path.abspath(__file__)), "gdb.instructions")
+        if not os.path.exists (gdbscriptfile):
+            gdbscriptfile = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "share", "insanity", "gdb.instructions")
+        if not os.path.exists (gdbscriptfile):
+            print
+            sys.exit(1)
+        else:
+            monitors.append((GDBMonitor, {"gdb-script" : gdbscriptfile}))
+
+    if options.valgrind:
+        monitors.append((ValgrindMemCheckMonitor,
+                         {"suppression-files":options.supp}))
 
     storage_name, storage_args = options.storage
     if storage_name == "sqlite":
@@ -276,9 +288,9 @@ def main():
 
         test_arguments[arg_name] = gen
 
-    test_run = TestRun(maxnbtests=1, workingdir=options.output, execcmd=options.execcmd)
+    test_run = TestRun(maxnbtests=1, workingdir=options.output)
     try:
-        test_run.addTest(test, test_arguments)
+        test_run.addTest(test, arguments=test_arguments, monitors=monitors)
     except Exception, e:
         print 'Error: exception adding test: ', e
         error = True

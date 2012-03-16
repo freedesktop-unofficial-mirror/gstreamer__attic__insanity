@@ -106,7 +106,7 @@ class DBusTest(Test, dbus.service.Object):
 
         return parsed_arguments
 
-    def __init__(self, bus=None, bus_address="", metadata = None, execcmd = None,
+    def __init__(self, bus=None, bus_address="", metadata = None,
                  test_arguments = None, env=None, *args, **kwargs):
         """
         bus is the private DBusConnection used for testing.
@@ -125,7 +125,6 @@ class DBusTest(Test, dbus.service.Object):
             raise Exception("You need to provide at least a bus or bus_address")
         self._bus = bus
         self._bus_address = bus_address
-        self._execcmd = execcmd
 
         self._remote_tearing_down = False
 
@@ -145,6 +144,7 @@ class DBusTest(Test, dbus.service.Object):
         self._stdin = None
         self._stdout = None
         self._stderr = None
+        self._preargs = []
         self._environ = env or {}
         self._environ.update(os.environ.copy())
         self._subprocessspawntime = 0
@@ -162,7 +162,8 @@ class DBusTest(Test, dbus.service.Object):
             return False
 
         # get the remote launcher
-        pargs = self.get_remote_launcher_args()
+        pargs = self._preargs
+        pargs.extend(self.get_remote_launcher_args())
         shell = isinstance (pargs, basestring)
 
         cwd = self._testrun.getWorkingDirectory()
@@ -476,15 +477,9 @@ class PythonDBusTest(DBusTest):
 
     def get_remote_launcher_args(self):
         # FIXME : add proper arguments
-        if self._execcmd == None:
-            rootdir = os.path.split(os.path.dirname(os.path.abspath(__file__)))[0]
-            path = self._metadata.__test_filename__
-            return [path, "--run", "--dbus-uuid="+self.uuid]
-        execcmd = self._execcmd
-        execcmd = re.sub("%t", self._metadata.__test_filename__, execcmd, 0)
-        args = "--run --dbus-uuid=" + self.uuid
-        execcmd = re.sub("%a", args, execcmd, 0)
-        return execcmd
+        rootdir = os.path.split(os.path.dirname(os.path.abspath(__file__)))[0]
+        path = self._metadata.__test_filename__
+        return [path, "--run", "--dbus-uuid="+self.uuid]
 
     def __excepthook(self, exc_type, exc_value, exc_traceback):
 

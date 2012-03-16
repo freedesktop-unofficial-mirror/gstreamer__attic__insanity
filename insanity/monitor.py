@@ -277,7 +277,7 @@ class ValgrindMemCheckMonitor(Monitor):
     __monitor_name__ = "valgrind-memcheck-monitor"
     __monitor_description__ = "Checks for memory leaks using valgrind memcheck"
     __monitor_arguments__ = {
-        "suppression-files":"coma separated list of suppresion files"
+        "suppression-files":"coma separated list of suppression files, or list of suppression files"
         }
     __monitor_output_files__ = {
         "memcheck-log" : "Full log from valgrind memcheck"
@@ -296,8 +296,12 @@ class ValgrindMemCheckMonitor(Monitor):
         # add the suppression files
         sups = self.arguments.get("suppression-files")
         if sups:
-            for sup in sups.split(','):
-                ourargs.append("--suppressions=%s" % sup)
+            if isinstance(sups,list):
+                for sup in sups:
+                    ourargs.append("--suppressions=%s" % sup)
+            else:
+                for sup in sups.split(','):
+                    ourargs.append("--suppressions=%s" % sup)
         ourargs.extend(self.test._preargs)
         self.test._preargs = ourargs
         # set some env variables
@@ -313,6 +317,7 @@ class ValgrindMemCheckMonitor(Monitor):
         return True
 
     def tearDown(self):
+        print 'Tearing down memcheck monitor'
         Monitor.tearDown(self)
         if self._logfile:
             os.close(self._logfile)
@@ -322,6 +327,7 @@ class ValgrindMemCheckMonitor(Monitor):
             os.remove(self._logfilepath)
         else:
             # else report it
+            print 'Reporting memcheck monitor log: ', self._logfilepath
             self.setOutputFile("memcheck-log", self._logfilepath)
 
 class GDBMonitor(Monitor):
@@ -394,7 +400,9 @@ class GDBMonitor(Monitor):
 
                     # run the backtrace script
                     # This blocks, which is acceptable since we're tearing down
-                    subprocess.Popen(["gdb", "--batch", "-x", self._GDBScript, "python2.6", core],
+                    subprocess.Popen(["libtool", "--mode=execute",
+                                     "gdb", "--batch", "-x", self._GDBScript,
+                                     self.test._metadata.__test_filename__, core],
                                      stdout = backtracefile,
                                      stderr = backtracefile).wait()
 

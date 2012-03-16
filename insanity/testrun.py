@@ -99,7 +99,7 @@ class TestRun(gobject.GObject):
                                  (gobject.TYPE_STRING, ))
         }
 
-    def __init__(self, maxnbtests=1, workingdir=None, execcmd=None, env=None, clientid=None):
+    def __init__(self, maxnbtests=1, workingdir=None, env=None, clientid=None):
         """
         maxnbtests : Maximum number of tests to run simultaneously in each batch.
         workingdir : Working directory (default : getcwd() + /workingdir/)
@@ -131,7 +131,6 @@ class TestRun(gobject.GObject):
         if env:
             self._env.update(env)
         self._running = False
-        self.execcmd = execcmd
         self.setWorkingDirectory(workingdir or os.path.join(os.getcwd(), "workingdir"))
 
     ## PUBLIC API
@@ -263,7 +262,7 @@ class TestRun(gobject.GObject):
         debug("Creating test %r with arguments %r" % (testclass, kwargs))
         test = PythonDBusTest(testrun=self, bus=self._bus,
                          bus_address=self._bus_address,
-                         metadata = testclass, execcmd = self.execcmd,
+                         metadata = testclass,
                          test_arguments = self._currentarguments,
                          **kwargs)
 #        test = testclass(testrun=self, bus=self._bus,
