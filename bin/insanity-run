@@ -146,7 +146,7 @@ class OptionParser(optparse.OptionParser):
             return "help"
 
         result = []
-        args = value.split(",")
+        args = value.split(";")
         for arg in args:
             if not ":" in arg:
                 return "help"
@@ -196,9 +196,11 @@ def args_help():
 
     # FIXME: Hardcoded list!
     print "Usage for --args (-a) option:"
-    print "  --args [ARG[,ARG1...]]"
-    print "Each ARG in the comma separated list takes the following form:"
-    print "  ARGNAME:GENERATOR[:GENERATOR-ARGUMENTS]"
+    print "  --args [ARG[;ARG1...]]"
+    print "Each ARG in the semicolon separated list takes the following form:"
+    print "  ARGLIST:GENERATOR[:GENERATOR-ARGUMENTS]"
+    print "ARGLIST is either a single argument, or a comma separated list of arguments."
+    print "The generator should generate the appropirate number of arguments."
     print "Possible generators and arguments:"
     print "  filesystem:PATH"
     print "  urifilesystem:PATH"
@@ -208,6 +210,7 @@ def args_help():
     print "  uri:urifilesystem:/testclips"
     print "  uri:playlist:/home/user/playlist.txt"
     print "  uri:external:\"find `pwd` | sed -e s:^:file\\\://:\""
+    print "  uri:urifilesystem:/testclips\;videodec,audiodec:playlist:/decoders"
 
 def main():
 
