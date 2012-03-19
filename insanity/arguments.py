@@ -39,7 +39,8 @@ class Arguments(object):
 
     If a dynamic arguments produces multiple return values, you need
     to name that argument as the coma-separated concatenation of the
-    individual arguments. Ex : "arg1,arg2,arg3"
+    individual arguments. Ex : "arg1,arg2,arg3". These multiple values
+    may be either a python list, or a comma separated string.
     """
 
     def __init__(self, **kwargs):
@@ -90,8 +91,12 @@ class Arguments(object):
                 # split generator name
                 keys = key.split(",")
                 if len(keys) > 1:
+                    if isinstance(gen[idx],list):
+                      gens = gen[idx]
+                    else:
+                      gens = gen[idx].split(",")
                     for i in range(len(keys)):
-                        res[keys[i]] = gen[idx][i]
+                        res[keys[i]] = gens[i]
                 else:
                     res[keys[0]] = gen[idx]
             # update values
