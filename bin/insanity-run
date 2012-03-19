@@ -196,6 +196,8 @@ def args_help():
 
     # FIXME: Hardcoded list!
     print "Usage for --args (-a) option:"
+    print "  --args [ARG[,ARG1...]]"
+    print "Each ARG in the comma separated list takes the following form:"
     print "  ARGNAME:GENERATOR[:GENERATOR-ARGUMENTS]"
     print "Possible generators and arguments:"
     print "  filesystem:PATH"
