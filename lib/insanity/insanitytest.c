@@ -1073,7 +1073,7 @@ insanity_test_get_output_filename (InsanityTest * test, const char *key)
 
     if (!test->priv->tmpdir) {
       GError *error = NULL;
-      test->priv->tmpdir = g_dir_make_tmp (NULL, &error);
+      test->priv->tmpdir = g_dir_make_tmp ("insanity-XXXXXX", &error);
       if (error)
         g_error_free (error);
       if (!test->priv->tmpdir) {
