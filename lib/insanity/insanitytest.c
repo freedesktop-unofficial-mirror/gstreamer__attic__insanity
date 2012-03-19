@@ -95,6 +95,7 @@ struct _InsanityTestPrivateData
   gboolean exit;
   GHashTable *filename_cache;
   char *tmpdir;
+  gboolean keep_unnamed_output_files;
 #ifdef USE_NEW_GLIB_MUTEX_API
   GMutex lock;
 
@@ -1658,11 +1659,15 @@ insanity_test_run (InsanityTest * test, int *argc, char ***argv)
   gboolean opt_run = FALSE;
   gboolean opt_metadata = FALSE;
   gint opt_timeout = TEST_TIMEOUT;
+  const char *opt_output_directory = NULL;
+  gboolean opt_keep_unnamed_output_files = FALSE;
   const GOptionEntry options[] = {
     {"run", 0, 0, G_OPTION_ARG_NONE, &opt_run, "Run the test standalone", NULL},
     {"insanity-metadata", 0, 0, G_OPTION_ARG_NONE, &opt_metadata, "Output test metadata", NULL},
     {"dbus-uuid", 0, 0, G_OPTION_ARG_STRING, &opt_uuid, "Set D-Bus uuid", "UUID"},
     {"timeout", 0, 0, G_OPTION_ARG_INT, &opt_timeout, "Test timeout in standalone mode (<= 0 to disable)", NULL},
+    {"output-directory", 0, 0, G_OPTION_ARG_STRING, &opt_output_directory, "Set directory where to create output files(random by default)", NULL},
+    {"keep-unnamed-output-files", 0, 0, G_OPTION_ARG_NONE, &opt_keep_unnamed_output_files, "Keep unnamed output files after program ends (by default, only named ones are kept)", NULL},
     {NULL}
   };
   GOptionContext *ctx;
@@ -1681,6 +1686,11 @@ insanity_test_run (InsanityTest * test, int *argc, char ***argv)
     g_option_context_free (ctx);
     return FALSE;
   }
+
+  if (opt_output_directory) {
+    test->priv->tmpdir = g_strdup (opt_output_directory);
+  }
+  test->priv->keep_unnamed_output_files = opt_keep_unnamed_output_files;
 
   if (opt_metadata) {
     insanity_test_write_metadata (test);
@@ -1767,13 +1777,15 @@ insanity_test_finalize (GObject * gobject)
     g_free (test->priv->name);
   if (priv->filename_cache) {
     if (!priv->conn) { /* unreffed, but value still set */
-      GHashTableIter i;
-      gpointer key, value;
-      g_hash_table_iter_init (&i, priv->filename_cache);
-      while (g_hash_table_iter_next (&i, &key, &value)) {
-        /* only unlink those random ones */
-        if (test->priv->tmpdir && g_str_has_prefix (value, test->priv->tmpdir)) {
-          g_unlink (value);
+      if (!priv->keep_unnamed_output_files) {
+        GHashTableIter i;
+        gpointer key, value;
+        g_hash_table_iter_init (&i, priv->filename_cache);
+        while (g_hash_table_iter_next (&i, &key, &value)) {
+          /* only unlink those random ones */
+          if (test->priv->tmpdir && g_str_has_prefix (value, test->priv->tmpdir)) {
+            g_unlink (value);
+          }
         }
       }
     }
