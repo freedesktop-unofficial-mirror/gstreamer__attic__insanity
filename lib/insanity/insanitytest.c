@@ -1069,9 +1069,6 @@ insanity_test_get_output_filename (InsanityTest * test, const char *key)
   }
 
   else if (test->priv->standalone) {
-    char *template;
-    int fd;
-
     if (!test->priv->tmpdir) {
       GError *error = NULL;
       test->priv->tmpdir = g_dir_make_tmp ("insanity-XXXXXX", &error);
@@ -1084,18 +1081,8 @@ insanity_test_get_output_filename (InsanityTest * test, const char *key)
       }
     }
 
-    template = g_strdup_printf ("%s/insanity-standalone-XXXXXX", test->priv->tmpdir);
-    fd = g_mkstemp (template);
-    if (fd < 0) {
-      fprintf (stderr, "Failed creating temporary file %s: %s\n",
-          template, strerror (errno));
-      fn = NULL;
-      g_free (template);
-    }
-    else {
-      fn = template;
-      g_hash_table_insert (test->priv->filename_cache, g_strdup (key), fn);
-    }
+    fn = g_build_filename (test->priv->tmpdir, key, NULL);
+    g_hash_table_insert (test->priv->filename_cache, g_strdup (key), fn);
   }
 
   UNLOCK (test);
