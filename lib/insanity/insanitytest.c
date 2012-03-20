@@ -1665,6 +1665,9 @@ insanity_test_run (InsanityTest * test, int *argc, char ***argv)
 
   g_set_prgname ((*argv)[0]);
 
+  /* Make warnings/criticals fatal */
+  g_log_set_always_fatal (G_LOG_LEVEL_ERROR | G_LOG_LEVEL_CRITICAL | G_LOG_LEVEL_WARNING);
+
   ctx = g_option_context_new (test->priv->test_desc);
   g_option_context_add_main_entries (ctx, options, NULL);
   if (!g_option_context_parse (ctx, argc, argv, &err)) {
