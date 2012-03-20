@@ -395,7 +395,7 @@ send_signal (DBusConnection * conn, const char *signal_name,
   msg =
       dbus_message_new_signal (path_name, INSANITY_TEST_INTERFACE, signal_name);
   if (NULL == msg) {
-    fprintf (stderr, "Message Null\n");
+    g_error ("Message Null\n");
     return FALSE;
   }
 
@@ -413,7 +413,7 @@ send_signal (DBusConnection * conn, const char *signal_name,
         
         value = va_arg (ap, const void *);
         if (!dbus_message_iter_append_basic (&iter, iter_type, value)) {
-          fprintf (stderr, "Out Of Memory!\n");
+          g_error("Out Of Memory!\n");
           va_end (ap);
           goto fail;
         }
@@ -428,7 +428,7 @@ send_signal (DBusConnection * conn, const char *signal_name,
         value = va_arg (ap, const void *);
 
         if (!dbus_signature_validate_single (variant_type, NULL)) {
-          fprintf (stderr, "Invalid or unsupported DBus type \'%s\'\n", variant_type);
+          g_critical ("Invalid or unsupported DBus type \'%s\'\n", variant_type);
           va_end (ap);
           goto fail;
         }
@@ -437,31 +437,31 @@ send_signal (DBusConnection * conn, const char *signal_name,
         variant_type_id = dbus_signature_iter_get_current_type (&siter);
 
         if (!dbus_type_is_basic (variant_type_id)) {
-          fprintf (stderr, "Invalid or unsupported DBus type \'%s\'\n", variant_type);
+          g_critical ("Invalid or unsupported DBus type \'%s\'\n", variant_type);
           va_end (ap);
           goto fail;
         }
 
         if (!dbus_message_iter_open_container (&iter, DBUS_TYPE_VARIANT, variant_type, &sub)) {
-          fprintf (stderr, "Out Of Memory!\n");
+          g_error ("Out Of Memory!\n");
           va_end (ap);
           goto fail;
         }
 
         if (!dbus_message_iter_append_basic (&sub, variant_type_id, value)) {
-          fprintf (stderr, "Out Of Memory!\n");
+          g_error ("Out Of Memory!\n");
           dbus_message_iter_close_container (&iter, &sub);
           va_end (ap);
           goto fail;
         }
 
         if (!dbus_message_iter_close_container (&iter, &sub)) {
-          fprintf (stderr, "Out Of Memory!\n");
+          g_error ("Out Of Memory!\n");
           va_end (ap);
           goto fail;
         }
       } else {
-        fprintf (stderr, "Invalid or unsupported DBus type %d\n", type);
+        g_critical ("Invalid or unsupported DBus type %d\n", type);
         va_end (ap);
         goto fail;
       }
@@ -472,7 +472,7 @@ send_signal (DBusConnection * conn, const char *signal_name,
   }
 
   if (!dbus_connection_send (conn, msg, &serial)) {
-    fprintf (stderr, "Out Of Memory!\n");
+    g_error ("Out Of Memory!\n");
     dbus_message_unref (msg);
     return FALSE;
   }
@@ -615,7 +615,7 @@ insanity_test_set_extra_info_internal (InsanityTest * test, const char *name,
         DBUS_TYPE_STRING, &name, DBUS_TYPE_VARIANT, dbus_type, dataptr, DBUS_TYPE_INVALID);
   } else {
     char *s = g_strdup_value_contents (data);
-    fprintf (stderr, "Unsupported extra info: %s\n", s);
+    g_critical ("Unsupported extra info: %s\n", s);
     g_free (s);
   }
 
@@ -803,26 +803,26 @@ foreach_dbus_array (DBusMessageIter * iter, int (*f) (const char *key,
 
   type = dbus_message_iter_get_arg_type (iter);
   if (type != DBUS_TYPE_ARRAY) {
-    fprintf (stderr, "Expected array, got %c\n", type);
+    g_critical ("Expected array, got %c\n", type);
     return -1;
   }
   dbus_message_iter_recurse (iter, &subiter);
   do {
     type = dbus_message_iter_get_arg_type (&subiter);
     if (type != DBUS_TYPE_DICT_ENTRY) {
-      fprintf (stderr, "Expected dict entry, got %c\n", type);
+      g_critical ("Expected dict entry, got %c\n", type);
       return -1;
     }
     dbus_message_iter_recurse (&subiter, &subsubiter);
 
     type = dbus_message_iter_get_arg_type (&subsubiter);
     if (type != DBUS_TYPE_STRING) {
-      fprintf (stderr, "Expected string, got %c\n", type);
+      g_critical ("Expected string, got %c\n", type);
       return -1;
     }
     dbus_message_iter_get_basic (&subsubiter, &key);
     if (!dbus_message_iter_next (&subsubiter)) {
-      fprintf (stderr, "Value not present\n");
+      g_critical ("Value not present\n");
       return -1;
     }
     type = dbus_message_iter_get_arg_type (&subsubiter);
@@ -876,12 +876,12 @@ foreach_dbus_array (DBusMessageIter * iter, int (*f) (const char *key,
           g_value_set_pointer (&value, &subsubsubiter);
           break;
         default:
-          fprintf (stderr, "Unsupported type: %c\n", type);
+          g_critical ("Unsupported type: %c\n", type);
           return -1;
           break;
       }
     } else {
-      fprintf (stderr, "Expected variant, got %c\n", type);
+      g_critical ("Expected variant, got %c\n", type);
       return -1;
     }
 
@@ -902,7 +902,7 @@ output_filename_converter (const char *key, const GValue * value, guintptr userd
   InsanityTest *test = (InsanityTest *)userdata;
 
   if (G_VALUE_TYPE (value) != G_TYPE_STRING) {
-    fprintf (stderr, "Output filename %s is not a string, ignored\n", key);
+    g_critical ("Output filename %s is not a string, ignored\n", key);
     return 0;
   }
 
@@ -923,7 +923,7 @@ arg_converter (const char *key, const GValue * value, guintptr userdata)
     return 0;
   }
   if (G_VALUE_TYPE (value) != G_VALUE_TYPE (&arg->default_value)) {
-    fprintf (stderr, "Key '%s' does not have the expected type\n", key);
+    g_critical ("Key '%s' does not have the expected type\n", key);
     return -1;
   }
 
@@ -1013,7 +1013,7 @@ insanity_test_get_argument (InsanityTest * test, const char *key,
   arg = g_hash_table_lookup (test->priv->test_arguments, key);
 
   if (arg && !arg->global && test->priv->runlevel != rl_started && test->priv->runlevel != rl_setup) {
-    fprintf (stderr, "Non-global argument \'%s' requested but not set up yet\n", key);
+    g_critical ("Non-global argument \'%s' requested but not set up yet\n", key);
     goto done;
   }
 
@@ -1035,7 +1035,7 @@ insanity_test_get_argument (InsanityTest * test, const char *key,
   }
 
   if (!ret) {
-    fprintf (stderr, "Argument %s not found\n", key);
+    g_critical ("Argument %s not found\n", key);
   }
 
 done:
@@ -1075,7 +1075,7 @@ insanity_test_get_output_filename (InsanityTest * test, const char *key)
       if (error)
         g_error_free (error);
       if (!test->priv->tmpdir) {
-        fprintf (stderr, "Failed to create temporary directory\n");
+        g_error ("Failed to create temporary directory\n");
         UNLOCK (test);
         return NULL;
       }
@@ -1101,7 +1101,7 @@ insanity_test_dbus_handler_remoteSetup (InsanityTest * test, DBusMessage * msg, 
 
   dbus_message_iter_init_append (reply, &iter);
   if (!dbus_message_iter_append_basic (&iter, DBUS_TYPE_BOOLEAN, &ret)) {
-    fprintf (stderr, "Out Of Memory!\n");
+    g_error ("Out Of Memory!\n");
   }
 }
 
@@ -1116,7 +1116,7 @@ insanity_test_dbus_handler_remoteStart (InsanityTest * test, DBusMessage * msg, 
 
   dbus_message_iter_init_append (reply, &iter);
   if (!dbus_message_iter_append_basic (&iter, DBUS_TYPE_BOOLEAN, &ret)) {
-    fprintf (stderr, "Out Of Memory!\n");
+    g_error ("Out Of Memory!\n");
   }
 }
 
@@ -1162,7 +1162,7 @@ insanity_call_interface (InsanityTest * test, DBusMessage * msg)
 
       LOCK (test);
       if (!dbus_connection_send (test->priv->conn, reply, &serial)) {
-        fprintf (stderr, "Out Of Memory!\n");
+        g_error ("Out Of Memory!\n");
       }
       else {
         dbus_connection_flush (test->priv->conn);
@@ -1195,18 +1195,18 @@ listen (InsanityTest * test, const char *bus_address, const char *uuid)
   /* connect to the bus and check for errors */
   conn = dbus_connection_open (bus_address, &err);
   if (dbus_error_is_set (&err)) {
-    fprintf (stderr, "Connection Error (%s)\n", err.message);
+    g_error ("Connection Error (%s)\n", err.message);
     dbus_error_free (&err);
     return FALSE;
   }
   if (NULL == conn) {
-    fprintf (stderr, "Connection Null\n");
+    g_error ("Connection Null\n");
     return FALSE;
   }
 
   ret = dbus_bus_register (conn, &err);
   if (dbus_error_is_set (&err)) {
-    fprintf (stderr, "Failed to register bus (%s)\n", err.message);
+    g_error ("Failed to register bus (%s)\n", err.message);
     dbus_error_free (&err);
     /* Is this supposed to be fatal ? */
   }
@@ -1216,12 +1216,12 @@ listen (InsanityTest * test, const char *bus_address, const char *uuid)
       dbus_bus_request_name (conn, object_name, DBUS_NAME_FLAG_REPLACE_EXISTING,
       &err);
   if (dbus_error_is_set (&err)) {
-    fprintf (stderr, "Name Error (%s)\n", err.message);
+    g_error ("Name Error (%s)\n", err.message);
     dbus_error_free (&err);
     /* Is this supposed to be fatal ? */
   }
   if (DBUS_REQUEST_NAME_REPLY_PRIMARY_OWNER != ret) {
-    fprintf (stderr, "Not Primary Owner (%d)\n", ret);
+    g_error ("Not Primary Owner (%d)\n", ret);
     return FALSE;
   }
 
@@ -1267,7 +1267,7 @@ listen (InsanityTest * test, const char *bus_address, const char *uuid)
       dbus_message_iter_init_append (reply, &args);
       if (!dbus_message_iter_append_basic (&args, DBUS_TYPE_STRING,
               &introspect_response)) {
-        fprintf (stderr, "Out Of Memory!\n");
+        g_error ("Out Of Memory!\n");
         dbus_message_unref (reply);
         goto msg_error;
       }
@@ -1275,7 +1275,7 @@ listen (InsanityTest * test, const char *bus_address, const char *uuid)
       LOCK (test);
       if (!dbus_connection_send (conn, reply, &serial)) {
         UNLOCK (test);
-        fprintf (stderr, "Out Of Memory!\n");
+        g_error ("Out Of Memory!\n");
         dbus_message_unref (reply);
         goto msg_error;
       }
@@ -1469,7 +1469,7 @@ insanity_test_write_metadata (InsanityTest * test)
 static void
 usage (const char *argv0)
 {
-  fprintf (stderr, "Usage: %s [--insanity-metadata | --run [name=value]... | <uuid>]\n", argv0);
+  g_print ("Usage: %s [--insanity-metadata | --run [name=value]... | <uuid>]\n", argv0);
 }
 
 static gboolean
@@ -1569,7 +1569,7 @@ parse_value (InsanityTest *test, const char *key, const char *string_value, GVal
         return TRUE;
       }
     }
-    fprintf (stderr, "Unable to convert '%s' to the declared type\n", string_value);
+    g_critical ("Unable to convert '%s' to the declared type\n", string_value);
     return FALSE;
   }
 
@@ -1668,7 +1668,7 @@ insanity_test_run (InsanityTest * test, int *argc, char ***argv)
   ctx = g_option_context_new (test->priv->test_desc);
   g_option_context_add_main_entries (ctx, options, NULL);
   if (!g_option_context_parse (ctx, argc, argv, &err)) {
-    fprintf (stderr, "Error initializing: %s\n", err->message);
+    g_error ("Error initializing: %s\n", err->message);
     g_error_free (err);
     g_option_context_free (ctx);
     return FALSE;
@@ -1725,8 +1725,7 @@ insanity_test_run (InsanityTest * test, int *argc, char ***argv)
   else if (opt_run && opt_uuid) {
     private_dbus_address = getenv ("PRIVATE_DBUS_ADDRESS");
     if (!private_dbus_address || !private_dbus_address[0]) {
-      fprintf (stderr,
-          "The PRIVATE_DBUS_ADDRESS environment variable must be set\n");
+      g_error ("The PRIVATE_DBUS_ADDRESS environment variable must be set\n");
       ret = FALSE;
     }
     else {
@@ -1739,7 +1738,7 @@ insanity_test_run (InsanityTest * test, int *argc, char ***argv)
   }
 
   else {
-    fprintf (stderr, "%s\n", g_option_context_get_help (ctx, FALSE, NULL));
+    g_print ("%s\n", g_option_context_get_help (ctx, FALSE, NULL));
     ret = FALSE;
   }
 

@@ -34,8 +34,6 @@
 #include "insanitythreadedtest.h"
 #include "insanityprivate.h"
 
-#include <stdio.h>
-
 /* if global vars are good enough for gstreamer, it's good enough for insanity */
 static guint test_signal;
 
