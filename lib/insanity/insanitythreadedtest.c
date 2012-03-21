@@ -77,12 +77,6 @@ insanity_threaded_test_start (InsanityTest * itest)
 }
 
 static void
-insanity_threaded_test_test (InsanityThreadedTest * test)
-{
-  (void) test;
-}
-
-static void
 insanity_threaded_test_init (InsanityThreadedTest * test)
 {
   InsanityThreadedTestPrivateData *priv = G_TYPE_INSTANCE_GET_PRIVATE (test,

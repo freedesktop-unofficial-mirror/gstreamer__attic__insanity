@@ -68,7 +68,6 @@ enum
 static guint setup_signal;
 static guint start_signal;
 static guint stop_signal;
-static guint test_signal;
 static guint teardown_signal;
 static GParamSpec *properties[N_PROPERTIES] = { NULL, };
 
@@ -342,47 +341,47 @@ insanity_test_record_stop_time (InsanityTest * test)
 }
 
 #define INSANITY_TEST_INTERFACE "net.gstreamer.Insanity.Test"
-static const char *introspect_response_template =
-  "<!DOCTYPE node PUBLIC \"-//freedesktop//DTD D-BUS Object Introspection 1.0//EN\" "
-  "\"http://www.freedesktop.org/standards/dbus/1.0/introspect.dtd\">\n"
-  "<node name=\"/net/gstreamer/Insanity/Test/Test%s\">\n"
-  "  <interface name=\"org.freedesktop.DBus.Introspectable\">\n"
-  "    <method name=\"Introspect\">\n"
-  "      <arg name=\"xml_data\" direction=\"out\" type=\"s\" />\n"
-  "    </method>\n"
-  "  </interface>\n"
-  "  <interface name=\"" INSANITY_TEST_INTERFACE "\">\n"
-  "    <method name=\"remoteSetUp\">\n"
-  "      <arg name=\"success\" direction=\"out\" type=\"b\" />\n"
-  "      <arg name=\"arguments\" direction=\"in\" type=\"a{sv}\" />\n"
-  "      <arg name=\"outputfiles\" direction=\"in\" type=\"a{ss}\" />\n"
-  "    </method>\n"
-  "    <method name=\"remoteStart\">\n"
-  "      <arg name=\"success\" direction=\"out\" type=\"b\" />\n"
-  "      <arg name=\"arguments\" direction=\"in\" type=\"a{sv}\" />\n"
-  "      <arg name=\"outputfiles\" direction=\"in\" type=\"a{ss}\" />\n"
-  "    </method>\n"
-  "    <method name=\"remoteStop\">\n"
-  "    </method>\n"
-  "    <method name=\"remoteTearDown\">\n"
-  "    </method>\n"
-  "    <signal name=\"remoteReadySignal\">\n"
-  "    </signal>\n"
-  "    <signal name=\"remoteStopSignal\">\n"
-  "    </signal>\n"
-  "    <signal name=\"remoteValidateStepSignal\">\n"
-  "      <arg name=\"name\" type=\"s\" />\n"
-  "      <arg name=\"success\" type=\"b\" />\n"
-  "      <arg name=\"description\" type=\"s\" />\n"
-  "    </signal>\n"
-  "    <signal name=\"remoteExtraInfoSignal\">\n"
-  "      <arg name=\"name\" type=\"s\" />\n"
-  "      <arg name=\"value\" type=\"v\" />\n"
-  "    </signal>\n"
-  "    <signal name=\"remotePingSignal\">\n"
-  "    </signal>\n"
-  "  </interface>\n"
-  "</node>\n";
+#define INTROSPECT_RESPONSE_TEMPLATE \
+  "<!DOCTYPE node PUBLIC \"-//freedesktop//DTD D-BUS Object Introspection 1.0//EN\" " \
+  "\"http://www.freedesktop.org/standards/dbus/1.0/introspect.dtd\">\n" \
+  "<node name=\"/net/gstreamer/Insanity/Test/Test%s\">\n" \
+  "  <interface name=\"org.freedesktop.DBus.Introspectable\">\n" \
+  "    <method name=\"Introspect\">\n" \
+  "      <arg name=\"xml_data\" direction=\"out\" type=\"s\" />\n" \
+  "    </method>\n" \
+  "  </interface>\n" \
+  "  <interface name=\"" INSANITY_TEST_INTERFACE "\">\n" \
+  "    <method name=\"remoteSetUp\">\n" \
+  "      <arg name=\"success\" direction=\"out\" type=\"b\" />\n" \
+  "      <arg name=\"arguments\" direction=\"in\" type=\"a{sv}\" />\n" \
+  "      <arg name=\"outputfiles\" direction=\"in\" type=\"a{ss}\" />\n" \
+  "    </method>\n" \
+  "    <method name=\"remoteStart\">\n" \
+  "      <arg name=\"success\" direction=\"out\" type=\"b\" />\n" \
+  "      <arg name=\"arguments\" direction=\"in\" type=\"a{sv}\" />\n" \
+  "      <arg name=\"outputfiles\" direction=\"in\" type=\"a{ss}\" />\n" \
+  "    </method>\n" \
+  "    <method name=\"remoteStop\">\n" \
+  "    </method>\n" \
+  "    <method name=\"remoteTearDown\">\n" \
+  "    </method>\n" \
+  "    <signal name=\"remoteReadySignal\">\n" \
+  "    </signal>\n" \
+  "    <signal name=\"remoteStopSignal\">\n" \
+  "    </signal>\n" \
+  "    <signal name=\"remoteValidateStepSignal\">\n" \
+  "      <arg name=\"name\" type=\"s\" />\n" \
+  "      <arg name=\"success\" type=\"b\" />\n" \
+  "      <arg name=\"description\" type=\"s\" />\n" \
+  "    </signal>\n" \
+  "    <signal name=\"remoteExtraInfoSignal\">\n" \
+  "      <arg name=\"name\" type=\"s\" />\n" \
+  "      <arg name=\"value\" type=\"v\" />\n" \
+  "    </signal>\n" \
+  "    <signal name=\"remotePingSignal\">\n" \
+  "    </signal>\n" \
+  "  </interface>\n" \
+  "</node>\n"
 
 static gboolean
 send_signal (DBusConnection * conn, const char *signal_name,
@@ -796,10 +795,8 @@ foreach_dbus_array (DBusMessageIter * iter, int (*f) (const char *key,
   dbus_int64_t int64_value;
   double double_value;
   GValue value = { 0 };
-  DBusMessageIter array_value;
   int type;
   int ret;
-  void *ptr;
 
   type = dbus_message_iter_get_arg_type (iter);
   if (type != DBUS_TYPE_ARRAY) {
@@ -1260,9 +1257,7 @@ listen (InsanityTest * test, const char *bus_address, const char *uuid)
     /* check this is a method call for the right interface & method */
     if (dbus_message_is_method_call (msg, "org.freedesktop.DBus.Introspectable",
             "Introspect")) {
-      char *introspect_response =
-          g_malloc (strlen (introspect_response_template) + strlen (uuid) + 1);
-      sprintf (introspect_response, introspect_response_template, uuid);
+      char *introspect_response = g_strdup_printf (INTROSPECT_RESPONSE_TEMPLATE, uuid);
       reply = dbus_message_new_method_return (msg);
       dbus_message_iter_init_append (reply, &args);
       if (!dbus_message_iter_append_basic (&args, DBUS_TYPE_STRING,

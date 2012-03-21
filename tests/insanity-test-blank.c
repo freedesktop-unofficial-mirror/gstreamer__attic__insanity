@@ -35,15 +35,17 @@ static gboolean
 blank_test_start (InsanityTest * test)
 {
   GValue value, zero = { 0 };
+  const char *fn;
+
   value = zero;
+
   if (insanity_test_get_argument (test, "uri", &value)) {
     const char *uri = g_value_get_string (&value);
     printf ("uri: %s\n", uri);
     g_value_unset (&value);
   }
 
-  const char *fn =
-      insanity_test_get_output_filename (test, "dummy-output-file");
+  fn = insanity_test_get_output_filename (test, "dummy-output-file");
   printf ("fn: %s\n", fn);
   fn = insanity_test_get_output_filename (test, "dummy-output-file-global");
   printf ("fn-global: %s\n", fn);
