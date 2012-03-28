@@ -1053,12 +1053,19 @@ insanity_test_get_output_filename (InsanityTest * test, const char *key)
 {
   gpointer ptr;
   char *fn = NULL;
+  OutputFileItem *of;
 
   g_return_val_if_fail (INSANITY_IS_TEST (test), NULL);
   g_return_val_if_fail (key != NULL, NULL);
   g_return_val_if_fail (check_valid_label (key), NULL);
 
   LOCK (test);
+
+  of = g_hash_table_lookup (test->priv->test_output_files, key);
+  if (of && !of->global && test->priv->runlevel != rl_started && test->priv->runlevel != rl_setup) {
+    g_critical ("Non-global output filename \'%s' requested but not set up yet\n", key);
+    goto done;
+  }
 
   ptr = g_hash_table_lookup (test->priv->filename_cache, key);
   if (ptr) {
@@ -1082,6 +1089,7 @@ insanity_test_get_output_filename (InsanityTest * test, const char *key)
     g_hash_table_insert (test->priv->filename_cache, g_strdup (key), fn);
   }
 
+done:
   UNLOCK (test);
 
   return fn;
