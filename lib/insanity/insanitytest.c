@@ -2246,3 +2246,13 @@ void insanity_test_printf (InsanityTest *test, const char *format,...)
   va_end (ap);
 }
 
+void insanity_test_add_string_argument(InsanityTest *test, const char *label, const char *description, const char *full_description, gboolean global, const char *default_value)
+{
+  GValue v = {0};
+
+  g_value_init (&v, G_TYPE_STRING);
+  g_value_set_string (&v, default_value);
+  insanity_test_add_argument (test, label, description, full_description, global, &v);
+  g_value_unset (&v);
+}
+

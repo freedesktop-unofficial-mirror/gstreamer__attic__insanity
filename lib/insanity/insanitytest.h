@@ -105,6 +105,9 @@ void insanity_test_printf (InsanityTest *test, const char *format,...);
 
 gboolean insanity_test_run(InsanityTest *test, int *argc, char ***argv);
 
+/* convenience functions to avoid the heavy GValue use on common uses */
+void insanity_test_add_string_argument(InsanityTest *test, const char *label, const char *description, const char *full_description, gboolean global, const char *default_value);
+
 G_END_DECLS
 
 #endif
