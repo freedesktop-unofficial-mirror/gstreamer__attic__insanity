@@ -109,6 +109,7 @@ struct _InsanityTestPrivateData
   gboolean standalone;
   GHashTable *checklist_results;
   RunLevel runlevel;
+  gint iteration;
   gboolean verbose;
 
   /* test metadata */
@@ -729,6 +730,7 @@ on_setup (InsanityTest * test)
   }
 
   test->priv->runlevel = rl_setup;
+  test->priv->iteration = 0;
   UNLOCK (test);
   return ret;
 }
@@ -760,6 +762,7 @@ on_stop (InsanityTest * test)
         DBUS_TYPE_INVALID);
   }
   test->priv->runlevel = rl_setup;
+  test->priv->iteration++;
   UNLOCK (test);
 }
 
@@ -1010,7 +1013,7 @@ insanity_test_get_argument (InsanityTest * test, const char *key,
 
   arg = g_hash_table_lookup (test->priv->test_arguments, key);
 
-  if (arg && !arg->global && test->priv->runlevel != rl_started && test->priv->runlevel != rl_setup) {
+  if (!arg->global && test->priv->runlevel != rl_started && test->priv->runlevel != rl_setup) {
     g_critical ("Non-global argument \'%s' requested but not set up yet\n", key);
     goto done;
   }
@@ -1064,7 +1067,7 @@ insanity_test_get_output_filename (InsanityTest * test, const char *key)
   LOCK (test);
 
   of = g_hash_table_lookup (test->priv->test_output_files, key);
-  if (of && !of->global && test->priv->runlevel != rl_started && test->priv->runlevel != rl_setup) {
+  if (!of->global && test->priv->runlevel != rl_started && test->priv->runlevel != rl_setup) {
     g_critical ("Non-global output filename \'%s' requested but not set up yet\n", key);
     goto done;
   }
@@ -1087,7 +1090,15 @@ insanity_test_get_output_filename (InsanityTest * test, const char *key)
       }
     }
 
-    fn = g_build_filename (test->priv->tmpdir, key, NULL);
+    if (of->global) {
+      fn = g_build_filename (test->priv->tmpdir, key, NULL);
+    } else {
+      gchar *filename;
+
+      filename = g_strdup_printf ("key-%d", test->priv->iteration);
+      fn = g_build_filename (test->priv->tmpdir, filename, NULL);
+      g_free (filename);
+    }
     g_hash_table_insert (test->priv->filename_cache, g_strdup (key), fn);
   }
 
