@@ -2041,6 +2041,7 @@ insanity_test_add_checklist_item (InsanityTest * test, const char *label,
   g_return_if_fail (label != NULL);
   g_return_if_fail (check_valid_label (label));
   g_return_if_fail (description != NULL);
+  g_return_if_fail (g_hash_table_lookup (test->priv->test_checklist, label) == NULL);
 
   i = g_slice_new (ChecklistItem);
   i->description = g_strdup (description);
@@ -2081,6 +2082,8 @@ insanity_test_add_argument (InsanityTest * test, const char *label,
   g_return_if_fail (INSANITY_IS_TEST (test));
   g_return_if_fail (label != NULL);
   g_return_if_fail (check_valid_label (label));
+  g_return_if_fail (g_hash_table_lookup (test->priv->test_arguments, label) == NULL);
+  g_return_if_fail (g_hash_table_lookup (test->priv->test_output_files, label) == NULL);
   g_return_if_fail (description != NULL);
   g_return_if_fail (G_IS_VALUE (default_value));
 
@@ -2111,6 +2114,7 @@ insanity_test_add_extra_info (InsanityTest * test, const char *label,
   g_return_if_fail (INSANITY_IS_TEST (test));
   g_return_if_fail (label != NULL);
   g_return_if_fail (check_valid_label (label));
+  g_return_if_fail (g_hash_table_lookup (test->priv->test_extra_infos, label) == NULL);
   g_return_if_fail (description != NULL);
 
   insanity_add_metadata_entry (test->priv->test_extra_infos, label,
@@ -2144,6 +2148,8 @@ insanity_test_add_output_file (InsanityTest * test, const char *label,
   g_return_if_fail (INSANITY_IS_TEST (test));
   g_return_if_fail (label != NULL);
   g_return_if_fail (check_valid_label (label));
+  g_return_if_fail (g_hash_table_lookup (test->priv->test_output_files, label) == NULL);
+  g_return_if_fail (g_hash_table_lookup (test->priv->test_arguments, label) == NULL);
   g_return_if_fail (description != NULL);
 
   of = g_slice_new (OutputFileItem);
