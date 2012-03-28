@@ -1003,6 +1003,7 @@ insanity_test_get_argument (InsanityTest * test, const char *key,
   g_return_val_if_fail (INSANITY_IS_TEST (test), FALSE);
   g_return_val_if_fail (key != NULL, FALSE);
   g_return_val_if_fail (check_valid_label (key), FALSE);
+  g_return_val_if_fail (g_hash_table_lookup (test->priv->test_arguments, key) != NULL, FALSE);
   g_return_val_if_fail (value != NULL, FALSE);
 
   LOCK (test);
@@ -1058,6 +1059,7 @@ insanity_test_get_output_filename (InsanityTest * test, const char *key)
   g_return_val_if_fail (INSANITY_IS_TEST (test), NULL);
   g_return_val_if_fail (key != NULL, NULL);
   g_return_val_if_fail (check_valid_label (key), NULL);
+  g_return_val_if_fail (g_hash_table_lookup (test->priv->test_output_files, key) != NULL, NULL);
 
   LOCK (test);
 
