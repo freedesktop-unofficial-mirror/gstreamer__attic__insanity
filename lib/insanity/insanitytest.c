@@ -1629,15 +1629,17 @@ insanity_report_failed_tests (InsanityTest *test, gboolean verbose)
 static gboolean
 insanity_test_run_standalone (InsanityTest * test)
 {
-  gboolean timeout = FALSE;
+  gboolean timeout = FALSE, started;
 
   if (on_setup (test)) {
     LOCK_SIGNAL (test);
-    if (on_start (test)) {
+    started = on_start (test);
+    if (started) {
       timeout = WAIT_TIMEOUT (test);
     }
     UNLOCK_SIGNAL (test);
-    on_stop (test);
+    if (started)
+      on_stop (test);
     on_teardown (test);
   }
   return (!timeout && insanity_report_failed_tests (test, TRUE) == 0);
