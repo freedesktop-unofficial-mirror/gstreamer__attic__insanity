@@ -2427,3 +2427,164 @@ insanity_test_add_boolean_argument (InsanityTest * test, const char *label,
       global, &v);
   g_value_unset (&v);
 }
+
+gboolean
+insanity_test_get_string_argument (InsanityTest * test, const char *key,
+    char **value)
+{
+  GValue v = { 0 };
+  gboolean ret = FALSE;
+
+  ret = insanity_test_get_argument (test, key, &v);
+  if (!ret)
+    goto done;
+  if (!G_VALUE_HOLDS_STRING (&v)) {
+    ret = FALSE;
+    goto done;
+  }
+
+  *value = g_value_dup_string (&v);
+  ret = TRUE;
+
+done:
+  g_value_unset (&v);
+  return ret;
+}
+
+gboolean
+insanity_test_get_int_argument (InsanityTest * test, const char *key,
+    gint32 * value)
+{
+  GValue v = { 0 };
+  gboolean ret = FALSE;
+
+  ret = insanity_test_get_argument (test, key, &v);
+  if (!ret)
+    goto done;
+  if (!G_VALUE_HOLDS_INT (&v)) {
+    ret = FALSE;
+    goto done;
+  }
+
+  *value = g_value_get_int (&v);
+  ret = TRUE;
+
+done:
+  g_value_unset (&v);
+  return ret;
+}
+
+gboolean
+insanity_test_get_uint_argument (InsanityTest * test, const char *key,
+    guint32 * value)
+{
+  GValue v = { 0 };
+  gboolean ret = FALSE;
+
+  ret = insanity_test_get_argument (test, key, &v);
+  if (!ret)
+    goto done;
+  if (!G_VALUE_HOLDS_UINT (&v)) {
+    ret = FALSE;
+    goto done;
+  }
+
+  *value = g_value_get_uint (&v);
+  ret = TRUE;
+
+done:
+  g_value_unset (&v);
+  return ret;
+}
+
+gboolean
+insanity_test_get_int64_argument (InsanityTest * test, const char *key,
+    gint64 * value)
+{
+  GValue v = { 0 };
+  gboolean ret = FALSE;
+
+  ret = insanity_test_get_argument (test, key, &v);
+  if (!ret)
+    goto done;
+  if (!G_VALUE_HOLDS_INT64 (&v)) {
+    ret = FALSE;
+    goto done;
+  }
+
+  *value = g_value_get_int64 (&v);
+  ret = TRUE;
+
+done:
+  g_value_unset (&v);
+  return ret;
+}
+
+gboolean
+insanity_test_get_uint64_argument (InsanityTest * test, const char *key,
+    guint64 * value)
+{
+  GValue v = { 0 };
+  gboolean ret = FALSE;
+
+  ret = insanity_test_get_argument (test, key, &v);
+  if (!ret)
+    goto done;
+  if (!G_VALUE_HOLDS_UINT64 (&v)) {
+    ret = FALSE;
+    goto done;
+  }
+
+  *value = g_value_get_uint64 (&v);
+  ret = TRUE;
+
+done:
+  g_value_unset (&v);
+  return ret;
+}
+
+gboolean
+insanity_test_get_double_argument (InsanityTest * test, const char *key,
+    gdouble * value)
+{
+  GValue v = { 0 };
+  gboolean ret = FALSE;
+
+  ret = insanity_test_get_argument (test, key, &v);
+  if (!ret)
+    goto done;
+  if (!G_VALUE_HOLDS_DOUBLE (&v)) {
+    ret = FALSE;
+    goto done;
+  }
+
+  *value = g_value_get_double (&v);
+  ret = TRUE;
+
+done:
+  g_value_unset (&v);
+  return ret;
+}
+
+gboolean
+insanity_test_get_boolean_argument (InsanityTest * test, const char *key,
+    gboolean * value)
+{
+  GValue v = { 0 };
+  gboolean ret = FALSE;
+
+  ret = insanity_test_get_argument (test, key, &v);
+  if (!ret)
+    goto done;
+  if (!G_VALUE_HOLDS_BOOLEAN (&v)) {
+    ret = FALSE;
+    goto done;
+  }
+
+  *value = g_value_get_boolean (&v);
+  ret = TRUE;
+
+done:
+  g_value_unset (&v);
+  return ret;
+}

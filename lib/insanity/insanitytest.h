@@ -114,6 +114,14 @@ void insanity_test_add_uint64_argument(InsanityTest *test, const char *label, co
 void insanity_test_add_double_argument(InsanityTest *test, const char *label, const char *description, const char *full_description, gboolean global, gdouble default_value);
 void insanity_test_add_boolean_argument(InsanityTest *test, const char *label, const char *description, const char *full_description, gboolean global, gboolean default_value);
 
+gboolean insanity_test_get_string_argument(InsanityTest *test, const char *key, char **value);
+gboolean insanity_test_get_int_argument(InsanityTest *test, const char *key, gint32 *value);
+gboolean insanity_test_get_uint_argument(InsanityTest *test, const char *key, guint32 *value);
+gboolean insanity_test_get_int64_argument(InsanityTest *test, const char *key, gint64 *value);
+gboolean insanity_test_get_uint64_argument(InsanityTest *test, const char *key, guint64 *value);
+gboolean insanity_test_get_double_argument(InsanityTest *test, const char *key, gdouble *value);
+gboolean insanity_test_get_boolean_argument(InsanityTest *test, const char *key, gboolean *value);
+
 G_END_DECLS
 
 #endif
