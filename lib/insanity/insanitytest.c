@@ -515,6 +515,18 @@ check_valid_label (const char *label)
   return TRUE;
 }
 
+static gboolean
+check_valid_type (GType type)
+{
+  return (type == G_TYPE_STRING ||
+          type == G_TYPE_INT ||
+          type == G_TYPE_UINT ||
+          type == G_TYPE_INT64 ||
+          type == G_TYPE_UINT64 ||
+          type == G_TYPE_DOUBLE ||
+          type == G_TYPE_BOOLEAN);
+}
+
 static void
 insanity_test_ping_unlocked (InsanityTest * test)
 {
@@ -576,7 +588,11 @@ insanity_test_set_extra_info_internal (InsanityTest * test, const char *name,
   GType glib_type;
   const char* dbus_type;
   dbus_int32_t int32_value;
+  dbus_uint32_t uint32_value;
   dbus_int64_t int64_value;
+  dbus_uint64_t uint64_value;
+  dbus_bool_t bool_value;
+  double double_value;
   const char *string_value;
   void *dataptr = NULL;
 
@@ -597,10 +613,26 @@ insanity_test_set_extra_info_internal (InsanityTest * test, const char *name,
     int32_value = g_value_get_int (data);
     dbus_type = "i";
     dataptr = &int32_value;
+  } else if (glib_type == G_TYPE_UINT) {
+    uint32_value = g_value_get_uint (data);
+    dbus_type = "u";
+    dataptr = &uint32_value;
   } else if (glib_type == G_TYPE_INT64) {
     int64_value = g_value_get_int64 (data);
-    dbus_type = "l";
+    dbus_type = "x";
     dataptr = &int64_value;
+  } else if (glib_type == G_TYPE_UINT64) {
+    uint64_value = g_value_get_uint64 (data);
+    dbus_type = "t";
+    dataptr = &uint64_value;
+  } else if (glib_type == G_TYPE_DOUBLE) {
+    double_value = g_value_get_double (data);
+    dbus_type = "d";
+    dataptr = &double_value;
+  } else if (glib_type == G_TYPE_BOOLEAN) {
+    bool_value = g_value_get_boolean (data) ? 0 : 1;
+    dbus_type = "b";
+    dataptr = &bool_value;
   } else if (glib_type == G_TYPE_STRING) {
     string_value = g_value_get_string (data);
     dbus_type = "s";
@@ -641,6 +673,7 @@ insanity_test_set_extra_info (InsanityTest * test, const char *name,
   g_return_if_fail (name != NULL);
   g_return_if_fail (check_valid_label (name));
   g_return_if_fail (G_IS_VALUE (data));
+  g_return_if_fail (check_valid_type (G_VALUE_TYPE (data)));
 
   insanity_test_ping (test);
   insanity_test_set_extra_info_internal (test, name, data, FALSE);
@@ -2101,6 +2134,7 @@ insanity_test_add_argument (InsanityTest * test, const char *label,
   g_return_if_fail (g_hash_table_lookup (test->priv->test_output_files, label) == NULL);
   g_return_if_fail (description != NULL);
   g_return_if_fail (G_IS_VALUE (default_value));
+  g_return_if_fail (check_valid_type (G_VALUE_TYPE (default_value)));
 
   arg = g_slice_alloc0 (sizeof (Argument));
   arg->global = global;
