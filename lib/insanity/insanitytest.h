@@ -107,6 +107,12 @@ gboolean insanity_test_run(InsanityTest *test, int *argc, char ***argv);
 
 /* convenience functions to avoid the heavy GValue use on common uses */
 void insanity_test_add_string_argument(InsanityTest *test, const char *label, const char *description, const char *full_description, gboolean global, const char *default_value);
+void insanity_test_add_int_argument(InsanityTest *test, const char *label, const char *description, const char *full_description, gboolean global, gint32 default_value);
+void insanity_test_add_uint_argument(InsanityTest *test, const char *label, const char *description, const char *full_description, gboolean global, guint32 default_value);
+void insanity_test_add_int64_argument(InsanityTest *test, const char *label, const char *description, const char *full_description, gboolean global, gint64 default_value);
+void insanity_test_add_uint64_argument(InsanityTest *test, const char *label, const char *description, const char *full_description, gboolean global, guint64 default_value);
+void insanity_test_add_double_argument(InsanityTest *test, const char *label, const char *description, const char *full_description, gboolean global, gdouble default_value);
+void insanity_test_add_boolean_argument(InsanityTest *test, const char *label, const char *description, const char *full_description, gboolean global, gboolean default_value);
 
 G_END_DECLS
 

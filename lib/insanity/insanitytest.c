@@ -2290,3 +2290,63 @@ void insanity_test_add_string_argument(InsanityTest *test, const char *label, co
   g_value_unset (&v);
 }
 
+void insanity_test_add_int_argument(InsanityTest *test, const char *label, const char *description, const char *full_description, gboolean global, gint32 default_value)
+{
+  GValue v = {0};
+
+  g_value_init (&v, G_TYPE_INT);
+  g_value_set_int (&v, default_value);
+  insanity_test_add_argument (test, label, description, full_description, global, &v);
+  g_value_unset (&v);
+}
+
+void insanity_test_add_uint_argument(InsanityTest *test, const char *label, const char *description, const char *full_description, gboolean global, guint32 default_value)
+{
+  GValue v = {0};
+
+  g_value_init (&v, G_TYPE_UINT);
+  g_value_set_uint (&v, default_value);
+  insanity_test_add_argument (test, label, description, full_description, global, &v);
+  g_value_unset (&v);
+}
+
+void insanity_test_add_int64_argument(InsanityTest *test, const char *label, const char *description, const char *full_description, gboolean global, gint64 default_value)
+{
+  GValue v = {0};
+
+  g_value_init (&v, G_TYPE_INT64);
+  g_value_set_int64 (&v, default_value);
+  insanity_test_add_argument (test, label, description, full_description, global, &v);
+  g_value_unset (&v);
+}
+
+void insanity_test_add_uint64_argument(InsanityTest *test, const char *label, const char *description, const char *full_description, gboolean global, guint64 default_value)
+{
+  GValue v = {0};
+
+  g_value_init (&v, G_TYPE_UINT64);
+  g_value_set_uint64 (&v, default_value);
+  insanity_test_add_argument (test, label, description, full_description, global, &v);
+  g_value_unset (&v);
+}
+
+void insanity_test_add_double_argument(InsanityTest *test, const char *label, const char *description, const char *full_description, gboolean global, gdouble default_value)
+{
+  GValue v = {0};
+
+  g_value_init (&v, G_TYPE_DOUBLE);
+  g_value_set_double (&v, default_value);
+  insanity_test_add_argument (test, label, description, full_description, global, &v);
+  g_value_unset (&v);
+}
+
+void insanity_test_add_boolean_argument(InsanityTest *test, const char *label, const char *description, const char *full_description, gboolean global, gboolean default_value)
+{
+  GValue v = {0};
+
+  g_value_init (&v, G_TYPE_BOOLEAN);
+  g_value_set_boolean (&v, default_value);
+  insanity_test_add_argument (test, label, description, full_description, global, &v);
+  g_value_unset (&v);
+}
+
