@@ -75,7 +75,8 @@ static GParamSpec *properties[N_PROPERTIES] = { NULL, };
 #define USE_NEW_GLIB_MUTEX_API
 #endif
 
-typedef enum RunLevel {
+typedef enum RunLevel
+{
   rl_idle,
   rl_setup,
   rl_started
@@ -142,16 +143,19 @@ WAIT_TIMEOUT (InsanityTest * test)
     gboolean signalled;
 
     do {
-      test->priv->timeout_end_time = g_get_monotonic_time () + test->priv->timeout * G_TIME_SPAN_SECOND;
-      signalled = g_cond_wait_until (&test->priv->cond, &test->priv->signal_lock, test->priv->timeout_end_time);
+      test->priv->timeout_end_time =
+          g_get_monotonic_time () + test->priv->timeout * G_TIME_SPAN_SECOND;
+      signalled =
+          g_cond_wait_until (&test->priv->cond, &test->priv->signal_lock,
+          test->priv->timeout_end_time);
       current_time = g_get_monotonic_time ();
     } while (!signalled && current_time < test->priv->timeout_end_time);
 
     return !signalled;
- } else {
-   g_cond_wait (&test->priv->cond, &test->priv->signal_lock);
-   return FALSE;
- }
+  } else {
+    g_cond_wait (&test->priv->cond, &test->priv->signal_lock);
+    return FALSE;
+  }
 }
 #else
 #define LOCK(test) g_mutex_lock((test)->priv->lock)
@@ -170,10 +174,12 @@ WAIT_TIMEOUT (InsanityTest * test)
     gboolean signalled;
 
     do {
-      test->priv->timeout_end_time = g_get_monotonic_time () + test->priv->timeout * G_TIME_SPAN_SECOND;
+      test->priv->timeout_end_time =
+          g_get_monotonic_time () + test->priv->timeout * G_TIME_SPAN_SECOND;
       tmp.tv_sec = test->priv->timeout_end_time / G_USEC_PER_SEC;
       tmp.tv_usec = test->priv->timeout_end_time % G_USEC_PER_SEC;
-      signalled = g_cond_timed_wait (test->priv->cond, test->priv->signal_lock, &tmp);
+      signalled =
+          g_cond_timed_wait (test->priv->cond, test->priv->signal_lock, &tmp);
       current_time = g_get_monotonic_time ();
     } while (!signalled && current_time < test->priv->timeout_end_time);
 
@@ -185,19 +191,22 @@ WAIT_TIMEOUT (InsanityTest * test)
 }
 #endif
 
-typedef struct _Argument {
+typedef struct _Argument
+{
   gboolean global;
   char *description;
   GValue default_value;
   char *full_description;
 } Argument;
 
-typedef struct _ChecklistItem {
+typedef struct _ChecklistItem
+{
   char *description;
   char *likely_error;
 } ChecklistItem;
 
-typedef struct _OutputFileItem {
+typedef struct _OutputFileItem
+{
   char *description;
   gboolean global;
 } OutputFileItem;
@@ -226,11 +235,11 @@ free_checklist_item (void *ptr)
 static void
 free_argument (void *ptr)
 {
-  Argument *arg = (Argument *)ptr;
+  Argument *arg = (Argument *) ptr;
 
-  g_free(arg->description);
-  g_value_unset(&arg->default_value);
-  g_free(arg->full_description);
+  g_free (arg->description);
+  g_value_unset (&arg->default_value);
+  g_free (arg->full_description);
   g_slice_free1 (sizeof (Argument), ptr);
 }
 
@@ -410,17 +419,17 @@ send_signal (DBusConnection * conn, const char *signal_name,
     while (iter_type != DBUS_TYPE_INVALID) {
       if (dbus_type_is_basic (iter_type)) {
         const void *value;
-        
+
         value = va_arg (ap, const void *);
         if (!dbus_message_iter_append_basic (&iter, iter_type, value)) {
-          g_error("Out Of Memory!\n");
+          g_error ("Out Of Memory!\n");
           va_end (ap);
           goto fail;
         }
       } else if (iter_type == DBUS_TYPE_VARIANT) {
         DBusMessageIter sub;
         DBusSignatureIter siter;
-        const char * variant_type;
+        const char *variant_type;
         int variant_type_id;
         const void *value;
 
@@ -428,7 +437,8 @@ send_signal (DBusConnection * conn, const char *signal_name,
         value = va_arg (ap, const void *);
 
         if (!dbus_signature_validate_single (variant_type, NULL)) {
-          g_critical ("Invalid or unsupported DBus type \'%s\'\n", variant_type);
+          g_critical ("Invalid or unsupported DBus type \'%s\'\n",
+              variant_type);
           va_end (ap);
           goto fail;
         }
@@ -437,12 +447,14 @@ send_signal (DBusConnection * conn, const char *signal_name,
         variant_type_id = dbus_signature_iter_get_current_type (&siter);
 
         if (!dbus_type_is_basic (variant_type_id)) {
-          g_critical ("Invalid or unsupported DBus type \'%s\'\n", variant_type);
+          g_critical ("Invalid or unsupported DBus type \'%s\'\n",
+              variant_type);
           va_end (ap);
           goto fail;
         }
 
-        if (!dbus_message_iter_open_container (&iter, DBUS_TYPE_VARIANT, variant_type, &sub)) {
+        if (!dbus_message_iter_open_container (&iter, DBUS_TYPE_VARIANT,
+                variant_type, &sub)) {
           g_error ("Out Of Memory!\n");
           va_end (ap);
           goto fail;
@@ -497,20 +509,16 @@ check_valid_label (const char *label)
   if (!label)
     return FALSE;
 
-  if ((label[0] < 'A' || label[0] > 'Z') &&
-      (label[0] < 'a' || label[0] > 'z'))
+  if ((label[0] < 'A' || label[0] > 'Z') && (label[0] < 'a' || label[0] > 'z'))
     return FALSE;
 
-  for (p = label; *p != 0; p++)
-    {
-      gchar c = *p;
-      
-      if (c != '-' && c != '.' &&
-	  (c < '0' || c > '9') &&
-	  (c < 'A' || c > 'Z') &&
-	  (c < 'a' || c > 'z'))
-	return FALSE;
-    }
+  for (p = label; *p != 0; p++) {
+    gchar c = *p;
+
+    if (c != '-' && c != '.' &&
+        (c < '0' || c > '9') && (c < 'A' || c > 'Z') && (c < 'a' || c > 'z'))
+      return FALSE;
+  }
 
   return TRUE;
 }
@@ -519,21 +527,21 @@ static gboolean
 check_valid_type (GType type)
 {
   return (type == G_TYPE_STRING ||
-          type == G_TYPE_INT ||
-          type == G_TYPE_UINT ||
-          type == G_TYPE_INT64 ||
-          type == G_TYPE_UINT64 ||
-          type == G_TYPE_DOUBLE ||
-          type == G_TYPE_BOOLEAN);
+      type == G_TYPE_INT ||
+      type == G_TYPE_UINT ||
+      type == G_TYPE_INT64 ||
+      type == G_TYPE_UINT64 || type == G_TYPE_DOUBLE || type == G_TYPE_BOOLEAN);
 }
 
 static void
 insanity_test_ping_unlocked (InsanityTest * test)
 {
   if (!test->priv->standalone) {
-    send_signal (test->priv->conn, "remotePingSignal", test->priv->name, DBUS_TYPE_INVALID);
+    send_signal (test->priv->conn, "remotePingSignal", test->priv->name,
+        DBUS_TYPE_INVALID);
   } else {
-    test->priv->timeout_end_time = g_get_monotonic_time () + test->priv->timeout * G_TIME_SPAN_SECOND;
+    test->priv->timeout_end_time =
+        g_get_monotonic_time () + test->priv->timeout * G_TIME_SPAN_SECOND;
   }
 }
 
@@ -555,7 +563,8 @@ insanity_test_validate_step (InsanityTest * test, const char *name,
   g_return_if_fail (INSANITY_IS_TEST (test));
   g_return_if_fail (name != NULL);
   g_return_if_fail (check_valid_label (name));
-  g_return_if_fail (g_hash_table_lookup (test->priv->test_checklist, name) != NULL);
+  g_return_if_fail (g_hash_table_lookup (test->priv->test_checklist,
+          name) != NULL);
 
   LOCK (test);
 
@@ -563,21 +572,20 @@ insanity_test_validate_step (InsanityTest * test, const char *name,
 
   if (test->priv->standalone) {
     if (description) {
-      printf("step: %s: %s (%s)\n", name, success ? "PASS" : "FAIL",
+      printf ("step: %s: %s (%s)\n", name, success ? "PASS" : "FAIL",
           description);
+    } else {
+      printf ("step: %s: %s\n", name, success ? "PASS" : "FAIL");
     }
-    else {
-      printf("step: %s: %s\n", name, success ? "PASS" : "FAIL");
-    }
-  }
-  else {
+  } else {
     const char *desc = description ? description : "";
     send_signal (test->priv->conn, "remoteValidateStepSignal", test->priv->name,
         DBUS_TYPE_STRING, &name, DBUS_TYPE_BOOLEAN, &success,
         DBUS_TYPE_STRING, &desc, DBUS_TYPE_INVALID);
   }
 
-  g_hash_table_insert (test->priv->checklist_results, g_strdup (name), (success ? ((gpointer) 1) : ((gpointer) 0)));
+  g_hash_table_insert (test->priv->checklist_results, g_strdup (name),
+      (success ? ((gpointer) 1) : ((gpointer) 0)));
   UNLOCK (test);
 }
 
@@ -586,7 +594,7 @@ insanity_test_set_extra_info_internal (InsanityTest * test, const char *name,
     const GValue * data, gboolean locked)
 {
   GType glib_type;
-  const char* dbus_type;
+  const char *dbus_type;
   dbus_int32_t int32_value;
   dbus_uint32_t uint32_value;
   dbus_int64_t int64_value;
@@ -601,7 +609,7 @@ insanity_test_set_extra_info_internal (InsanityTest * test, const char *name,
 
   if (test->priv->standalone) {
     char *s = g_strdup_value_contents (data);
-    printf("Extra info: %s: %s\n", name, s);
+    printf ("Extra info: %s: %s\n", name, s);
     g_free (s);
     if (!locked)
       UNLOCK (test);
@@ -644,7 +652,8 @@ insanity_test_set_extra_info_internal (InsanityTest * test, const char *name,
 
   if (dataptr) {
     send_signal (test->priv->conn, "remoteExtraInfoSignal", test->priv->name,
-        DBUS_TYPE_STRING, &name, DBUS_TYPE_VARIANT, dbus_type, dataptr, DBUS_TYPE_INVALID);
+        DBUS_TYPE_STRING, &name, DBUS_TYPE_VARIANT, dbus_type, dataptr,
+        DBUS_TYPE_INVALID);
   } else {
     char *s = g_strdup_value_contents (data);
     g_critical ("Unsupported extra info: %s\n", s);
@@ -684,9 +693,9 @@ insanity_test_ping (InsanityTest * test)
 {
   g_return_if_fail (INSANITY_IS_TEST (test));
 
-  LOCK(test);
+  LOCK (test);
   insanity_test_ping_unlocked (test);
-  UNLOCK(test);
+  UNLOCK (test);
 }
 
 static void
@@ -731,7 +740,7 @@ insanity_test_done (InsanityTest * test)
 static gboolean
 on_setup (InsanityTest * test)
 {
-  GValue verbose = {0};
+  GValue verbose = { 0 };
   gboolean ret = TRUE;
 
   LOCK (test);
@@ -930,23 +939,25 @@ foreach_dbus_array (DBusMessageIter * iter, int (*f) (const char *key,
 }
 
 static int
-output_filename_converter (const char *key, const GValue * value, guintptr userdata)
+output_filename_converter (const char *key, const GValue * value,
+    guintptr userdata)
 {
-  InsanityTest *test = (InsanityTest *)userdata;
+  InsanityTest *test = (InsanityTest *) userdata;
 
   if (G_VALUE_TYPE (value) != G_TYPE_STRING) {
     g_critical ("Output filename %s is not a string, ignored\n", key);
     return 0;
   }
 
-  g_hash_table_insert (test->priv->filename_cache, g_strdup (key), g_value_dup_string (value));
+  g_hash_table_insert (test->priv->filename_cache, g_strdup (key),
+      g_value_dup_string (value));
   return 0;
 }
 
 static int
 arg_converter (const char *key, const GValue * value, guintptr userdata)
 {
-  InsanityTest *test = (InsanityTest *)userdata;
+  InsanityTest *test = (InsanityTest *) userdata;
   const Argument *arg;
   GValue *v;
 
@@ -962,7 +973,7 @@ arg_converter (const char *key, const GValue * value, guintptr userdata)
 
   v = g_slice_alloc0 (sizeof (GValue));
   g_value_init (v, G_VALUE_TYPE (value));
-  g_value_copy (value, v); /* src first */
+  g_value_copy (value, v);      /* src first */
   g_hash_table_insert (test->priv->args, g_strdup (key), v);
   return 0;
 }
@@ -970,7 +981,7 @@ arg_converter (const char *key, const GValue * value, guintptr userdata)
 static void
 free_gvalue (void *ptr)
 {
-  GValue *v = (GValue*)ptr;
+  GValue *v = (GValue *) ptr;
 
   g_value_unset (v);
   g_slice_free1 (sizeof (GValue), v);
@@ -995,7 +1006,9 @@ insanity_test_set_args (InsanityTest * test, DBusMessage * msg)
     dbus_message_iter_init (msg, &iter);
 
     /* arguments */
-    test->priv->args = g_hash_table_new_full (&g_str_hash, &g_str_equal, &g_free, &free_gvalue);
+    test->priv->args =
+        g_hash_table_new_full (&g_str_hash, &g_str_equal, &g_free,
+        &free_gvalue);
     ret = foreach_dbus_array (&iter, &arg_converter, (guintptr) test);
     if (ret < 0) {
       UNLOCK (test);
@@ -1008,7 +1021,8 @@ insanity_test_set_args (InsanityTest * test, DBusMessage * msg)
       return;
     }
 
-    ret = foreach_dbus_array (&iter, &output_filename_converter, (guintptr) test);
+    ret =
+        foreach_dbus_array (&iter, &output_filename_converter, (guintptr) test);
     if (ret < 0) {
       UNLOCK (test);
       return;
@@ -1039,15 +1053,18 @@ insanity_test_get_argument (InsanityTest * test, const char *key,
   g_return_val_if_fail (INSANITY_IS_TEST (test), FALSE);
   g_return_val_if_fail (key != NULL, FALSE);
   g_return_val_if_fail (check_valid_label (key), FALSE);
-  g_return_val_if_fail (g_hash_table_lookup (test->priv->test_arguments, key) != NULL, FALSE);
+  g_return_val_if_fail (g_hash_table_lookup (test->priv->test_arguments,
+          key) != NULL, FALSE);
   g_return_val_if_fail (value != NULL, FALSE);
 
   LOCK (test);
 
   arg = g_hash_table_lookup (test->priv->test_arguments, key);
 
-  if (!arg->global && test->priv->runlevel != rl_started && test->priv->runlevel != rl_setup) {
-    g_critical ("Non-global argument \'%s' requested but not set up yet\n", key);
+  if (!arg->global &&test->priv->runlevel != rl_started
+      && test->priv->runlevel != rl_setup) {
+    g_critical ("Non-global argument \'%s' requested but not set up yet\n",
+        key);
     goto done;
   }
 
@@ -1095,13 +1112,17 @@ insanity_test_get_output_filename (InsanityTest * test, const char *key)
   g_return_val_if_fail (INSANITY_IS_TEST (test), NULL);
   g_return_val_if_fail (key != NULL, NULL);
   g_return_val_if_fail (check_valid_label (key), NULL);
-  g_return_val_if_fail (g_hash_table_lookup (test->priv->test_output_files, key) != NULL, NULL);
+  g_return_val_if_fail (g_hash_table_lookup (test->priv->test_output_files,
+          key) != NULL, NULL);
 
   LOCK (test);
 
   of = g_hash_table_lookup (test->priv->test_output_files, key);
-  if (!of->global && test->priv->runlevel != rl_started && test->priv->runlevel != rl_setup) {
-    g_critical ("Non-global output filename \'%s' requested but not set up yet\n", key);
+  if (!of->global &&test->priv->runlevel != rl_started
+      && test->priv->runlevel != rl_setup) {
+    g_critical
+        ("Non-global output filename \'%s' requested but not set up yet\n",
+        key);
     goto done;
   }
 
@@ -1142,7 +1163,8 @@ done:
 }
 
 static void
-insanity_test_dbus_handler_remoteSetup (InsanityTest * test, DBusMessage * msg, DBusMessage *reply)
+insanity_test_dbus_handler_remoteSetup (InsanityTest * test, DBusMessage * msg,
+    DBusMessage * reply)
 {
   DBusMessageIter iter;
   gboolean ret;
@@ -1157,7 +1179,8 @@ insanity_test_dbus_handler_remoteSetup (InsanityTest * test, DBusMessage * msg, 
 }
 
 static void
-insanity_test_dbus_handler_remoteStart (InsanityTest * test, DBusMessage * msg, DBusMessage *reply)
+insanity_test_dbus_handler_remoteStart (InsanityTest * test, DBusMessage * msg,
+    DBusMessage * reply)
 {
   DBusMessageIter iter;
   gboolean ret;
@@ -1172,14 +1195,16 @@ insanity_test_dbus_handler_remoteStart (InsanityTest * test, DBusMessage * msg, 
 }
 
 static void
-insanity_test_dbus_handler_remoteStop (InsanityTest * test, DBusMessage * msg, DBusMessage *reply)
+insanity_test_dbus_handler_remoteStop (InsanityTest * test, DBusMessage * msg,
+    DBusMessage * reply)
 {
   (void) msg;
   on_stop (test);
 }
 
 static void
-insanity_test_dbus_handler_remoteTearDown (InsanityTest * test, DBusMessage * msg, DBusMessage *reply)
+insanity_test_dbus_handler_remoteTearDown (InsanityTest * test,
+    DBusMessage * msg, DBusMessage * reply)
 {
   (void) msg;
   on_teardown (test);
@@ -1190,11 +1215,11 @@ static const struct
   const char *method;
   void (*handler) (InsanityTest *, DBusMessage *, DBusMessage *);
 } dbus_test_handlers[] = {
-  { "remoteSetUp", &insanity_test_dbus_handler_remoteSetup },
-  { "remoteStart", &insanity_test_dbus_handler_remoteStart },
-  { "remoteStop", &insanity_test_dbus_handler_remoteStop },
-  { "remoteTearDown", &insanity_test_dbus_handler_remoteTearDown },
-};
+  {
+  "remoteSetUp", &insanity_test_dbus_handler_remoteSetup}, {
+  "remoteStart", &insanity_test_dbus_handler_remoteStart}, {
+  "remoteStop", &insanity_test_dbus_handler_remoteStop}, {
+"remoteTearDown", &insanity_test_dbus_handler_remoteTearDown},};
 
 static gboolean
 insanity_call_interface (InsanityTest * test, DBusMessage * msg)
@@ -1214,8 +1239,7 @@ insanity_call_interface (InsanityTest * test, DBusMessage * msg)
       LOCK (test);
       if (!dbus_connection_send (test->priv->conn, reply, &serial)) {
         g_error ("Out Of Memory!\n");
-      }
-      else {
+      } else {
         dbus_connection_flush (test->priv->conn);
       }
       UNLOCK (test);
@@ -1294,7 +1318,7 @@ listen (InsanityTest * test, const char *bus_address, const char *uuid)
     msg = dbus_connection_pop_message (conn);
     UNLOCK (test);
     if (NULL == msg) {
-      g_usleep (10000); /* Not good */
+      g_usleep (10000);         /* Not good */
       continue;
     }
 #if 0
@@ -1311,7 +1335,8 @@ listen (InsanityTest * test, const char *bus_address, const char *uuid)
     /* check this is a method call for the right interface & method */
     if (dbus_message_is_method_call (msg, "org.freedesktop.DBus.Introspectable",
             "Introspect")) {
-      char *introspect_response = g_strdup_printf (INTROSPECT_RESPONSE_TEMPLATE, uuid);
+      char *introspect_response =
+          g_strdup_printf (INTROSPECT_RESPONSE_TEMPLATE, uuid);
       reply = dbus_message_new_method_return (msg);
       dbus_message_iter_init_append (reply, &args);
       if (!dbus_message_iter_append_basic (&args, DBUS_TYPE_STRING,
@@ -1335,10 +1360,10 @@ listen (InsanityTest * test, const char *bus_address, const char *uuid)
             INSANITY_TEST_INTERFACE)) {
       insanity_call_interface (test, msg);
     } else {
-      /*printf("Got unhandled method call: interface %s, method %s\n", dbus_message_get_interface(msg), dbus_message_get_member(msg));*/
+      /*printf("Got unhandled method call: interface %s, method %s\n", dbus_message_get_interface(msg), dbus_message_get_member(msg)); */
     }
 
-msg_error:
+  msg_error:
     dbus_message_unref (msg);
   }
 
@@ -1350,7 +1375,7 @@ msg_error:
 
 static void
 output_table (InsanityTest * test, FILE * f, GHashTable * table,
-    const char *name, const char * (*getname)(void*))
+    const char *name, const char *(*getname) (void *))
 {
   GHashTableIter it;
   const char *label, *comma = "";
@@ -1362,7 +1387,7 @@ output_table (InsanityTest * test, FILE * f, GHashTable * table,
   fprintf (f, ",\n  \"%s\": {\n", name);
   g_hash_table_iter_init (&it, table);
   while (g_hash_table_iter_next (&it, (gpointer) & label, (gpointer) & data)) {
-    const char * str_value = (*getname)(data);
+    const char *str_value = (*getname) (data);
 
     if (!str_value)
       continue;
@@ -1380,7 +1405,7 @@ get_raw_string (void *ptr)
 }
 
 static const char *
-get_argument_type_char (const GValue *v)
+get_argument_type_char (const GValue * v)
 {
   if (G_VALUE_HOLDS_STRING (v))
     return "s";
@@ -1445,7 +1470,7 @@ output_arguments_table (InsanityTest * test, FILE * f)
   while (g_hash_table_iter_next (&it, (gpointer) & label, (gpointer) & data)) {
     Argument *a = data;
     char *default_value;
-    
+
     if (G_VALUE_HOLDS_STRING (&a->default_value))
       default_value = g_value_dup_string (&a->default_value);
     else
@@ -1455,8 +1480,10 @@ output_arguments_table (InsanityTest * test, FILE * f)
     fprintf (f, "    {\n");
     fprintf (f, "        \"global\" : %s,\n", (a->global ? "true" : "false"));
     fprintf (f, "        \"description\" : \"%s\",\n", a->description);
-    fprintf (f, "        \"full_description\" : \"%s\",\n", a->full_description ? a->full_description : a->description);
-    fprintf (f, "        \"type\" : \"%s\",\n", get_argument_type_char (&a->default_value));
+    fprintf (f, "        \"full_description\" : \"%s\",\n",
+        a->full_description ? a->full_description : a->description);
+    fprintf (f, "        \"type\" : \"%s\",\n",
+        get_argument_type_char (&a->default_value));
     fprintf (f, "        \"default_value\" : \"%s\"\n", default_value);
     fprintf (f, "    }");
     g_free (default_value);
@@ -1480,7 +1507,7 @@ output_output_files_table (InsanityTest * test, FILE * f)
   g_hash_table_iter_init (&it, test->priv->test_output_files);
   while (g_hash_table_iter_next (&it, (gpointer) & label, (gpointer) & data)) {
     OutputFileItem *of = data;
-    
+
     fprintf (f, "%s    \"%s\" : \n", comma, label);
     fprintf (f, "    {\n");
     fprintf (f, "        \"description\" : \"%s\",\n", of->description);
@@ -1507,7 +1534,8 @@ insanity_test_write_metadata (InsanityTest * test)
   fprintf (f, "  \"__description__\": \"%s\"", desc);
   output_checklist_table (test, f);
   output_arguments_table (test, f);
-  output_table (test, f, test->priv->test_extra_infos, "__extra_infos__", &get_raw_string);
+  output_table (test, f, test->priv->test_extra_infos, "__extra_infos__",
+      &get_raw_string);
   output_output_files_table (test, f);
   fprintf (f, "\n}\n");
 
@@ -1518,7 +1546,8 @@ insanity_test_write_metadata (InsanityTest * test)
 static void
 usage (const char *argv0)
 {
-  g_print ("Usage: %s [--insanity-metadata | --run [name=value]... | <uuid>]\n", argv0);
+  g_print ("Usage: %s [--insanity-metadata | --run [name=value]... | <uuid>]\n",
+      argv0);
 }
 
 static gboolean
@@ -1536,19 +1565,20 @@ find_string (const char *string_value, const char *values[])
 static gboolean
 is_true (const char *string_value)
 {
-  static const char *true_values[] = {"1", "true", NULL};
+  static const char *true_values[] = { "1", "true", NULL };
   return find_string (string_value, true_values);
 }
 
 static gboolean
 is_false (const char *string_value)
 {
-  static const char *false_values[] = {"0", "false", NULL};
+  static const char *false_values[] = { "0", "false", NULL };
   return find_string (string_value, false_values);
 }
 
 static gboolean
-parse_value (InsanityTest *test, const char *key, const char *string_value, GValue *value)
+parse_value (InsanityTest * test, const char *key, const char *string_value,
+    GValue * value)
 {
   const Argument *arg;
   GType type;
@@ -1560,8 +1590,7 @@ parse_value (InsanityTest *test, const char *key, const char *string_value, GVal
       g_value_init (value, G_TYPE_STRING);
       g_value_set_string (value, string_value);
       return TRUE;
-    }
-    else if (type == G_TYPE_INT) {
+    } else if (type == G_TYPE_INT) {
       char *ptr = NULL;
       long n = strtol (string_value, &ptr, 10);
       if (!ptr || !*ptr) {
@@ -1569,8 +1598,7 @@ parse_value (InsanityTest *test, const char *key, const char *string_value, GVal
         g_value_set_int (value, n);
         return TRUE;
       }
-    }
-    else if (type == G_TYPE_UINT) {
+    } else if (type == G_TYPE_UINT) {
       char *ptr = NULL;
       unsigned long n = strtoul (string_value, &ptr, 10);
       if (!ptr || !*ptr) {
@@ -1578,8 +1606,7 @@ parse_value (InsanityTest *test, const char *key, const char *string_value, GVal
         g_value_set_uint (value, n);
         return TRUE;
       }
-    }
-    else if (type == G_TYPE_INT64) {
+    } else if (type == G_TYPE_INT64) {
       char *ptr = NULL;
       gint64 n = g_ascii_strtoll (string_value, &ptr, 10);
       if (!ptr || !*ptr) {
@@ -1587,8 +1614,7 @@ parse_value (InsanityTest *test, const char *key, const char *string_value, GVal
         g_value_set_int64 (value, n);
         return TRUE;
       }
-    }
-    else if (type == G_TYPE_UINT64) {
+    } else if (type == G_TYPE_UINT64) {
       char *ptr = NULL;
       guint64 n = g_ascii_strtoull (string_value, &ptr, 10);
       if (!ptr || !*ptr) {
@@ -1596,8 +1622,7 @@ parse_value (InsanityTest *test, const char *key, const char *string_value, GVal
         g_value_set_uint64 (value, n);
         return TRUE;
       }
-    }
-    else if (type == G_TYPE_DOUBLE) {
+    } else if (type == G_TYPE_DOUBLE) {
       char *ptr = NULL;
       float f = strtof (string_value, &ptr);
       if (!ptr || !*ptr) {
@@ -1605,14 +1630,12 @@ parse_value (InsanityTest *test, const char *key, const char *string_value, GVal
         g_value_set_float (value, f);
         return TRUE;
       }
-    }
-    else if (type == G_TYPE_BOOLEAN) {
+    } else if (type == G_TYPE_BOOLEAN) {
       if (is_true (string_value)) {
         g_value_init (value, G_TYPE_BOOLEAN);
         g_value_set_boolean (value, TRUE);
         return TRUE;
-      }
-      else if (is_false (string_value)) {
+      } else if (is_false (string_value)) {
         g_value_init (value, G_TYPE_BOOLEAN);
         g_value_set_boolean (value, FALSE);
         return TRUE;
@@ -1626,7 +1649,7 @@ parse_value (InsanityTest *test, const char *key, const char *string_value, GVal
 }
 
 static unsigned int
-insanity_report_failed_tests (InsanityTest *test, gboolean verbose)
+insanity_report_failed_tests (InsanityTest * test, gboolean verbose)
 {
   GHashTableIter i;
   gpointer key, value;
@@ -1637,7 +1660,7 @@ insanity_report_failed_tests (InsanityTest *test, gboolean verbose)
   while (g_hash_table_iter_next (&i, &key, &value)) {
     gboolean success = (value != NULL);
     if (verbose)
-      printf ("%s: %s\n", (const char *)key, success ? "PASS" : "FAIL");
+      printf ("%s: %s\n", (const char *) key, success ? "PASS" : "FAIL");
     if (!success)
       failed++;
   }
@@ -1645,15 +1668,16 @@ insanity_report_failed_tests (InsanityTest *test, gboolean verbose)
   /* Get all checklist items that were not passed nor failed */
   g_hash_table_iter_init (&i, test->priv->test_checklist);
   while (g_hash_table_iter_next (&i, &key, &value)) {
-    if (!g_hash_table_lookup_extended (test->priv->checklist_results, key, NULL, NULL)) {
+    if (!g_hash_table_lookup_extended (test->priv->checklist_results, key, NULL,
+            NULL)) {
       if (verbose)
-        printf ("%s: SKIP\n", (const char *)key);
+        printf ("%s: SKIP\n", (const char *) key);
       ++failed;
     }
   }
 
   if (verbose)
-    printf("%u/%u failed tests\n", failed,
+    printf ("%u/%u failed tests\n", failed,
         g_hash_table_size (test->priv->test_checklist));
 
   return failed;
@@ -1701,11 +1725,19 @@ insanity_test_run (InsanityTest * test, int *argc, char ***argv)
   gboolean opt_keep_unnamed_output_files = FALSE;
   const GOptionEntry options[] = {
     {"run", 0, 0, G_OPTION_ARG_NONE, &opt_run, "Run the test standalone", NULL},
-    {"insanity-metadata", 0, 0, G_OPTION_ARG_NONE, &opt_metadata, "Output test metadata", NULL},
-    {"dbus-uuid", 0, 0, G_OPTION_ARG_STRING, &opt_uuid, "Set D-Bus uuid", "UUID"},
-    {"timeout", 0, 0, G_OPTION_ARG_INT, &opt_timeout, "Test timeout in standalone mode (<= 0 to disable)", NULL},
-    {"output-directory", 0, 0, G_OPTION_ARG_STRING, &opt_output_directory, "Set directory where to create output files(random by default)", NULL},
-    {"keep-unnamed-output-files", 0, 0, G_OPTION_ARG_NONE, &opt_keep_unnamed_output_files, "Keep unnamed output files after program ends (by default, only named ones are kept)", NULL},
+    {"insanity-metadata", 0, 0, G_OPTION_ARG_NONE, &opt_metadata,
+        "Output test metadata", NULL},
+    {"dbus-uuid", 0, 0, G_OPTION_ARG_STRING, &opt_uuid, "Set D-Bus uuid",
+        "UUID"},
+    {"timeout", 0, 0, G_OPTION_ARG_INT, &opt_timeout,
+        "Test timeout in standalone mode (<= 0 to disable)", NULL},
+    {"output-directory", 0, 0, G_OPTION_ARG_STRING, &opt_output_directory,
+          "Set directory where to create output files(random by default)",
+        NULL},
+    {"keep-unnamed-output-files", 0, 0, G_OPTION_ARG_NONE,
+          &opt_keep_unnamed_output_files,
+          "Keep unnamed output files after program ends (by default, only named ones are kept)",
+        NULL},
     {NULL}
   };
   GOptionContext *ctx;
@@ -1717,7 +1749,8 @@ insanity_test_run (InsanityTest * test, int *argc, char ***argv)
   g_set_prgname ((*argv)[0]);
 
   /* Make warnings/criticals fatal */
-  g_log_set_always_fatal (G_LOG_LEVEL_ERROR | G_LOG_LEVEL_CRITICAL | G_LOG_LEVEL_WARNING);
+  g_log_set_always_fatal (G_LOG_LEVEL_ERROR | G_LOG_LEVEL_CRITICAL |
+      G_LOG_LEVEL_WARNING);
 
   ctx = g_option_context_new (test->priv->test_desc);
   g_option_context_add_main_entries (ctx, options, NULL);
@@ -1736,18 +1769,19 @@ insanity_test_run (InsanityTest * test, int *argc, char ***argv)
   if (opt_metadata) {
     insanity_test_write_metadata (test);
     ret = TRUE;
-  }
-  else if (opt_run && !opt_uuid) {
+  } else if (opt_run && !opt_uuid) {
     int n;
 
     test->priv->timeout = opt_timeout;
 
     /* Load any command line output files and arguments */
-    test->priv->args = g_hash_table_new_full (&g_str_hash, &g_str_equal, &g_free, &free_gvalue);
+    test->priv->args =
+        g_hash_table_new_full (&g_str_hash, &g_str_equal, &g_free,
+        &free_gvalue);
     for (n = 1; n < *argc; ++n) {
       char *key;
       const char *equals;
-      GValue value = {0}, *v;
+      GValue value = { 0 }, *v;
 
       equals = strchr ((*argv)[n], '=');
       if (!equals) {
@@ -1757,17 +1791,16 @@ insanity_test_run (InsanityTest * test, int *argc, char ***argv)
 
       key = g_strndup ((*argv)[n], equals - (*argv)[n]);
       if (g_hash_table_lookup (test->priv->test_output_files, key)) {
-        g_hash_table_insert (test->priv->filename_cache, key, g_strdup (equals+1));
-      }
-      else {
-        if (parse_value (test, key, equals+1, &value)) {
+        g_hash_table_insert (test->priv->filename_cache, key,
+            g_strdup (equals + 1));
+      } else {
+        if (parse_value (test, key, equals + 1, &value)) {
           v = g_slice_alloc0 (sizeof (GValue));
           g_value_init (v, G_VALUE_TYPE (&value));
-          g_value_copy (&value, v); /* src first */
+          g_value_copy (&value, v);     /* src first */
           g_hash_table_insert (test->priv->args, key, v);
           g_value_unset (&value);
-        }
-        else {
+        } else {
           g_free (key);
         }
       }
@@ -1781,8 +1814,7 @@ insanity_test_run (InsanityTest * test, int *argc, char ***argv)
     if (!private_dbus_address || !private_dbus_address[0]) {
       g_error ("The PRIVATE_DBUS_ADDRESS environment variable must be set\n");
       ret = FALSE;
-    }
-    else {
+    } else {
 #if 0
       printf ("uuid: %s\n", opt_uuid);
       printf ("PRIVATE_DBUS_ADDRESS: %s\n", private_dbus_address);
@@ -1816,14 +1848,15 @@ insanity_test_finalize (GObject * gobject)
   if (test->priv->name)
     g_free (test->priv->name);
   if (priv->filename_cache) {
-    if (!priv->conn) { /* unreffed, but value still set */
+    if (!priv->conn) {          /* unreffed, but value still set */
       if (!priv->keep_unnamed_output_files) {
         GHashTableIter i;
         gpointer key, value;
         g_hash_table_iter_init (&i, priv->filename_cache);
         while (g_hash_table_iter_next (&i, &key, &value)) {
           /* only unlink those random ones */
-          if (test->priv->tmpdir && g_str_has_prefix (value, test->priv->tmpdir)) {
+          if (test->priv->tmpdir
+              && g_str_has_prefix (value, test->priv->tmpdir)) {
             g_unlink (value);
           }
         }
@@ -1862,7 +1895,7 @@ insanity_test_init (InsanityTest * test)
 {
   InsanityTestPrivateData *priv = G_TYPE_INSTANCE_GET_PRIVATE (test,
       INSANITY_TYPE_TEST, InsanityTestPrivateData);
-  GValue vdef = {0};
+  GValue vdef = { 0 };
 
 #ifdef USE_NEW_GLIB_MUTEX_API
   g_mutex_init (&priv->lock);
@@ -1891,19 +1924,23 @@ insanity_test_init (InsanityTest * test)
   priv->test_desc = NULL;
   priv->test_full_desc = NULL;
   priv->test_checklist =
-      g_hash_table_new_full (&g_str_hash, &g_str_equal, &g_free, &free_checklist_item);
+      g_hash_table_new_full (&g_str_hash, &g_str_equal, &g_free,
+      &free_checklist_item);
   priv->test_arguments =
-      g_hash_table_new_full (&g_str_hash, &g_str_equal, &g_free, &free_argument);
+      g_hash_table_new_full (&g_str_hash, &g_str_equal, &g_free,
+      &free_argument);
   priv->test_extra_infos =
       g_hash_table_new_full (&g_str_hash, &g_str_equal, &g_free, g_free);
   priv->test_output_files =
-      g_hash_table_new_full (&g_str_hash, &g_str_equal, &g_free, &free_output_file_item);
+      g_hash_table_new_full (&g_str_hash, &g_str_equal, &g_free,
+      &free_output_file_item);
 
   priv->timeout = TEST_TIMEOUT;
 
   g_value_init (&vdef, G_TYPE_BOOLEAN);
   g_value_set_boolean (&vdef, FALSE);
-  insanity_test_add_argument (test, "verbose", "Output extra information on stdout", NULL, TRUE, &vdef);
+  insanity_test_add_argument (test, "verbose",
+      "Output extra information on stdout", NULL, TRUE, &vdef);
   g_value_unset (&vdef);
 }
 
@@ -1993,11 +2030,13 @@ insanity_test_class_init (InsanityTestClass * klass)
       g_param_spec_string ("name", "Name", "Name of the test", NULL,
       G_PARAM_READWRITE | G_PARAM_CONSTRUCT_ONLY | G_PARAM_STATIC_STRINGS);
   properties[PROP_DESCRIPTION] =
-      g_param_spec_string ("description", "Description", "Description of the test",
-      NULL, G_PARAM_READWRITE | G_PARAM_CONSTRUCT_ONLY | G_PARAM_STATIC_STRINGS);
+      g_param_spec_string ("description", "Description",
+      "Description of the test", NULL,
+      G_PARAM_READWRITE | G_PARAM_CONSTRUCT_ONLY | G_PARAM_STATIC_STRINGS);
   properties[PROP_FULL_DESCRIPTION] =
       g_param_spec_string ("full-description", "Full description",
-      "Full description of the test", NULL, G_PARAM_READWRITE | G_PARAM_CONSTRUCT_ONLY | G_PARAM_STATIC_STRINGS);
+      "Full description of the test", NULL,
+      G_PARAM_READWRITE | G_PARAM_CONSTRUCT_ONLY | G_PARAM_STATIC_STRINGS);
 
   g_object_class_install_properties (gobject_class, N_PROPERTIES, properties);
 
@@ -2046,14 +2085,15 @@ insanity_test_new (const char *name, const char *description,
     const char *full_description)
 {
   InsanityTest *test;
-  
+
   g_return_val_if_fail (name != NULL, NULL);
   g_return_val_if_fail (check_valid_label (name), NULL);
   g_return_val_if_fail (description != NULL, NULL);
 
   if (full_description)
     test = g_object_new (INSANITY_TYPE_TEST,
-        "name", name, "description", description, "full-description", full_description, NULL);
+        "name", name, "description", description, "full-description",
+        full_description, NULL);
   else
     test = g_object_new (INSANITY_TYPE_TEST,
         "name", name, "description", description, NULL);
@@ -2089,7 +2129,8 @@ insanity_test_add_checklist_item (InsanityTest * test, const char *label,
   g_return_if_fail (label != NULL);
   g_return_if_fail (check_valid_label (label));
   g_return_if_fail (description != NULL);
-  g_return_if_fail (g_hash_table_lookup (test->priv->test_checklist, label) == NULL);
+  g_return_if_fail (g_hash_table_lookup (test->priv->test_checklist,
+          label) == NULL);
 
   i = g_slice_new (ChecklistItem);
   i->description = g_strdup (description);
@@ -2123,15 +2164,17 @@ insanity_test_add_checklist_item (InsanityTest * test, const char *label,
 void
 insanity_test_add_argument (InsanityTest * test, const char *label,
     const char *description, const char *full_description,
-    gboolean global, const GValue *default_value)
+    gboolean global, const GValue * default_value)
 {
   Argument *arg;
 
   g_return_if_fail (INSANITY_IS_TEST (test));
   g_return_if_fail (label != NULL);
   g_return_if_fail (check_valid_label (label));
-  g_return_if_fail (g_hash_table_lookup (test->priv->test_arguments, label) == NULL);
-  g_return_if_fail (g_hash_table_lookup (test->priv->test_output_files, label) == NULL);
+  g_return_if_fail (g_hash_table_lookup (test->priv->test_arguments,
+          label) == NULL);
+  g_return_if_fail (g_hash_table_lookup (test->priv->test_output_files,
+          label) == NULL);
   g_return_if_fail (description != NULL);
   g_return_if_fail (G_IS_VALUE (default_value));
   g_return_if_fail (check_valid_type (G_VALUE_TYPE (default_value)));
@@ -2141,7 +2184,7 @@ insanity_test_add_argument (InsanityTest * test, const char *label,
   arg->description = g_strdup (description);
   arg->full_description = full_description ? g_strdup (full_description) : NULL;
   g_value_init (&arg->default_value, G_VALUE_TYPE (default_value));
-  g_value_copy (default_value, &arg->default_value); /* Source is first */
+  g_value_copy (default_value, &arg->default_value);    /* Source is first */
   g_hash_table_insert (test->priv->test_arguments, g_strdup (label), arg);
 }
 
@@ -2163,7 +2206,8 @@ insanity_test_add_extra_info (InsanityTest * test, const char *label,
   g_return_if_fail (INSANITY_IS_TEST (test));
   g_return_if_fail (label != NULL);
   g_return_if_fail (check_valid_label (label));
-  g_return_if_fail (g_hash_table_lookup (test->priv->test_extra_infos, label) == NULL);
+  g_return_if_fail (g_hash_table_lookup (test->priv->test_extra_infos,
+          label) == NULL);
   g_return_if_fail (description != NULL);
 
   insanity_add_metadata_entry (test->priv->test_extra_infos, label,
@@ -2197,8 +2241,10 @@ insanity_test_add_output_file (InsanityTest * test, const char *label,
   g_return_if_fail (INSANITY_IS_TEST (test));
   g_return_if_fail (label != NULL);
   g_return_if_fail (check_valid_label (label));
-  g_return_if_fail (g_hash_table_lookup (test->priv->test_output_files, label) == NULL);
-  g_return_if_fail (g_hash_table_lookup (test->priv->test_arguments, label) == NULL);
+  g_return_if_fail (g_hash_table_lookup (test->priv->test_output_files,
+          label) == NULL);
+  g_return_if_fail (g_hash_table_lookup (test->priv->test_arguments,
+          label) == NULL);
   g_return_if_fail (description != NULL);
 
   of = g_slice_new (OutputFileItem);
@@ -2229,7 +2275,9 @@ insanity_test_add_output_file (InsanityTest * test, const char *label,
  *
  * Returns: the value of the expression, as a convenience.
  */
-gboolean insanity_test_check (InsanityTest *test, const char *step, gboolean expr, const char *msg,...)
+gboolean
+insanity_test_check (InsanityTest * test, const char *step, gboolean expr,
+    const char *msg, ...)
 {
   char *fullmsg;
   va_list ap;
@@ -2237,7 +2285,8 @@ gboolean insanity_test_check (InsanityTest *test, const char *step, gboolean exp
   g_return_val_if_fail (INSANITY_IS_TEST (test), FALSE);
   g_return_val_if_fail (step != NULL, FALSE);
   g_return_val_if_fail (check_valid_label (step), FALSE);
-  g_return_val_if_fail (g_hash_table_lookup (test->priv->test_checklist, step) != NULL, FALSE);
+  g_return_val_if_fail (g_hash_table_lookup (test->priv->test_checklist,
+          step) != NULL, FALSE);
 
   if (!expr) {
     va_start (ap, msg);
@@ -2266,7 +2315,8 @@ gboolean insanity_test_check (InsanityTest *test, const char *step, gboolean exp
  *
  * These conditions may change to match a "when it makes sense" ideal.
  */
-void insanity_test_printf (InsanityTest *test, const char *format,...)
+void
+insanity_test_printf (InsanityTest * test, const char *format, ...)
 {
   va_list ap;
 
@@ -2276,77 +2326,104 @@ void insanity_test_printf (InsanityTest *test, const char *format,...)
     return;
 
   va_start (ap, format);
-  vprintf(format, ap);
+  vprintf (format, ap);
   va_end (ap);
 }
 
-void insanity_test_add_string_argument(InsanityTest *test, const char *label, const char *description, const char *full_description, gboolean global, const char *default_value)
+void
+insanity_test_add_string_argument (InsanityTest * test, const char *label,
+    const char *description, const char *full_description, gboolean global,
+    const char *default_value)
 {
-  GValue v = {0};
+  GValue v = { 0 };
 
   g_value_init (&v, G_TYPE_STRING);
   g_value_set_string (&v, default_value);
-  insanity_test_add_argument (test, label, description, full_description, global, &v);
+  insanity_test_add_argument (test, label, description, full_description,
+      global, &v);
   g_value_unset (&v);
 }
 
-void insanity_test_add_int_argument(InsanityTest *test, const char *label, const char *description, const char *full_description, gboolean global, gint32 default_value)
+void
+insanity_test_add_int_argument (InsanityTest * test, const char *label,
+    const char *description, const char *full_description, gboolean global,
+    gint32 default_value)
 {
-  GValue v = {0};
+  GValue v = { 0 };
 
   g_value_init (&v, G_TYPE_INT);
   g_value_set_int (&v, default_value);
-  insanity_test_add_argument (test, label, description, full_description, global, &v);
+  insanity_test_add_argument (test, label, description, full_description,
+      global, &v);
   g_value_unset (&v);
 }
 
-void insanity_test_add_uint_argument(InsanityTest *test, const char *label, const char *description, const char *full_description, gboolean global, guint32 default_value)
+void
+insanity_test_add_uint_argument (InsanityTest * test, const char *label,
+    const char *description, const char *full_description, gboolean global,
+    guint32 default_value)
 {
-  GValue v = {0};
+  GValue v = { 0 };
 
   g_value_init (&v, G_TYPE_UINT);
   g_value_set_uint (&v, default_value);
-  insanity_test_add_argument (test, label, description, full_description, global, &v);
+  insanity_test_add_argument (test, label, description, full_description,
+      global, &v);
   g_value_unset (&v);
 }
 
-void insanity_test_add_int64_argument(InsanityTest *test, const char *label, const char *description, const char *full_description, gboolean global, gint64 default_value)
+void
+insanity_test_add_int64_argument (InsanityTest * test, const char *label,
+    const char *description, const char *full_description, gboolean global,
+    gint64 default_value)
 {
-  GValue v = {0};
+  GValue v = { 0 };
 
   g_value_init (&v, G_TYPE_INT64);
   g_value_set_int64 (&v, default_value);
-  insanity_test_add_argument (test, label, description, full_description, global, &v);
+  insanity_test_add_argument (test, label, description, full_description,
+      global, &v);
   g_value_unset (&v);
 }
 
-void insanity_test_add_uint64_argument(InsanityTest *test, const char *label, const char *description, const char *full_description, gboolean global, guint64 default_value)
+void
+insanity_test_add_uint64_argument (InsanityTest * test, const char *label,
+    const char *description, const char *full_description, gboolean global,
+    guint64 default_value)
 {
-  GValue v = {0};
+  GValue v = { 0 };
 
   g_value_init (&v, G_TYPE_UINT64);
   g_value_set_uint64 (&v, default_value);
-  insanity_test_add_argument (test, label, description, full_description, global, &v);
+  insanity_test_add_argument (test, label, description, full_description,
+      global, &v);
   g_value_unset (&v);
 }
 
-void insanity_test_add_double_argument(InsanityTest *test, const char *label, const char *description, const char *full_description, gboolean global, gdouble default_value)
+void
+insanity_test_add_double_argument (InsanityTest * test, const char *label,
+    const char *description, const char *full_description, gboolean global,
+    gdouble default_value)
 {
-  GValue v = {0};
+  GValue v = { 0 };
 
   g_value_init (&v, G_TYPE_DOUBLE);
   g_value_set_double (&v, default_value);
-  insanity_test_add_argument (test, label, description, full_description, global, &v);
+  insanity_test_add_argument (test, label, description, full_description,
+      global, &v);
   g_value_unset (&v);
 }
 
-void insanity_test_add_boolean_argument(InsanityTest *test, const char *label, const char *description, const char *full_description, gboolean global, gboolean default_value)
+void
+insanity_test_add_boolean_argument (InsanityTest * test, const char *label,
+    const char *description, const char *full_description, gboolean global,
+    gboolean default_value)
 {
-  GValue v = {0};
+  GValue v = { 0 };
 
   g_value_init (&v, G_TYPE_BOOLEAN);
   g_value_set_boolean (&v, default_value);
-  insanity_test_add_argument (test, label, description, full_description, global, &v);
+  insanity_test_add_argument (test, label, description, full_description,
+      global, &v);
   g_value_unset (&v);
 }
-

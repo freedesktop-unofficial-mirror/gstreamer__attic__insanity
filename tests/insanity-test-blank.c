@@ -80,12 +80,13 @@ blank_test_teardown (InsanityTest * test)
 static void
 blank_test_test (InsanityTest * test)
 {
-  GValue info = {0};
+  GValue info = { 0 };
 
   printf ("blank_test_test\n");
 
   /* Show how to validate steps and send extra info */
-  insanity_test_validate_step (test, "random-step", TRUE, "Explanation of random-step failure");
+  insanity_test_validate_step (test, "random-step", TRUE,
+      "Explanation of random-step failure");
   g_value_init (&info, G_TYPE_STRING);
   g_value_set_string (&info, "Foo");
   insanity_test_set_extra_info (test, "random-extra-info", &info);
@@ -96,7 +97,8 @@ blank_test_test (InsanityTest * test)
 
   insanity_test_ping (test);
 
-  insanity_test_validate_step (test, "random-other-step", TRUE, "Explanation of random-step failure");
+  insanity_test_validate_step (test, "random-other-step", TRUE,
+      "Explanation of random-step failure");
 
 done:
   /* Must be called when the test is done */
@@ -108,7 +110,7 @@ main (int argc, char **argv)
 {
   InsanityTest *test;
   gboolean ret;
-  GValue def = {0};
+  GValue def = { 0 };
 
   g_type_init ();
 
@@ -135,8 +137,10 @@ main (int argc, char **argv)
       "Some integer here", TRUE, &def);
   g_value_unset (&def);
 
-  insanity_test_add_output_file (test, "dummy-output-file", "dummy output file", FALSE);
-  insanity_test_add_output_file (test, "dummy-output-file-global", "dummy output file", TRUE);
+  insanity_test_add_output_file (test, "dummy-output-file", "dummy output file",
+      FALSE);
+  insanity_test_add_output_file (test, "dummy-output-file-global",
+      "dummy output file", TRUE);
 
   g_signal_connect_after (test, "setup", G_CALLBACK (&blank_test_setup), 0);
   g_signal_connect_after (test, "start", G_CALLBACK (&blank_test_start), 0);

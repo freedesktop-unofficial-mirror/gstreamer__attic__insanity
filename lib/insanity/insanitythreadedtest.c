@@ -117,10 +117,11 @@ insanity_threaded_test_class_init (InsanityThreadedTestClass * klass)
  * Returns: (transfer full): a new #InsanityThreadedTest instance.
  */
 InsanityThreadedTest *
-insanity_threaded_test_new (const char *name, const char *description, const char *full_description)
+insanity_threaded_test_new (const char *name, const char *description,
+    const char *full_description)
 {
   InsanityThreadedTest *test;
-    
+
   g_return_val_if_fail (name != NULL, NULL);
   g_return_val_if_fail (check_valid_label (name), NULL);
   g_return_val_if_fail (description != NULL, NULL);
@@ -128,7 +129,8 @@ insanity_threaded_test_new (const char *name, const char *description, const cha
 
   if (full_description)
     test = g_object_new (INSANITY_TYPE_THREADED_TEST,
-        "name", name, "description", description, "full-description", full_description, NULL);
+        "name", name, "description", description, "full-description",
+        full_description, NULL);
   else
     test = g_object_new (INSANITY_TYPE_THREADED_TEST,
         "name", name, "description", description, NULL);
