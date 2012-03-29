@@ -2588,3 +2588,87 @@ done:
   g_value_unset (&v);
   return ret;
 }
+
+void
+insanity_test_set_string_extra_info (InsanityTest * test, const char *name,
+    const char *data)
+{
+  GValue v = { 0 };
+
+  g_value_init (&v, G_TYPE_STRING);
+  g_value_set_string (&v, data);
+  insanity_test_set_extra_info (test, name, &v);
+  g_value_unset (&v);
+}
+
+void
+insanity_test_set_int_extra_info (InsanityTest * test, const char *name,
+    gint32 data)
+{
+  GValue v = { 0 };
+
+  g_value_init (&v, G_TYPE_INT);
+  g_value_set_int (&v, data);
+  insanity_test_set_extra_info (test, name, &v);
+  g_value_unset (&v);
+}
+
+void
+insanity_test_set_uint_extra_info (InsanityTest * test, const char *name,
+    guint32 data)
+{
+  GValue v = { 0 };
+
+  g_value_init (&v, G_TYPE_UINT);
+  g_value_set_uint (&v, data);
+  insanity_test_set_extra_info (test, name, &v);
+  g_value_unset (&v);
+}
+
+void
+insanity_test_set_int64_extra_info (InsanityTest * test, const char *name,
+    gint64 data)
+{
+  GValue v = { 0 };
+
+  g_value_init (&v, G_TYPE_INT64);
+  g_value_set_int64 (&v, data);
+  insanity_test_set_extra_info (test, name, &v);
+  g_value_unset (&v);
+}
+
+void
+insanity_test_set_uint64_extra_info (InsanityTest * test, const char *name,
+    guint64 data)
+{
+  GValue v = { 0 };
+
+  g_value_init (&v, G_TYPE_UINT64);
+  g_value_set_uint64 (&v, data);
+  insanity_test_set_extra_info (test, name, &v);
+  g_value_unset (&v);
+}
+
+void
+insanity_test_set_double_extra_info (InsanityTest * test, const char *name,
+    gdouble data)
+{
+  GValue v = { 0 };
+
+  g_value_init (&v, G_TYPE_DOUBLE);
+  g_value_set_double (&v, data);
+  insanity_test_set_extra_info (test, name, &v);
+  g_value_unset (&v);
+}
+
+void
+insanity_test_set_boolean_extra_info (InsanityTest * test, const char *name,
+    gboolean data)
+{
+  GValue v = { 0 };
+
+  g_value_init (&v, G_TYPE_BOOLEAN);
+  g_value_set_boolean (&v, data);
+  insanity_test_set_extra_info (test, name, &v);
+  g_value_unset (&v);
+}
