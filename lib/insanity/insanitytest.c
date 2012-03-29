@@ -2347,7 +2347,7 @@ insanity_test_add_string_argument (InsanityTest * test, const char *label,
 void
 insanity_test_add_int_argument (InsanityTest * test, const char *label,
     const char *description, const char *full_description, gboolean global,
-    gint32 default_value)
+    gint default_value)
 {
   GValue v = { 0 };
 
@@ -2361,7 +2361,7 @@ insanity_test_add_int_argument (InsanityTest * test, const char *label,
 void
 insanity_test_add_uint_argument (InsanityTest * test, const char *label,
     const char *description, const char *full_description, gboolean global,
-    guint32 default_value)
+    guint default_value)
 {
   GValue v = { 0 };
 
@@ -2453,7 +2453,7 @@ done:
 
 gboolean
 insanity_test_get_int_argument (InsanityTest * test, const char *key,
-    gint32 * value)
+    gint * value)
 {
   GValue v = { 0 };
   gboolean ret = FALSE;
@@ -2476,7 +2476,7 @@ done:
 
 gboolean
 insanity_test_get_uint_argument (InsanityTest * test, const char *key,
-    guint32 * value)
+    guint * value)
 {
   GValue v = { 0 };
   gboolean ret = FALSE;
@@ -2603,7 +2603,7 @@ insanity_test_set_string_extra_info (InsanityTest * test, const char *name,
 
 void
 insanity_test_set_int_extra_info (InsanityTest * test, const char *name,
-    gint32 data)
+    gint data)
 {
   GValue v = { 0 };
 
@@ -2615,7 +2615,7 @@ insanity_test_set_int_extra_info (InsanityTest * test, const char *name,
 
 void
 insanity_test_set_uint_extra_info (InsanityTest * test, const char *name,
-    guint32 data)
+    guint data)
 {
   GValue v = { 0 };
 
