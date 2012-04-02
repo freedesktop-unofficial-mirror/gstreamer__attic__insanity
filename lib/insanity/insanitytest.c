@@ -80,7 +80,7 @@ static GParamSpec *properties[N_PROPERTIES] = { NULL, };
         (guint) ((((guint64)(t)) / SECOND) % 60), \
         (guint) (((guint64)(t)) % SECOND)
 
-static const char * const log_level_names[] = {
+static const char *const log_level_names[] = {
   "none", "info", "debug", "spam"
 };
 
@@ -598,15 +598,16 @@ insanity_test_validate_checklist_item (InsanityTest * test, const char *label,
 
   if (test->priv->standalone) {
     if (description) {
-      insanity_test_printf (test, "checklist item: %s: %s (%s)\n", label, success ? "PASS" : "FAIL",
-          description);
+      insanity_test_printf (test, "checklist item: %s: %s (%s)\n", label,
+          success ? "PASS" : "FAIL", description);
     } else {
-     insanity_test_printf (test, "checklist item: %s: %s\n", label, success ? "PASS" : "FAIL");
+      insanity_test_printf (test, "checklist item: %s: %s\n", label,
+          success ? "PASS" : "FAIL");
     }
   } else {
     const char *desc = description ? description : "";
-    send_signal (test->priv->conn, "remoteValidateChecklistItemSignal", test->priv->name,
-        DBUS_TYPE_STRING, &label, DBUS_TYPE_BOOLEAN, &success,
+    send_signal (test->priv->conn, "remoteValidateChecklistItemSignal",
+        test->priv->name, DBUS_TYPE_STRING, &label, DBUS_TYPE_BOOLEAN, &success,
         DBUS_TYPE_STRING, &desc, DBUS_TYPE_INVALID);
   }
 
@@ -786,12 +787,13 @@ on_setup (InsanityTest * test)
     unsigned long level;
 
     end = strchr (ptr, ',');
-    if (!end) end = strchr (ptr, 0);
-    colon = memchr (ptr, ':', end-ptr+1);
+    if (!end)
+      end = strchr (ptr, 0);
+    colon = memchr (ptr, ':', end - ptr + 1);
     slev = ptr;
     if (colon) {
       slev = colon + 1;
-      category = g_strndup (ptr, colon-ptr);
+      category = g_strndup (ptr, colon - ptr);
       if (!check_valid_label (category)) {
         g_error ("Invalid category name: %s - ignored\n", category);
         g_free (category);
@@ -800,23 +802,23 @@ on_setup (InsanityTest * test)
     }
 
     errno = 0;
-    level = strtoul(slev, &lptr, 10);
-    if ((*lptr && lptr < end) || (level == ULONG_MAX && errno) || end==slev) {
-      g_error ("Invalid log level: %*.*s - ignored\n", (int)(end-slev), (int)(end-slev), slev);
+    level = strtoul (slev, &lptr, 10);
+    if ((*lptr && lptr < end) || (level == ULONG_MAX && errno) || end == slev) {
+      g_error ("Invalid log level: %*.*s - ignored\n", (int) (end - slev),
+          (int) (end - slev), slev);
       if (category)
         g_free (category);
       goto ignore;
     }
 
     if (colon) {
-      g_hash_table_insert (test->priv->log_levels, category, (gpointer)level);
-    }
-    else {
+      g_hash_table_insert (test->priv->log_levels, category, (gpointer) level);
+    } else {
       test->priv->default_log_level = level;
     }
 
-ignore:
-    ptr=*end ? end+1 : end;
+  ignore:
+    ptr = *end ? end + 1 : end;
   }
   UNLOCK (test);
   g_value_unset (&log_level);
@@ -1611,7 +1613,8 @@ insanity_test_write_metadata (InsanityTest * test)
 static void
 usage (const char *argv0)
 {
-  g_print ("Usage: %s [--insanity-metadata | --run [label=value]... | <uuid>]\n",
+  g_print
+      ("Usage: %s [--insanity-metadata | --run [label=value]... | <uuid>]\n",
       argv0);
 }
 
@@ -1725,7 +1728,8 @@ insanity_report_failed_tests (InsanityTest * test, gboolean verbose)
   while (g_hash_table_iter_next (&i, &label, &value)) {
     gboolean success = (value != NULL);
     if (verbose)
-      insanity_test_printf (test, "%s: %s\n", (const char *) label, success ? "PASS" : "FAIL");
+      insanity_test_printf (test, "%s: %s\n", (const char *) label,
+          success ? "PASS" : "FAIL");
     if (!success)
       failed++;
   }
@@ -1733,10 +1737,10 @@ insanity_report_failed_tests (InsanityTest * test, gboolean verbose)
   /* Get all checklist items that were not passed nor failed */
   g_hash_table_iter_init (&i, test->priv->test_checklist);
   while (g_hash_table_iter_next (&i, &label, &value)) {
-    if (!g_hash_table_lookup_extended (test->priv->checklist_results, label, NULL,
-            NULL)) {
+    if (!g_hash_table_lookup_extended (test->priv->checklist_results, label,
+            NULL, NULL)) {
       if (verbose)
-       insanity_test_printf (test, "%s: SKIP\n", (const char *) label);
+        insanity_test_printf (test, "%s: SKIP\n", (const char *) label);
       ++failed;
     }
   }
@@ -2012,7 +2016,8 @@ insanity_test_init (InsanityTest * test)
   g_value_init (&vdef, G_TYPE_STRING);
   g_value_set_string (&vdef, "1");
   insanity_test_add_argument (test, "log-level",
-      "Amount of extra information on stdout", "0: no output; 1: info; 2: debug; 3: verbose traces", TRUE, &vdef);
+      "Amount of extra information on stdout",
+      "0: no output; 1: info; 2: debug; 3: verbose traces", TRUE, &vdef);
   g_value_unset (&vdef);
 }
 
@@ -2371,13 +2376,13 @@ insanity_test_check (InsanityTest * test, const char *label, gboolean expr,
 }
 
 static InsanityLogLevel
-find_log_level (InsanityTest *test, const char *category)
+find_log_level (InsanityTest * test, const char *category)
 {
   gpointer p;
 
   if (g_hash_table_lookup_extended (test->priv->log_levels, category, NULL, &p)) {
-    printf("category '%s' has log level %u\n", category, (InsanityLogLevel)p);
-    return (InsanityLogLevel)p;
+    printf ("category '%s' has log level %u\n", category, (InsanityLogLevel) p);
+    return (InsanityLogLevel) p;
   }
   return test->priv->default_log_level;
 }
@@ -2403,7 +2408,10 @@ find_log_level (InsanityTest *test, const char *category)
  *
  * These conditions may change to match a "when it makes sense" ideal.
  */
-void insanity_test_logv (InsanityTest *test, const char *category, InsanityLogLevel level, const char *file, unsigned int line, const char *format, va_list args)
+void
+insanity_test_logv (InsanityTest * test, const char *category,
+    InsanityLogLevel level, const char *file, unsigned int line,
+    const char *format, va_list args)
 {
   guint64 dt;
   gchar *msg;
@@ -2415,15 +2423,16 @@ void insanity_test_logv (InsanityTest *test, const char *category, InsanityLogLe
     return;
   if (level == INSANITY_LOG_LEVEL_NONE)
     return;
-  if (level>find_log_level (test, category))
+  if (level > find_log_level (test, category))
     return;
 
-  dt = g_get_monotonic_time() - test->priv->start_time;
+  dt = g_get_monotonic_time () - test->priv->start_time;
 
   msg = g_strdup_vprintf (format, args);
 
-  printf("%"TIME_FORMAT "\t%p\t%s\t%s\t%s:%u\t%s",
-    TIME_ARGS (dt), g_thread_self (), log_level_names[level], category, file, line, msg);
+  printf ("%" TIME_FORMAT "\t%p\t%s\t%s\t%s:%u\t%s",
+      TIME_ARGS (dt), g_thread_self (), log_level_names[level], category, file,
+      line, msg);
   g_free (msg);
 }
 
@@ -2448,7 +2457,10 @@ void insanity_test_logv (InsanityTest *test, const char *category, InsanityLogLe
  *
  * These conditions may change to match a "when it makes sense" ideal.
  */
-void insanity_test_log (InsanityTest *test, const char *category, InsanityLogLevel level, const char *file, unsigned int line, const char *format, ...)
+void
+insanity_test_log (InsanityTest * test, const char *category,
+    InsanityLogLevel level, const char *file, unsigned int line,
+    const char *format, ...)
 {
   va_list ap;
 
