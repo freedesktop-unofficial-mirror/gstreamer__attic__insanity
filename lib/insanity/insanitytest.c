@@ -71,6 +71,19 @@ static guint stop_signal;
 static guint teardown_signal;
 static GParamSpec *properties[N_PROPERTIES] = { NULL, };
 
+/* Taken and adapted from GStreamer */
+#define SECOND ((guint64)1000000)
+#define TIME_FORMAT "u:%02u:%02u.%09u"
+#define TIME_ARGS(t) \
+        (guint) (((guint64)(t)) / (SECOND * 60 * 60)), \
+        (guint) ((((guint64)(t)) / (SECOND * 60)) % 60), \
+        (guint) ((((guint64)(t)) / SECOND) % 60), \
+        (guint) (((guint64)(t)) % SECOND)
+
+static const char * const log_level_names[] = {
+  "none", "info", "debug", "spam"
+};
+
 #if GLIB_CHECK_VERSION(2,31,0)
 #define USE_NEW_GLIB_MUTEX_API
 #endif
@@ -111,7 +124,9 @@ struct _InsanityTestPrivateData
   GHashTable *checklist_results;
   RunLevel runlevel;
   gint iteration;
-  gboolean verbose;
+  InsanityLogLevel default_log_level;
+  GHashTable *log_levels;
+  guint64 start_time;
 
   /* test metadata */
   char *test_name;
@@ -572,10 +587,10 @@ insanity_test_validate_step (InsanityTest * test, const char *name,
 
   if (test->priv->standalone) {
     if (description) {
-      printf ("step: %s: %s (%s)\n", name, success ? "PASS" : "FAIL",
+      insanity_test_printf (test, "step: %s: %s (%s)\n", name, success ? "PASS" : "FAIL",
           description);
     } else {
-      printf ("step: %s: %s\n", name, success ? "PASS" : "FAIL");
+     insanity_test_printf (test, "step: %s: %s\n", name, success ? "PASS" : "FAIL");
     }
   } else {
     const char *desc = description ? description : "";
@@ -609,7 +624,7 @@ insanity_test_set_extra_info_internal (InsanityTest * test, const char *name,
 
   if (test->priv->standalone) {
     char *s = g_strdup_value_contents (data);
-    printf ("Extra info: %s: %s\n", name, s);
+    insanity_test_printf (test, "Extra info: %s: %s\n", name, s);
     g_free (s);
     if (!locked)
       UNLOCK (test);
@@ -740,8 +755,9 @@ insanity_test_done (InsanityTest * test)
 static gboolean
 on_setup (InsanityTest * test)
 {
-  GValue verbose = { 0 };
+  GValue log_level = { 0 };
   gboolean ret = TRUE;
+  const char *log_level_string, *ptr;
 
   LOCK (test);
   if (test->priv->runlevel != rl_idle) {
@@ -750,11 +766,50 @@ on_setup (InsanityTest * test)
   }
   UNLOCK (test);
 
-  insanity_test_get_argument (test, "verbose", &verbose);
+  insanity_test_get_argument (test, "log-level", &log_level);
   LOCK (test);
-  test->priv->verbose = g_value_get_boolean (&verbose);
+  test->priv->log_levels = g_hash_table_new (&g_str_hash, &g_str_equal);
+  log_level_string = g_value_get_string (&log_level);
+  for (ptr = log_level_string; *ptr;) {
+    const char *colon, *end, *slev;
+    char *category = NULL, *lptr = NULL;
+    unsigned long level;
+
+    end = strchr (ptr, ',');
+    if (!end) end = strchr (ptr, 0);
+    colon = memchr (ptr, ':', end-ptr+1);
+    slev = ptr;
+    if (colon) {
+      slev = colon + 1;
+      category = g_strndup (ptr, colon-ptr);
+      if (!check_valid_label (category)) {
+        g_error ("Invalid category name: %s - ignored\n", category);
+        g_free (category);
+        goto ignore;
+      }
+    }
+
+    errno = 0;
+    level = strtoul(slev, &lptr, 10);
+    if ((*lptr && lptr < end) || (level == ULONG_MAX && errno) || end==slev) {
+      g_error ("Invalid log level: %*.*s - ignored\n", (int)(end-slev), (int)(end-slev), slev);
+      if (category)
+        g_free (category);
+      goto ignore;
+    }
+
+    if (colon) {
+      g_hash_table_insert (test->priv->log_levels, category, (gpointer)level);
+    }
+    else {
+      test->priv->default_log_level = level;
+    }
+
+ignore:
+    ptr=*end ? end+1 : end;
+  }
   UNLOCK (test);
-  g_value_unset (&verbose);
+  g_value_unset (&log_level);
 
   g_signal_emit (test, setup_signal, 0, &ret);
 
@@ -1660,7 +1715,7 @@ insanity_report_failed_tests (InsanityTest * test, gboolean verbose)
   while (g_hash_table_iter_next (&i, &key, &value)) {
     gboolean success = (value != NULL);
     if (verbose)
-      printf ("%s: %s\n", (const char *) key, success ? "PASS" : "FAIL");
+      insanity_test_printf (test, "%s: %s\n", (const char *) key, success ? "PASS" : "FAIL");
     if (!success)
       failed++;
   }
@@ -1671,13 +1726,13 @@ insanity_report_failed_tests (InsanityTest * test, gboolean verbose)
     if (!g_hash_table_lookup_extended (test->priv->checklist_results, key, NULL,
             NULL)) {
       if (verbose)
-        printf ("%s: SKIP\n", (const char *) key);
+       insanity_test_printf (test, "%s: SKIP\n", (const char *) key);
       ++failed;
     }
   }
 
   if (verbose)
-    printf ("%u/%u failed tests\n", failed,
+    insanity_test_printf (test, "%u/%u failed tests\n", failed,
         g_hash_table_size (test->priv->test_checklist));
 
   return failed;
@@ -1887,6 +1942,9 @@ insanity_test_finalize (GObject * gobject)
   g_mutex_free (priv->signal_lock);
   g_cond_free (priv->cond);
 #endif
+
+  g_hash_table_destroy (test->priv->log_levels);
+
   G_OBJECT_CLASS (insanity_test_parent_class)->finalize (gobject);
 }
 
@@ -1896,6 +1954,8 @@ insanity_test_init (InsanityTest * test)
   InsanityTestPrivateData *priv = G_TYPE_INSTANCE_GET_PRIVATE (test,
       INSANITY_TYPE_TEST, InsanityTestPrivateData);
   GValue vdef = { 0 };
+
+  priv->start_time = g_get_monotonic_time ();
 
 #ifdef USE_NEW_GLIB_MUTEX_API
   g_mutex_init (&priv->lock);
@@ -1937,10 +1997,10 @@ insanity_test_init (InsanityTest * test)
 
   priv->timeout = TEST_TIMEOUT;
 
-  g_value_init (&vdef, G_TYPE_BOOLEAN);
-  g_value_set_boolean (&vdef, FALSE);
-  insanity_test_add_argument (test, "verbose",
-      "Output extra information on stdout", NULL, TRUE, &vdef);
+  g_value_init (&vdef, G_TYPE_STRING);
+  g_value_set_string (&vdef, "1");
+  insanity_test_add_argument (test, "log-level",
+      "Amount of extra information on stdout", "0: no output; 1: info; 2: debug; 3: verbose traces", TRUE, &vdef);
   g_value_unset (&vdef);
 }
 
@@ -2298,9 +2358,24 @@ insanity_test_check (InsanityTest * test, const char *step, gboolean expr,
   return expr;
 }
 
+static InsanityLogLevel
+find_log_level (InsanityTest *test, const char *category)
+{
+  gpointer p;
+
+  if (g_hash_table_lookup_extended (test->priv->log_levels, category, NULL, &p)) {
+    printf("category '%s' has log level %u\n", category, (InsanityLogLevel)p);
+    return (InsanityLogLevel)p;
+  }
+  return test->priv->default_log_level;
+}
+
 /**
- * insanity_test_printf:
+ * insanity_test_log:
  * @test: a #InsanityTest instance to operate on.
+ * @level: log level of this log
+ * @file: the filename where the log call is located
+ * @line: the line number in that file where the log call is located
  * @format: a printf(3) format string, followed by optional arguments as per printf(3)
  * @...: the parameters to insert into the format string
  *
@@ -2311,23 +2386,35 @@ insanity_test_check (InsanityTest * test, const char *step, gboolean expr,
  *
  * Currently, the output conditions are:
  *  - the test is running in standalone mode
- *  - the verbose property is set to TRUE
+ *  - the log-level property is set to higher or equal to the log's level
  *
  * These conditions may change to match a "when it makes sense" ideal.
  */
-void
-insanity_test_printf (InsanityTest * test, const char *format, ...)
+void insanity_test_log (InsanityTest *test, const char *category, InsanityLogLevel level,const char *file, unsigned int line,const char *format,...)
 {
   va_list ap;
+  guint64 dt;
+  gchar *msg;
+
+  g_return_if_fail (INSANITY_IS_TEST (test));
+  g_return_if_fail (check_valid_label (category));
 
   if (!test->priv->standalone)
     return;
-  if (!test->priv->verbose)
+  if (level == INSANITY_LOG_LEVEL_NONE)
+    return;
+  if (level>find_log_level (test, category))
     return;
 
+  dt = g_get_monotonic_time() - test->priv->start_time;
+
   va_start (ap, format);
-  vprintf (format, ap);
+  msg = g_strdup_vprintf (format, ap);
   va_end (ap);
+
+  printf("%"TIME_FORMAT "\t%p\t%s\t%s:%u\t%s",
+    TIME_ARGS (dt), g_thread_self (), log_level_names[level], file, line, msg);
+  g_free (msg);
 }
 
 void

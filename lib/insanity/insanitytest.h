@@ -29,6 +29,13 @@
 
 G_BEGIN_DECLS
 
+typedef enum {
+  INSANITY_LOG_LEVEL_NONE,
+  INSANITY_LOG_LEVEL_INFO,
+  INSANITY_LOG_LEVEL_DEBUG,
+  INSANITY_LOG_LEVEL_SPAM,
+} InsanityLogLevel;
+
 typedef struct _InsanityTest InsanityTest;
 typedef struct _InsanityTestClass InsanityTestClass;
 typedef struct _InsanityTestPrivateData InsanityTestPrivateData;
@@ -101,7 +108,12 @@ void insanity_test_ping(InsanityTest *test);
 gboolean insanity_test_check (InsanityTest *test, const char *step, gboolean expr, const char *msg,...);
 #define INSANITY_TEST_CHECK(test, step, expr) insanity_test_check(test, step, (expr), "%s:%u: check failed: %s", __FILE__, __LINE__, #expr)
 
-void insanity_test_printf (InsanityTest *test, const char *format,...);
+/* Logging */
+void insanity_test_log (InsanityTest *test, const char *category, InsanityLogLevel level,const char *file, unsigned int line,const char *format,...);
+#define INSANITY_LOG(test,category,loglevel,format,args...) \
+  insanity_test_log(test, category, loglevel, __FILE__, __LINE__, format, ##args)
+#define insanity_test_printf(test,format,args...) \
+  INSANITY_LOG(test, "default", INSANITY_LOG_LEVEL_INFO, format, ##args)
 
 gboolean insanity_test_run(InsanityTest *test, int *argc, char ***argv);
 

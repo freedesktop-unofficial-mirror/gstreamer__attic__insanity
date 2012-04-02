@@ -100,6 +100,14 @@ blank_test_test (InsanityTest * test)
   insanity_test_validate_step (test, "random-other-step", TRUE,
       "Explanation of random-step failure");
 
+  INSANITY_LOG(test,"default",INSANITY_LOG_LEVEL_NONE,"log:none\n");
+  INSANITY_LOG(test,"default",INSANITY_LOG_LEVEL_INFO,"log:info\n");
+  INSANITY_LOG(test,"default",INSANITY_LOG_LEVEL_DEBUG,"log:debug\n");
+  INSANITY_LOG(test,"default",INSANITY_LOG_LEVEL_SPAM,"log:spam\n");
+  insanity_test_printf(test,"log:via-test\n");
+  INSANITY_LOG(test,"cat1",INSANITY_LOG_LEVEL_INFO,"log:cat1\n");
+  INSANITY_LOG(test,"cat2",INSANITY_LOG_LEVEL_INFO,"log:cat2\n");
+
 done:
   /* Must be called when the test is done */
   insanity_test_done (test);
