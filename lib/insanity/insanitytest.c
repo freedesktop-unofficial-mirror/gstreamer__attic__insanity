@@ -580,11 +580,21 @@ insanity_test_validate_checklist_item (InsanityTest * test, const char *label,
   g_return_if_fail (check_valid_label (label));
   g_return_if_fail (g_hash_table_lookup (test->priv->test_checklist,
           label) != NULL);
-  g_return_if_fail (g_hash_table_lookup (test->priv->checklist_results, label) == NULL);
 
   LOCK (test);
 
   insanity_test_ping_unlocked (test);
+
+  /* if the item has already been (in)validated, then we invalidate if success is FALSE,
+     and do nothing if success is TRUE. This ends up doing a AND operation on all booleans
+     passed for that step (ie, a step succeeds only if all calls to validate for that
+     step succeed, and fails if any call to validate for that step fails). */
+  if (g_hash_table_lookup (test->priv->checklist_results, label) != NULL) {
+    if (success) {
+      UNLOCK (test);
+      return;
+    }
+  }
 
   if (test->priv->standalone) {
     if (description) {
