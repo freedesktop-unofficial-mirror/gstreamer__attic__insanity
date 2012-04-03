@@ -220,20 +220,20 @@ def main():
 
     if options.storage == "help":
         storage_help()
-        sys.exit(1)
+        return True
 
     if options.args == "help":
         args_help()
-        sys.exit(1)
+        return True
 
     insanity.utils.scan_for_tests(options.tests)
 
     if options.test == "help":
         test_help()
-        sys.exit(1)
+        return True
     elif options.test is None:
         parser.print_help()
-        sys.exit(1)
+        return True
 
     test = insanity.utils.get_test_metadata(options.test)
 
@@ -246,21 +246,13 @@ def main():
             gdbscriptfile = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "share", "insanity", "gdb.instructions")
         if not os.path.exists (gdbscriptfile):
             print
-            sys.exit(1)
+            return True
         else:
             monitors.append((GDBMonitor, {"gdb-script" : gdbscriptfile}))
 
     if options.valgrind:
         monitors.append((ValgrindMemCheckMonitor,
                          {"suppression-files":options.supp}))
-
-    storage_name, storage_args = options.storage
-    if storage_name == "sqlite":
-        storage = SQLiteStorage(path=storage_args)
-    else:
-        # FIXME: Support other storage backends.
-        storage_help()
-        sys.exit(1)
 
     test_arguments = {}
     for arg_name, gen_name, gen_args in options.args or []:
@@ -277,7 +269,7 @@ def main():
             gen_class = ConstantGenerator
         else:
             args_help()
-            sys.exit(1)
+            return True
         if gen_args:
             # FIXME:
             if gen_class == PlaylistGenerator:
@@ -293,6 +285,14 @@ def main():
 
         test_arguments[arg_name] = gen
 
+    storage_name, storage_args = options.storage
+    if storage_name == "sqlite":
+        storage = SQLiteStorage(path=storage_args)
+    else:
+        # FIXME: Support other storage backends.
+        storage_help()
+        return True
+
     test_run = TestRun(maxnbtests=1, workingdir=options.output)
     try:
         test_run.addTest(test, arguments=test_arguments, monitors=monitors)
@@ -300,10 +300,11 @@ def main():
         print 'Error: exception adding test: ', e
         error = True
 
-    client = Client()
-    client.setStorage(storage)
-    client.addTestRun(test_run)
-    client.run()
+    if not error:
+        client = Client()
+        client.setStorage(storage)
+        client.addTestRun(test_run)
+        client.run()
     return error
 
 if __name__ == "__main__":
