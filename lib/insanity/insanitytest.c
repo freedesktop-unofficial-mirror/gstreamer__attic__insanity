@@ -769,7 +769,6 @@ on_setup (InsanityTest * test)
 
   insanity_test_get_argument (test, "log-level", &log_level);
   LOCK (test);
-  test->priv->log_levels = g_hash_table_new (&g_str_hash, &g_str_equal);
   log_level_string = g_value_get_string (&log_level);
   for (ptr = log_level_string; *ptr;) {
     const char *colon, *end, *slev;
@@ -1995,6 +1994,8 @@ insanity_test_init (InsanityTest * test)
   priv->test_output_files =
       g_hash_table_new_full (&g_str_hash, &g_str_equal, &g_free,
       &free_output_file_item);
+
+  test->priv->log_levels = g_hash_table_new (&g_str_hash, &g_str_equal);
 
   priv->timeout = TEST_TIMEOUT;
 
