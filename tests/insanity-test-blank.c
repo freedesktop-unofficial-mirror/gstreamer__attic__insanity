@@ -84,21 +84,21 @@ blank_test_test (InsanityTest * test)
 
   printf ("blank_test_test\n");
 
-  /* Show how to validate steps and send extra info */
-  insanity_test_validate_step (test, "random-step", TRUE,
-      "Explanation of random-step failure");
+  /* Show how to validate checklist items and send extra info */
+  insanity_test_validate_checklist_item (test, "random-checklist-item", TRUE,
+      "Explanation of random-checklist-item failure");
   g_value_init (&info, G_TYPE_STRING);
   g_value_set_string (&info, "Foo");
   insanity_test_set_extra_info (test, "random-extra-info", &info);
   g_value_unset (&info);
 
-  if (!INSANITY_TEST_CHECK (test, "random-other-step", 1 != 0))
+  if (!INSANITY_TEST_CHECK (test, "random-other-checklist-item", 1 != 0))
     goto done;
 
   insanity_test_ping (test);
 
-  insanity_test_validate_step (test, "random-other-step", TRUE,
-      "Explanation of random-step failure");
+  insanity_test_validate_checklist_item (test, "random-other-checklist-item", TRUE,
+      "Explanation of random-checklist-item failure");
 
   INSANITY_LOG(test,"default",INSANITY_LOG_LEVEL_NONE,"log:none\n");
   INSANITY_LOG(test,"default",INSANITY_LOG_LEVEL_INFO,"log:info\n");
@@ -126,10 +126,10 @@ main (int argc, char **argv)
       INSANITY_TEST (insanity_threaded_test_new ("blank-c-test",
           "Sample test that does nothing", "some longer description"));
 
-  insanity_test_add_checklist_item (test, "random-step",
-      "Some random step, nothing much", "Probably something wrong here");
-  insanity_test_add_checklist_item (test, "random-other-step",
-      "Some random step, nothing much", "Not going to happen");
+  insanity_test_add_checklist_item (test, "random-checklist-item",
+      "Some random checklist item, nothing much", "Probably something wrong here");
+  insanity_test_add_checklist_item (test, "random-other-checklist-item",
+      "Some random checklist item, nothing much", "Not going to happen");
   insanity_test_add_extra_info (test, "random-extra-info",
       "Some random extra info");
 

@@ -45,7 +45,7 @@
 
 /* TODO:
   - logs ?
-  - gather timings at every step validated ?
+  - gather timings at every checklist item validated ?
 */
 
 #ifdef USE_CPU_LOAD
@@ -561,26 +561,26 @@ insanity_test_ping_unlocked (InsanityTest * test)
 }
 
 /**
- * insanity_test_validate_step:
+ * insanity_test_validate_checklist_item:
  * @test: a #InsanityTest to operate on
- * @name: the name of the step
- * @success: whether the step passed, or failed
+ * @label: the label of the checklist item
+ * @success: whether the checklist item passed, or failed
  * @description: (allow-none): optional description string
  *
- * Declares a given step as either passed, or failed.
+ * Declares a given checklist item as either passed, or failed.
  * An optional description may be given to supply more information
  * about the reason for a particular failure.
  */
 void
-insanity_test_validate_step (InsanityTest * test, const char *name,
+insanity_test_validate_checklist_item (InsanityTest * test, const char *label,
     gboolean success, const char *description)
 {
   g_return_if_fail (INSANITY_IS_TEST (test));
-  g_return_if_fail (name != NULL);
-  g_return_if_fail (check_valid_label (name));
+  g_return_if_fail (label != NULL);
+  g_return_if_fail (check_valid_label (label));
   g_return_if_fail (g_hash_table_lookup (test->priv->test_checklist,
-          name) != NULL);
-  g_return_if_fail (g_hash_table_lookup (test->priv->checklist_results, name) == NULL);
+          label) != NULL);
+  g_return_if_fail (g_hash_table_lookup (test->priv->checklist_results, label) == NULL);
 
   LOCK (test);
 
@@ -588,25 +588,25 @@ insanity_test_validate_step (InsanityTest * test, const char *name,
 
   if (test->priv->standalone) {
     if (description) {
-      insanity_test_printf (test, "step: %s: %s (%s)\n", name, success ? "PASS" : "FAIL",
+      insanity_test_printf (test, "checklist item: %s: %s (%s)\n", label, success ? "PASS" : "FAIL",
           description);
     } else {
-     insanity_test_printf (test, "step: %s: %s\n", name, success ? "PASS" : "FAIL");
+     insanity_test_printf (test, "checklist item: %s: %s\n", label, success ? "PASS" : "FAIL");
     }
   } else {
     const char *desc = description ? description : "";
     send_signal (test->priv->conn, "remoteValidateStepSignal", test->priv->name,
-        DBUS_TYPE_STRING, &name, DBUS_TYPE_BOOLEAN, &success,
+        DBUS_TYPE_STRING, &label, DBUS_TYPE_BOOLEAN, &success,
         DBUS_TYPE_STRING, &desc, DBUS_TYPE_INVALID);
   }
 
-  g_hash_table_insert (test->priv->checklist_results, g_strdup (name),
+  g_hash_table_insert (test->priv->checklist_results, g_strdup (label),
       (success ? ((gpointer) 1) : ((gpointer) 0)));
   UNLOCK (test);
 }
 
 static void
-insanity_test_set_extra_info_internal (InsanityTest * test, const char *name,
+insanity_test_set_extra_info_internal (InsanityTest * test, const char *label,
     const GValue * data, gboolean locked)
 {
   GType glib_type;
@@ -625,7 +625,7 @@ insanity_test_set_extra_info_internal (InsanityTest * test, const char *name,
 
   if (test->priv->standalone) {
     char *s = g_strdup_value_contents (data);
-    insanity_test_printf (test, "Extra info: %s: %s\n", name, s);
+    insanity_test_printf (test, "Extra info: %s: %s\n", label, s);
     g_free (s);
     if (!locked)
       UNLOCK (test);
@@ -668,7 +668,7 @@ insanity_test_set_extra_info_internal (InsanityTest * test, const char *name,
 
   if (dataptr) {
     send_signal (test->priv->conn, "remoteExtraInfoSignal", test->priv->name,
-        DBUS_TYPE_STRING, &name, DBUS_TYPE_VARIANT, dbus_type, dataptr,
+        DBUS_TYPE_STRING, &label, DBUS_TYPE_VARIANT, dbus_type, dataptr,
         DBUS_TYPE_INVALID);
   } else {
     char *s = g_strdup_value_contents (data);
@@ -683,7 +683,7 @@ insanity_test_set_extra_info_internal (InsanityTest * test, const char *name,
 /**
  * insanity_test_set_extra_info:
  * @test: a #InsanityTest to operate on
- * @name: a label for the extra information
+ * @label: a label for the extra information
  * @data: the extra information
  *
  * Allows a test to supply any relevant information of interest.
@@ -691,17 +691,17 @@ insanity_test_set_extra_info_internal (InsanityTest * test, const char *name,
  * used by a given test, the data here being an integer.
  */
 void
-insanity_test_set_extra_info (InsanityTest * test, const char *name,
+insanity_test_set_extra_info (InsanityTest * test, const char *label,
     const GValue * data)
 {
   g_return_if_fail (INSANITY_IS_TEST (test));
-  g_return_if_fail (name != NULL);
-  g_return_if_fail (check_valid_label (name));
+  g_return_if_fail (label != NULL);
+  g_return_if_fail (check_valid_label (label));
   g_return_if_fail (G_IS_VALUE (data));
   g_return_if_fail (check_valid_type (G_VALUE_TYPE (data)));
 
   insanity_test_ping (test);
-  insanity_test_set_extra_info_internal (test, name, data, FALSE);
+  insanity_test_set_extra_info_internal (test, label, data, FALSE);
 }
 
 void
@@ -995,42 +995,42 @@ foreach_dbus_array (DBusMessageIter * iter, int (*f) (const char *key,
 }
 
 static int
-output_filename_converter (const char *key, const GValue * value,
+output_filename_converter (const char *label, const GValue * value,
     guintptr userdata)
 {
   InsanityTest *test = (InsanityTest *) userdata;
 
   if (G_VALUE_TYPE (value) != G_TYPE_STRING) {
-    g_critical ("Output filename %s is not a string, ignored\n", key);
+    g_critical ("Output filename %s is not a string, ignored\n", label);
     return 0;
   }
 
-  g_hash_table_insert (test->priv->filename_cache, g_strdup (key),
+  g_hash_table_insert (test->priv->filename_cache, g_strdup (label),
       g_value_dup_string (value));
   return 0;
 }
 
 static int
-arg_converter (const char *key, const GValue * value, guintptr userdata)
+arg_converter (const char *label, const GValue * value, guintptr userdata)
 {
   InsanityTest *test = (InsanityTest *) userdata;
   const Argument *arg;
   GValue *v;
 
-  arg = g_hash_table_lookup (test->priv->test_arguments, key);
+  arg = g_hash_table_lookup (test->priv->test_arguments, label);
   if (!arg) {
-    /* fprintf (stderr, "Key '%s' is not a declared argument, ignored\n", key); */
+    /* fprintf (stderr, "Key '%s' is not a declared argument, ignored\n", label); */
     return 0;
   }
   if (G_VALUE_TYPE (value) != G_VALUE_TYPE (&arg->default_value)) {
-    g_critical ("Key '%s' does not have the expected type\n", key);
+    g_critical ("Key '%s' does not have the expected type\n", label);
     return -1;
   }
 
   v = g_slice_alloc0 (sizeof (GValue));
   g_value_init (v, G_VALUE_TYPE (value));
   g_value_copy (value, v);      /* src first */
-  g_hash_table_insert (test->priv->args, g_strdup (key), v);
+  g_hash_table_insert (test->priv->args, g_strdup (label), v);
   return 0;
 }
 
@@ -1091,7 +1091,7 @@ insanity_test_set_args (InsanityTest * test, DBusMessage * msg)
 /**
  * insanity_test_get_argument:
  * @test: a #InsanityTest to operate on
- * @key: the name of the argument to retrieve
+ * @label: the label of the argument to retrieve
  * @value: (out caller-allocates): a pointer to a value to receive the contents of the argument
  *
  * Returns: TRUE if the argument was found (in which case the value
@@ -1099,7 +1099,7 @@ insanity_test_set_args (InsanityTest * test, DBusMessage * msg)
  * case the value is left untouched).
  */
 gboolean
-insanity_test_get_argument (InsanityTest * test, const char *key,
+insanity_test_get_argument (InsanityTest * test, const char *label,
     GValue * value)
 {
   const Argument *arg;
@@ -1107,25 +1107,25 @@ insanity_test_get_argument (InsanityTest * test, const char *key,
   gboolean ret = FALSE;
 
   g_return_val_if_fail (INSANITY_IS_TEST (test), FALSE);
-  g_return_val_if_fail (key != NULL, FALSE);
-  g_return_val_if_fail (check_valid_label (key), FALSE);
+  g_return_val_if_fail (label != NULL, FALSE);
+  g_return_val_if_fail (check_valid_label (label), FALSE);
   g_return_val_if_fail (g_hash_table_lookup (test->priv->test_arguments,
-          key) != NULL, FALSE);
+          label) != NULL, FALSE);
   g_return_val_if_fail (value != NULL, FALSE);
 
   LOCK (test);
 
-  arg = g_hash_table_lookup (test->priv->test_arguments, key);
+  arg = g_hash_table_lookup (test->priv->test_arguments, label);
 
   if (!arg->global &&test->priv->runlevel != rl_started
       && test->priv->runlevel != rl_setup) {
     g_critical ("Non-global argument \'%s' requested but not set up yet\n",
-        key);
+        label);
     goto done;
   }
 
   if (test->priv->args) {
-    v = g_hash_table_lookup (test->priv->args, key);
+    v = g_hash_table_lookup (test->priv->args, label);
     if (v) {
       g_value_init (value, G_VALUE_TYPE (v));
       g_value_copy (v, value);
@@ -1142,7 +1142,7 @@ insanity_test_get_argument (InsanityTest * test, const char *key,
   }
 
   if (!ret) {
-    g_critical ("Argument %s not found\n", key);
+    g_critical ("Argument %s not found\n", label);
   }
 
 done:
@@ -1154,35 +1154,35 @@ done:
 /**
  * insanity_test_get_output_filename:
  * @test: a #InsanityTest to operate on
- * @key: the label of the filename to retrieve
+ * @label: the label of the filename to retrieve
  *
- * Returns: the filename associated to the key, or NULL if none.
+ * Returns: the filename associated to the label, or NULL if none.
  */
 const char *
-insanity_test_get_output_filename (InsanityTest * test, const char *key)
+insanity_test_get_output_filename (InsanityTest * test, const char *label)
 {
   gpointer ptr;
   char *fn = NULL;
   OutputFileItem *of;
 
   g_return_val_if_fail (INSANITY_IS_TEST (test), NULL);
-  g_return_val_if_fail (key != NULL, NULL);
-  g_return_val_if_fail (check_valid_label (key), NULL);
+  g_return_val_if_fail (label != NULL, NULL);
+  g_return_val_if_fail (check_valid_label (label), NULL);
   g_return_val_if_fail (g_hash_table_lookup (test->priv->test_output_files,
-          key) != NULL, NULL);
+          label) != NULL, NULL);
 
   LOCK (test);
 
-  of = g_hash_table_lookup (test->priv->test_output_files, key);
+  of = g_hash_table_lookup (test->priv->test_output_files, label);
   if (!of->global &&test->priv->runlevel != rl_started
       && test->priv->runlevel != rl_setup) {
     g_critical
         ("Non-global output filename \'%s' requested but not set up yet\n",
-        key);
+        label);
     goto done;
   }
 
-  ptr = g_hash_table_lookup (test->priv->filename_cache, key);
+  ptr = g_hash_table_lookup (test->priv->filename_cache, label);
   if (ptr) {
     fn = ptr;
   }
@@ -1201,15 +1201,15 @@ insanity_test_get_output_filename (InsanityTest * test, const char *key)
     }
 
     if (of->global) {
-      fn = g_build_filename (test->priv->tmpdir, key, NULL);
+      fn = g_build_filename (test->priv->tmpdir, label, NULL);
     } else {
       gchar *filename;
 
-      filename = g_strdup_printf ("key-%d", test->priv->iteration);
+      filename = g_strdup_printf ("%s-%d", label, test->priv->iteration);
       fn = g_build_filename (test->priv->tmpdir, filename, NULL);
       g_free (filename);
     }
-    g_hash_table_insert (test->priv->filename_cache, g_strdup (key), fn);
+    g_hash_table_insert (test->priv->filename_cache, g_strdup (label), fn);
   }
 
 done:
@@ -1602,7 +1602,7 @@ insanity_test_write_metadata (InsanityTest * test)
 static void
 usage (const char *argv0)
 {
-  g_print ("Usage: %s [--insanity-metadata | --run [name=value]... | <uuid>]\n",
+  g_print ("Usage: %s [--insanity-metadata | --run [label=value]... | <uuid>]\n",
       argv0);
 }
 
@@ -1633,13 +1633,13 @@ is_false (const char *string_value)
 }
 
 static gboolean
-parse_value (InsanityTest * test, const char *key, const char *string_value,
+parse_value (InsanityTest * test, const char *label, const char *string_value,
     GValue * value)
 {
   const Argument *arg;
   GType type;
 
-  arg = g_hash_table_lookup (test->priv->test_arguments, key);
+  arg = g_hash_table_lookup (test->priv->test_arguments, label);
   if (arg) {
     type = G_VALUE_TYPE (&arg->default_value);
     if (type == G_TYPE_STRING) {
@@ -1708,26 +1708,26 @@ static unsigned int
 insanity_report_failed_tests (InsanityTest * test, gboolean verbose)
 {
   GHashTableIter i;
-  gpointer key, value;
+  gpointer label, value;
   unsigned int failed = 0;
 
   /* Get all checklist items that were passed or failed */
   g_hash_table_iter_init (&i, test->priv->checklist_results);
-  while (g_hash_table_iter_next (&i, &key, &value)) {
+  while (g_hash_table_iter_next (&i, &label, &value)) {
     gboolean success = (value != NULL);
     if (verbose)
-      insanity_test_printf (test, "%s: %s\n", (const char *) key, success ? "PASS" : "FAIL");
+      insanity_test_printf (test, "%s: %s\n", (const char *) label, success ? "PASS" : "FAIL");
     if (!success)
       failed++;
   }
 
   /* Get all checklist items that were not passed nor failed */
   g_hash_table_iter_init (&i, test->priv->test_checklist);
-  while (g_hash_table_iter_next (&i, &key, &value)) {
-    if (!g_hash_table_lookup_extended (test->priv->checklist_results, key, NULL,
+  while (g_hash_table_iter_next (&i, &label, &value)) {
+    if (!g_hash_table_lookup_extended (test->priv->checklist_results, label, NULL,
             NULL)) {
       if (verbose)
-       insanity_test_printf (test, "%s: SKIP\n", (const char *) key);
+       insanity_test_printf (test, "%s: SKIP\n", (const char *) label);
       ++failed;
     }
   }
@@ -1835,7 +1835,7 @@ insanity_test_run (InsanityTest * test, int *argc, char ***argv)
         g_hash_table_new_full (&g_str_hash, &g_str_equal, &g_free,
         &free_gvalue);
     for (n = 1; n < *argc; ++n) {
-      char *key;
+      char *label;
       const char *equals;
       GValue value = { 0 }, *v;
 
@@ -1845,19 +1845,19 @@ insanity_test_run (InsanityTest * test, int *argc, char ***argv)
         return FALSE;
       }
 
-      key = g_strndup ((*argv)[n], equals - (*argv)[n]);
-      if (g_hash_table_lookup (test->priv->test_output_files, key)) {
-        g_hash_table_insert (test->priv->filename_cache, key,
+      label = g_strndup ((*argv)[n], equals - (*argv)[n]);
+      if (g_hash_table_lookup (test->priv->test_output_files, label)) {
+        g_hash_table_insert (test->priv->filename_cache, label,
             g_strdup (equals + 1));
       } else {
-        if (parse_value (test, key, equals + 1, &value)) {
+        if (parse_value (test, label, equals + 1, &value)) {
           v = g_slice_alloc0 (sizeof (GValue));
           g_value_init (v, G_VALUE_TYPE (&value));
           g_value_copy (&value, v);     /* src first */
-          g_hash_table_insert (test->priv->args, key, v);
+          g_hash_table_insert (test->priv->args, label, v);
           g_value_unset (&value);
         } else {
-          g_free (key);
+          g_free (label);
         }
       }
     }
@@ -1907,9 +1907,9 @@ insanity_test_finalize (GObject * gobject)
     if (!priv->conn) {          /* unreffed, but value still set */
       if (!priv->keep_unnamed_output_files) {
         GHashTableIter i;
-        gpointer key, value;
+        gpointer label, value;
         g_hash_table_iter_init (&i, priv->filename_cache);
-        while (g_hash_table_iter_next (&i, &key, &value)) {
+        while (g_hash_table_iter_next (&i, &label, &value)) {
           /* only unlink those random ones */
           if (test->priv->tmpdir
               && g_str_has_prefix (value, test->priv->tmpdir)) {
@@ -2171,14 +2171,14 @@ insanity_add_metadata_entry (GHashTable * hash, const char *label,
 /**
  * insanity_test_add_checklist_item:
  * @test: a #InsanityTest instance to operate on.
- * @label: the new checklist item's name
+ * @label: the new checklist item's label
  * @description: a one line description of that item
  * @error_hint: (allow-none): an optional explanatory description of why this error may happen
  *
  * This function adds a checklist item declaration to the test.
  *
- * Checklist items are the individual steps that a test can pass or fail
- * using insanity_test_validate_step.
+ * Checklist items are the individual checklist items that a test can pass or fail
+ * using insanity_test_validate_checklist_item().
  */
 void
 insanity_test_add_checklist_item (InsanityTest * test, const char *label,
@@ -2203,7 +2203,7 @@ insanity_test_add_checklist_item (InsanityTest * test, const char *label,
 /**
  * insanity_test_add_argument:
  * @test: a #InsanityTest instance to operate on.
- * @label: the new argument's name
+ * @label: the new argument's label
  * @description: a one line description of that argument
  * @full_description: (allow-none): an optional longer description of that argument
  * @global: if this is a global argument
@@ -2252,7 +2252,7 @@ insanity_test_add_argument (InsanityTest * test, const char *label,
 /**
  * insanity_test_add_extra_info:
  * @test: a #InsanityTest instance to operate on.
- * @label: the new extra info's name
+ * @label: the new extra info's label
  * @description: a one line description of that extra info
  *
  * This function adds an extra info declaration to the test.
@@ -2278,7 +2278,7 @@ insanity_test_add_extra_info (InsanityTest * test, const char *label,
 /**
  * insanity_test_add_output_file:
  * @test: a #InsanityTest instance to operate on.
- * @label: the new output file's name
+ * @label: the new output file's label
  * @description: a one line description of that file's purpose
  * @global: %TRUE if the filename should be shared among iterations, %FALSE otherwise
  *
@@ -2318,17 +2318,17 @@ insanity_test_add_output_file (InsanityTest * test, const char *label,
 /**
  * insanity_test_check:
  * @test: a #InsanityTest instance to operate on.
- * @step: a step label
+ * @label: a checklist item label
  * @expr: an expression which should evaluate to FALSE (failed) or TRUE (passed)
  * @msg: a printf(3) format string, followed by optional arguments as per printf(3)
  * @...: the parameters to insert into the format string
  *
  * This function checks whether an expression evaluates to 0 or not,
- * and, if false, invalidates the "insanity-check" step.
- * If all checks pass, or not checks are done, this step wil be
+ * and, if false, invalidates the "insanity-check" checklist item.
+ * If all checks pass, or not checks are done, this checklist item wil be
  * automatically validated at the end of a test.
  *
- * A step label must specified, it must be one of the checklist items that were
+ * A checklist item label must specified, it must be one of the checklist items that were
  * predefined.
  *
  * There are macros (only one at the moment, INSANITY_TEST_CHECK) which are higher
@@ -2337,23 +2337,23 @@ insanity_test_add_output_file (InsanityTest * test, const char *label,
  * Returns: the value of the expression, as a convenience.
  */
 gboolean
-insanity_test_check (InsanityTest * test, const char *step, gboolean expr,
+insanity_test_check (InsanityTest * test, const char *label, gboolean expr,
     const char *msg, ...)
 {
   char *fullmsg;
   va_list ap;
 
   g_return_val_if_fail (INSANITY_IS_TEST (test), FALSE);
-  g_return_val_if_fail (step != NULL, FALSE);
-  g_return_val_if_fail (check_valid_label (step), FALSE);
+  g_return_val_if_fail (label != NULL, FALSE);
+  g_return_val_if_fail (check_valid_label (label), FALSE);
   g_return_val_if_fail (g_hash_table_lookup (test->priv->test_checklist,
-          step) != NULL, FALSE);
+          label) != NULL, FALSE);
 
   if (!expr) {
     va_start (ap, msg);
     fullmsg = g_strdup_vprintf (msg, ap);
     va_end (ap);
-    insanity_test_validate_step (test, step, FALSE, fullmsg);
+    insanity_test_validate_checklist_item (test, label, FALSE, fullmsg);
     g_free (fullmsg);
   }
   return expr;
@@ -2374,6 +2374,7 @@ find_log_level (InsanityTest *test, const char *category)
 /**
  * insanity_test_log:
  * @test: a #InsanityTest instance to operate on.
+ * @category: a debug category
  * @level: log level of this log
  * @file: the filename where the log call is located
  * @line: the line number in that file where the log call is located
@@ -2391,7 +2392,7 @@ find_log_level (InsanityTest *test, const char *category)
  *
  * These conditions may change to match a "when it makes sense" ideal.
  */
-void insanity_test_log (InsanityTest *test, const char *category, InsanityLogLevel level,const char *file, unsigned int line,const char *format,...)
+void insanity_test_log (InsanityTest *test, const char *category, InsanityLogLevel level, const char *file, unsigned int line, const char *format, ...)
 {
   va_list ap;
   guint64 dt;
@@ -2517,13 +2518,13 @@ insanity_test_add_boolean_argument (InsanityTest * test, const char *label,
 }
 
 gboolean
-insanity_test_get_string_argument (InsanityTest * test, const char *key,
+insanity_test_get_string_argument (InsanityTest * test, const char *label,
     char **value)
 {
   GValue v = { 0 };
   gboolean ret = FALSE;
 
-  ret = insanity_test_get_argument (test, key, &v);
+  ret = insanity_test_get_argument (test, label, &v);
   if (!ret)
     goto done;
   if (!G_VALUE_HOLDS_STRING (&v)) {
@@ -2540,13 +2541,13 @@ done:
 }
 
 gboolean
-insanity_test_get_int_argument (InsanityTest * test, const char *key,
+insanity_test_get_int_argument (InsanityTest * test, const char *label,
     gint * value)
 {
   GValue v = { 0 };
   gboolean ret = FALSE;
 
-  ret = insanity_test_get_argument (test, key, &v);
+  ret = insanity_test_get_argument (test, label, &v);
   if (!ret)
     goto done;
   if (!G_VALUE_HOLDS_INT (&v)) {
@@ -2563,13 +2564,13 @@ done:
 }
 
 gboolean
-insanity_test_get_uint_argument (InsanityTest * test, const char *key,
+insanity_test_get_uint_argument (InsanityTest * test, const char *label,
     guint * value)
 {
   GValue v = { 0 };
   gboolean ret = FALSE;
 
-  ret = insanity_test_get_argument (test, key, &v);
+  ret = insanity_test_get_argument (test, label, &v);
   if (!ret)
     goto done;
   if (!G_VALUE_HOLDS_UINT (&v)) {
@@ -2586,13 +2587,13 @@ done:
 }
 
 gboolean
-insanity_test_get_int64_argument (InsanityTest * test, const char *key,
+insanity_test_get_int64_argument (InsanityTest * test, const char *label,
     gint64 * value)
 {
   GValue v = { 0 };
   gboolean ret = FALSE;
 
-  ret = insanity_test_get_argument (test, key, &v);
+  ret = insanity_test_get_argument (test, label, &v);
   if (!ret)
     goto done;
   if (!G_VALUE_HOLDS_INT64 (&v)) {
@@ -2609,13 +2610,13 @@ done:
 }
 
 gboolean
-insanity_test_get_uint64_argument (InsanityTest * test, const char *key,
+insanity_test_get_uint64_argument (InsanityTest * test, const char *label,
     guint64 * value)
 {
   GValue v = { 0 };
   gboolean ret = FALSE;
 
-  ret = insanity_test_get_argument (test, key, &v);
+  ret = insanity_test_get_argument (test, label, &v);
   if (!ret)
     goto done;
   if (!G_VALUE_HOLDS_UINT64 (&v)) {
@@ -2632,13 +2633,13 @@ done:
 }
 
 gboolean
-insanity_test_get_double_argument (InsanityTest * test, const char *key,
+insanity_test_get_double_argument (InsanityTest * test, const char *label,
     gdouble * value)
 {
   GValue v = { 0 };
   gboolean ret = FALSE;
 
-  ret = insanity_test_get_argument (test, key, &v);
+  ret = insanity_test_get_argument (test, label, &v);
   if (!ret)
     goto done;
   if (!G_VALUE_HOLDS_DOUBLE (&v)) {
@@ -2655,13 +2656,13 @@ done:
 }
 
 gboolean
-insanity_test_get_boolean_argument (InsanityTest * test, const char *key,
+insanity_test_get_boolean_argument (InsanityTest * test, const char *label,
     gboolean * value)
 {
   GValue v = { 0 };
   gboolean ret = FALSE;
 
-  ret = insanity_test_get_argument (test, key, &v);
+  ret = insanity_test_get_argument (test, label, &v);
   if (!ret)
     goto done;
   if (!G_VALUE_HOLDS_BOOLEAN (&v)) {
@@ -2678,85 +2679,85 @@ done:
 }
 
 void
-insanity_test_set_string_extra_info (InsanityTest * test, const char *name,
+insanity_test_set_string_extra_info (InsanityTest * test, const char *label,
     const char *data)
 {
   GValue v = { 0 };
 
   g_value_init (&v, G_TYPE_STRING);
   g_value_set_string (&v, data);
-  insanity_test_set_extra_info (test, name, &v);
+  insanity_test_set_extra_info (test, label, &v);
   g_value_unset (&v);
 }
 
 void
-insanity_test_set_int_extra_info (InsanityTest * test, const char *name,
+insanity_test_set_int_extra_info (InsanityTest * test, const char *label,
     gint data)
 {
   GValue v = { 0 };
 
   g_value_init (&v, G_TYPE_INT);
   g_value_set_int (&v, data);
-  insanity_test_set_extra_info (test, name, &v);
+  insanity_test_set_extra_info (test, label, &v);
   g_value_unset (&v);
 }
 
 void
-insanity_test_set_uint_extra_info (InsanityTest * test, const char *name,
+insanity_test_set_uint_extra_info (InsanityTest * test, const char *label,
     guint data)
 {
   GValue v = { 0 };
 
   g_value_init (&v, G_TYPE_UINT);
   g_value_set_uint (&v, data);
-  insanity_test_set_extra_info (test, name, &v);
+  insanity_test_set_extra_info (test, label, &v);
   g_value_unset (&v);
 }
 
 void
-insanity_test_set_int64_extra_info (InsanityTest * test, const char *name,
+insanity_test_set_int64_extra_info (InsanityTest * test, const char *label,
     gint64 data)
 {
   GValue v = { 0 };
 
   g_value_init (&v, G_TYPE_INT64);
   g_value_set_int64 (&v, data);
-  insanity_test_set_extra_info (test, name, &v);
+  insanity_test_set_extra_info (test, label, &v);
   g_value_unset (&v);
 }
 
 void
-insanity_test_set_uint64_extra_info (InsanityTest * test, const char *name,
+insanity_test_set_uint64_extra_info (InsanityTest * test, const char *label,
     guint64 data)
 {
   GValue v = { 0 };
 
   g_value_init (&v, G_TYPE_UINT64);
   g_value_set_uint64 (&v, data);
-  insanity_test_set_extra_info (test, name, &v);
+  insanity_test_set_extra_info (test, label, &v);
   g_value_unset (&v);
 }
 
 void
-insanity_test_set_double_extra_info (InsanityTest * test, const char *name,
+insanity_test_set_double_extra_info (InsanityTest * test, const char *label,
     gdouble data)
 {
   GValue v = { 0 };
 
   g_value_init (&v, G_TYPE_DOUBLE);
   g_value_set_double (&v, data);
-  insanity_test_set_extra_info (test, name, &v);
+  insanity_test_set_extra_info (test, label, &v);
   g_value_unset (&v);
 }
 
 void
-insanity_test_set_boolean_extra_info (InsanityTest * test, const char *name,
+insanity_test_set_boolean_extra_info (InsanityTest * test, const char *label,
     gboolean data)
 {
   GValue v = { 0 };
 
   g_value_init (&v, G_TYPE_BOOLEAN);
   g_value_set_boolean (&v, data);
-  insanity_test_set_extra_info (test, name, &v);
+  insanity_test_set_extra_info (test, label, &v);
   g_value_unset (&v);
 }

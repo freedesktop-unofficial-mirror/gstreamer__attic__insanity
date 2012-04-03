@@ -27,12 +27,15 @@ insanity_test_get_output_filename
 
 insanity_test_run
 insanity_test_set_extra_info
-insanity_test_validate_step
+insanity_test_validate_checklist_item
 INSANITY_TEST_CHECK
 insanity_test_check
 
 insanity_test_ping
 
+InsanityLogLevel
+INSANITY_LOG
+insanity_test_log
 insanity_test_printf
 
 insanity_test_done

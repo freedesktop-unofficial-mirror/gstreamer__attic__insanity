@@ -98,19 +98,19 @@ void insanity_test_add_argument(InsanityTest *test, const char *label, const cha
 void insanity_test_add_output_file(InsanityTest *test, const char *label, const char *description, gboolean global);
 void insanity_test_add_extra_info(InsanityTest *test, const char *label, const char *description);
 
-gboolean insanity_test_get_argument(InsanityTest *test, const char *key, GValue *value);
-const char *insanity_test_get_output_filename(InsanityTest *test, const char *key);
+gboolean insanity_test_get_argument(InsanityTest *test, const char *label, GValue *value);
+const char *insanity_test_get_output_filename(InsanityTest *test, const char *label);
 void insanity_test_done(InsanityTest *test);
-void insanity_test_validate_step(InsanityTest *test, const char *name, gboolean success, const char *description);
-void insanity_test_set_extra_info(InsanityTest *test, const char *name, const GValue *data);
+void insanity_test_validate_checklist_item(InsanityTest *test, const char *label, gboolean success, const char *description);
+void insanity_test_set_extra_info(InsanityTest *test, const char *label, const GValue *data);
 void insanity_test_ping(InsanityTest *test);
 
-gboolean insanity_test_check (InsanityTest *test, const char *step, gboolean expr, const char *msg,...);
-#define INSANITY_TEST_CHECK(test, step, expr) insanity_test_check(test, step, (expr), "%s:%u: check failed: %s", __FILE__, __LINE__, #expr)
+gboolean insanity_test_check (InsanityTest *test, const char *label, gboolean expr, const char *msg, ...);
+#define INSANITY_TEST_CHECK(test, label, expr) insanity_test_check(test, label, (expr), "%s:%u: check failed: %s", __FILE__, __LINE__, #expr)
 
 /* Logging */
-void insanity_test_log (InsanityTest *test, const char *category, InsanityLogLevel level,const char *file, unsigned int line,const char *format,...);
-#define INSANITY_LOG(test,category,loglevel,format,args...) \
+void insanity_test_log (InsanityTest *test, const char *category, InsanityLogLevel level, const char *file, unsigned int line, const char *format, ...);
+#define INSANITY_LOG(test, category, loglevel, format, args...) \
   insanity_test_log(test, category, loglevel, __FILE__, __LINE__, format, ##args)
 #define insanity_test_printf(test,format,args...) \
   INSANITY_LOG(test, "default", INSANITY_LOG_LEVEL_INFO, format, ##args)
@@ -126,21 +126,21 @@ void insanity_test_add_uint64_argument(InsanityTest *test, const char *label, co
 void insanity_test_add_double_argument(InsanityTest *test, const char *label, const char *description, const char *full_description, gboolean global, gdouble default_value);
 void insanity_test_add_boolean_argument(InsanityTest *test, const char *label, const char *description, const char *full_description, gboolean global, gboolean default_value);
 
-gboolean insanity_test_get_string_argument(InsanityTest *test, const char *key, char **value);
-gboolean insanity_test_get_int_argument(InsanityTest *test, const char *key, gint *value);
-gboolean insanity_test_get_uint_argument(InsanityTest *test, const char *key, guint *value);
-gboolean insanity_test_get_int64_argument(InsanityTest *test, const char *key, gint64 *value);
-gboolean insanity_test_get_uint64_argument(InsanityTest *test, const char *key, guint64 *value);
-gboolean insanity_test_get_double_argument(InsanityTest *test, const char *key, gdouble *value);
-gboolean insanity_test_get_boolean_argument(InsanityTest *test, const char *key, gboolean *value);
+gboolean insanity_test_get_string_argument(InsanityTest *test, const char *label, char **value);
+gboolean insanity_test_get_int_argument(InsanityTest *test, const char *label, gint *value);
+gboolean insanity_test_get_uint_argument(InsanityTest *test, const char *label, guint *value);
+gboolean insanity_test_get_int64_argument(InsanityTest *test, const char *label, gint64 *value);
+gboolean insanity_test_get_uint64_argument(InsanityTest *test, const char *label, guint64 *value);
+gboolean insanity_test_get_double_argument(InsanityTest *test, const char *label, gdouble *value);
+gboolean insanity_test_get_boolean_argument(InsanityTest *test, const char *label, gboolean *value);
 
-void insanity_test_set_string_extra_info (InsanityTest * test, const char *name, const char *data);
-void insanity_test_set_int_extra_info (InsanityTest * test, const char *name, gint data);
-void insanity_test_set_uint_extra_info (InsanityTest * test, const char *name, guint data);
-void insanity_test_set_int64_extra_info (InsanityTest * test, const char *name, gint64 data);
-void insanity_test_set_uint64_extra_info (InsanityTest * test, const char *name, guint64 data);
-void insanity_test_set_double_extra_info (InsanityTest * test, const char *name, gdouble data);
-void insanity_test_set_boolean_extra_info (InsanityTest * test, const char *name, gboolean data);
+void insanity_test_set_string_extra_info (InsanityTest * test, const char *label, const char *data);
+void insanity_test_set_int_extra_info (InsanityTest * test, const char *label, gint data);
+void insanity_test_set_uint_extra_info (InsanityTest * test, const char *label, guint data);
+void insanity_test_set_int64_extra_info (InsanityTest * test, const char *label, gint64 data);
+void insanity_test_set_uint64_extra_info (InsanityTest * test, const char *label, guint64 data);
+void insanity_test_set_double_extra_info (InsanityTest * test, const char *label, gdouble data);
+void insanity_test_set_boolean_extra_info (InsanityTest * test, const char *label, gboolean data);
 
 G_END_DECLS
 
