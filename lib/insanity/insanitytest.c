@@ -580,6 +580,7 @@ insanity_test_validate_step (InsanityTest * test, const char *name,
   g_return_if_fail (check_valid_label (name));
   g_return_if_fail (g_hash_table_lookup (test->priv->test_checklist,
           name) != NULL);
+  g_return_if_fail (g_hash_table_lookup (test->priv->checklist_results, name) == NULL);
 
   LOCK (test);
 
