@@ -2422,8 +2422,8 @@ void insanity_test_logv (InsanityTest *test, const char *category, InsanityLogLe
 
   msg = g_strdup_vprintf (format, args);
 
-  printf("%"TIME_FORMAT "\t%p\t%s\t%s:%u\t%s",
-    TIME_ARGS (dt), g_thread_self (), log_level_names[level], file, line, msg);
+  printf("%"TIME_FORMAT "\t%p\t%s\t%s\t%s:%u\t%s",
+    TIME_ARGS (dt), g_thread_self (), log_level_names[level], category, file, line, msg);
   g_free (msg);
 }
 
