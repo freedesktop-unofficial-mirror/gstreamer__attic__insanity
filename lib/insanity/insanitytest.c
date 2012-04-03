@@ -2372,6 +2372,51 @@ find_log_level (InsanityTest *test, const char *category)
 }
 
 /**
+ * insanity_test_logv:
+ * @test: a #InsanityTest instance to operate on.
+ * @category: a debug category
+ * @level: log level of this log
+ * @file: the filename where the log call is located
+ * @line: the line number in that file where the log call is located
+ * @format: a printf(3) format string, followed by optional arguments as per printf(3)
+ * @args: the parameters to insert into the format string
+ *
+ * This function outputs messages on stdout when some conditions are met.
+ * The semantics of these messages may be debugging, or informative, but
+ * which are not intended to be stored. If you want a message to be stored,
+ * use a extra-info string for this.
+ *
+ * Currently, the output conditions are:
+ *  - the test is running in standalone mode
+ *  - the log-level property is set to higher or equal to the log's level
+ *
+ * These conditions may change to match a "when it makes sense" ideal.
+ */
+void insanity_test_logv (InsanityTest *test, const char *category, InsanityLogLevel level, const char *file, unsigned int line, const char *format, va_list args)
+{
+  guint64 dt;
+  gchar *msg;
+
+  g_return_if_fail (INSANITY_IS_TEST (test));
+  g_return_if_fail (check_valid_label (category));
+
+  if (!test->priv->standalone)
+    return;
+  if (level == INSANITY_LOG_LEVEL_NONE)
+    return;
+  if (level>find_log_level (test, category))
+    return;
+
+  dt = g_get_monotonic_time() - test->priv->start_time;
+
+  msg = g_strdup_vprintf (format, args);
+
+  printf("%"TIME_FORMAT "\t%p\t%s\t%s:%u\t%s",
+    TIME_ARGS (dt), g_thread_self (), log_level_names[level], file, line, msg);
+  g_free (msg);
+}
+
+/**
  * insanity_test_log:
  * @test: a #InsanityTest instance to operate on.
  * @category: a debug category
@@ -2395,28 +2440,10 @@ find_log_level (InsanityTest *test, const char *category)
 void insanity_test_log (InsanityTest *test, const char *category, InsanityLogLevel level, const char *file, unsigned int line, const char *format, ...)
 {
   va_list ap;
-  guint64 dt;
-  gchar *msg;
-
-  g_return_if_fail (INSANITY_IS_TEST (test));
-  g_return_if_fail (check_valid_label (category));
-
-  if (!test->priv->standalone)
-    return;
-  if (level == INSANITY_LOG_LEVEL_NONE)
-    return;
-  if (level>find_log_level (test, category))
-    return;
-
-  dt = g_get_monotonic_time() - test->priv->start_time;
 
   va_start (ap, format);
-  msg = g_strdup_vprintf (format, ap);
+  insanity_test_logv (test, category, level, file, line, format, ap);
   va_end (ap);
-
-  printf("%"TIME_FORMAT "\t%p\t%s\t%s:%u\t%s",
-    TIME_ARGS (dt), g_thread_self (), log_level_names[level], file, line, msg);
-  g_free (msg);
 }
 
 void

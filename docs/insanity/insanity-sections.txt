@@ -36,6 +36,7 @@ insanity_test_ping
 InsanityLogLevel
 INSANITY_LOG
 insanity_test_log
+insanity_test_logv
 insanity_test_printf
 
 insanity_test_done

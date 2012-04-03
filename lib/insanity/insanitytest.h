@@ -109,6 +109,7 @@ gboolean insanity_test_check (InsanityTest *test, const char *label, gboolean ex
 #define INSANITY_TEST_CHECK(test, label, expr) insanity_test_check(test, label, (expr), "%s:%u: check failed: %s", __FILE__, __LINE__, #expr)
 
 /* Logging */
+void insanity_test_logv (InsanityTest *test, const char *category, InsanityLogLevel level, const char *file, unsigned int line, const char *format, va_list args);
 void insanity_test_log (InsanityTest *test, const char *category, InsanityLogLevel level, const char *file, unsigned int line, const char *format, ...);
 #define INSANITY_LOG(test, category, loglevel, format, args...) \
   insanity_test_log(test, category, loglevel, __FILE__, __LINE__, format, ##args)
