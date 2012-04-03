@@ -212,6 +212,9 @@ def args_help():
     print "  uri:external:\"find `pwd` | sed -e s:^:file\\\://:\""
     print "  uri:urifilesystem:/testclips\;videodec,audiodec:playlist:/decoders"
 
+def storage_closed():
+    pass
+
 def main():
 
     error = False
@@ -293,11 +296,14 @@ def main():
         storage_help()
         return True
 
+    # From now on, when returning on error, call: storage.close(callback=storage_closed)
+
     test_run = TestRun(maxnbtests=1, workingdir=options.output)
     try:
         test_run.addTest(test, arguments=test_arguments, monitors=monitors)
     except Exception, e:
         print 'Error: exception adding test: ', e
+        storage.close(callback=storage_closed)
         error = True
 
     if not error:
