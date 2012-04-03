@@ -138,14 +138,14 @@ class Monitor(object):
 
     ## Methods for tests to return information
 
-    def validateStep(self, checkitem):
+    def validateChecklistItem(self, checkitem):
         """
-        Validate a step in the checklist.
+        Validate a checklist item in the checklist.
         checkitem is one of the keys of __test_checklist__
 
         Called by the test itself
         """
-        info("step %s for item %r" % (checkitem, self))
+        info("checklist item %s for item %r" % (checkitem, self))
         if not checkitem in self._checklist:
             return
         self._checklist[checkitem] = True
@@ -207,10 +207,10 @@ class Monitor(object):
         Returns the success rate of this instance as a float
         """
         ckl = self.getCheckList()
-        nbsteps = len(ckl)
-        if nbsteps:
+        nbitems = len(ckl)
+        if nbitems:
             nbsucc = len([x for x in ckl if ckl[x] == True])
-            return (100.0 * nbsucc) / nbsteps
+            return (100.0 * nbsucc) / nbitems
         # yes, no check items means 100% success for monitors
         return 100.0
 

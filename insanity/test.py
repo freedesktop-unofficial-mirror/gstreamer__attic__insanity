@@ -414,7 +414,7 @@ class Test(gobject.GObject):
             gobject.source_remove(self._testtimeoutid)
             self._testtimeoutid = 0
             notimeout = True
-        self.validateStep("no-timeout", notimeout)
+        self.validateChecklistItem("no-timeout", notimeout)
         self.iteration_checklist[self._iteration] = self._checklist
         self.iteration_extrainfo[self._iteration] = self._extrainfo
         self.iteration_outputfiles[self._iteration] = self._outputfiles
@@ -452,7 +452,7 @@ class Test(gobject.GObject):
                            int((curtime - self._teststarttime) * 1000))
         self._running = True
         self.emit("start", self._iteration)
-        self.validateStep("test-started")
+        self.validateChecklistItem("test-started")
         # start timeout for test !
         self._testtimeouttime = time.time() + self._timeout
         self._testtimeoutid = gobject.timeout_add(self._timeout * 1000,
@@ -468,16 +468,16 @@ class Test(gobject.GObject):
 
     ## Methods for tests to return information
 
-    def validateStep(self, checkitem, validated=True, description = None):
+    def validateChecklistItem(self, checkitem, validated=True, description = None):
         """
-        Validate a step in the checklist.
+        Validate a checklist item in the checklist.
         checkitem is one of the keys of __test_checklist__
-        validated is a boolean indicating whether that step should be
+        validated is a boolean indicating whether that item should be
            validated or not.
 
         Called by the test itself
         """
-        info("step %s for item %r : %r" % (checkitem, self, validated))
+        info("checklist item %s for item %r : %r" % (checkitem, self, validated))
         # check for valid checkitem
         if not checkitem in self._possiblechecklist:
             return
@@ -607,7 +607,7 @@ class Test(gobject.GObject):
         """
         Returns the instance checklist as a list of tuples of:
         * checkitem name
-        * value indicating whether the success of that step
+        * value indicating whether the success of that checklist item
            That value can be one of: SKIPPED, SUCCESS, FAILURE, EXPECTED_FAILURE
         """
         allk = self.getFullCheckList().keys()
@@ -664,17 +664,17 @@ class Test(gobject.GObject):
         """
         Returns the success rate of this instance as a float
         """
-        total_nbsteps = 0
+        total_nbitems = 0
         total_nbsucc = 0
         for iteration in self.iteration_checklist:
             ckl = self.getIterationCheckList(iteration)
-            nbsteps = len(self._possiblechecklist)
-            nbsucc = len([step for step, val in ckl if val == True])
-            total_nbsteps = total_nbsteps + nbsteps
+            nbitems = len(self._possiblechecklist)
+            nbsucc = len([item for item, val in ckl if val == True])
+            total_nbitems = total_nbitems + nbitems
             total_nbsucc = total_nbsucc + nbsucc
-        if total_nbsteps == 0:
+        if total_nbitems == 0:
             return 0.0
-        return (100.0 * total_nbsucc) / total_nbsteps
+        return (100.0 * total_nbsucc) / total_nbitems
 
     def getIterationExtraInfo(self,iteration):
         """

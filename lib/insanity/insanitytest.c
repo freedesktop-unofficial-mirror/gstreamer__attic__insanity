@@ -394,7 +394,7 @@ insanity_test_record_stop_time (InsanityTest * test)
   "    </signal>\n" \
   "    <signal name=\"remoteStopSignal\">\n" \
   "    </signal>\n" \
-  "    <signal name=\"remoteValidateStepSignal\">\n" \
+  "    <signal name=\"remoteValidateChecklistItemSignal\">\n" \
   "      <arg name=\"name\" type=\"s\" />\n" \
   "      <arg name=\"success\" type=\"b\" />\n" \
   "      <arg name=\"description\" type=\"s\" />\n" \
@@ -587,8 +587,8 @@ insanity_test_validate_checklist_item (InsanityTest * test, const char *label,
 
   /* if the item has already been (in)validated, then we invalidate if success is FALSE,
      and do nothing if success is TRUE. This ends up doing a AND operation on all booleans
-     passed for that step (ie, a step succeeds only if all calls to validate for that
-     step succeed, and fails if any call to validate for that step fails). */
+     passed for that checklist item (ie, a checklist item succeeds only if all calls to
+     validate for that item succeed, and fails if any call to validate for that item fails). */
   if (g_hash_table_lookup (test->priv->checklist_results, label) != NULL) {
     if (success) {
       UNLOCK (test);
@@ -605,7 +605,7 @@ insanity_test_validate_checklist_item (InsanityTest * test, const char *label,
     }
   } else {
     const char *desc = description ? description : "";
-    send_signal (test->priv->conn, "remoteValidateStepSignal", test->priv->name,
+    send_signal (test->priv->conn, "remoteValidateChecklistItemSignal", test->priv->name,
         DBUS_TYPE_STRING, &label, DBUS_TYPE_BOOLEAN, &success,
         DBUS_TYPE_STRING, &desc, DBUS_TYPE_INVALID);
   }

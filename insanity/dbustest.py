@@ -193,11 +193,11 @@ class DBusTest(Test, dbus.service.Object):
             self._pid = self._process.pid
         except:
             exception("Error starting the subprocess command ! %r", pargs)
-            self.validateStep("dbus-process-spawned", False)
+            self.validateChecklistItem("dbus-process-spawned", False)
             return False
         debug("Subprocess created successfully [pid:%d]", self._pid)
 
-        self.validateStep("dbus-process-spawned")
+        self.validateChecklistItem("dbus-process-spawned")
         # add a poller for the proces
         self._processpollid = gobject.timeout_add(500, self._pollSubProcess)
         # Don't forget to set a timeout for waiting for the connection
@@ -235,7 +235,7 @@ class DBusTest(Test, dbus.service.Object):
                 self._process = None
             if not self._returncode is None:
                 info("Process returned %d", self._returncode)
-                self.validateStep("subprocess-exited-normally", self._returncode == 0)
+                self.validateChecklistItem("subprocess-exited-normally", self._returncode == 0)
                 self.extraInfo("subprocess-return-code", self._returncode)
 
         Test.tearDown(self)
@@ -372,10 +372,10 @@ class DBusTest(Test, dbus.service.Object):
         self.ping()
         self.stop()
 
-    def _remoteValidateStepCb(self, step, validate, desc):
-        info("%s step:%s : %r", self.uuid, step, validate)
+    def _remoteValidateChecklistItemCb(self, item, validate, desc):
+        info("%s checklist item:%s : %r", self.uuid, item, validate)
         self.ping()
-        self.validateStep(unwrap(step), validate, desc)
+        self.validateChecklistItem(unwrap(item), validate, desc)
 
     def _remoteExtraInfoCb(self, key, value):
         info("%s key:%s value:%r", self.uuid, key, value)
@@ -393,7 +393,7 @@ class DBusTest(Test, dbus.service.Object):
             return
 
         info("%s our remote counterpart has started", self.uuid)
-        self.validateStep("dbus-process-connected")
+        self.validateChecklistItem("dbus-process-connected")
         self._subprocessconnecttime = time.time()
         delay = self._subprocessconnecttime - self._subprocessspawntime
         self.extraInfo("subprocess-spawn-time", int(delay * 1000))
@@ -419,8 +419,8 @@ class DBusTest(Test, dbus.service.Object):
                                                    self._remoteReadyCb)
             self._remoteinstance.connect_to_signal("remoteStopSignal",
                                                    self._remoteStopCb)
-            self._remoteinstance.connect_to_signal("remoteValidateStepSignal",
-                                                   self._remoteValidateStepCb)
+            self._remoteinstance.connect_to_signal("remoteValidateChecklistItemSignal",
+                                                   self._remoteValidateChecklistItemCb)
             self._remoteinstance.connect_to_signal("remoteExtraInfoSignal",
                                                    self._remoteExtraInfoCb)
             self._remoteinstance.connect_to_signal("remotePingSignal",
