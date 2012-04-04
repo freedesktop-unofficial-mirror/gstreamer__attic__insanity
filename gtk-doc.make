@@ -34,8 +34,7 @@ EXTRA_DIST = 				\
 	$(SETUP_FILES)
 
 DOC_STAMPS=setup-build.stamp scan-build.stamp tmpl-build.stamp sgml-build.stamp \
-	html-build.stamp pdf-build.stamp \
-	tmpl.stamp sgml.stamp html.stamp pdf.stamp
+	html-build.stamp tmpl.stamp sgml.stamp html.stamp
 
 SCANOBJ_FILES = 		 \
 	$(DOC_MODULE).args 	 \
@@ -52,23 +51,15 @@ REPORT_FILES = \
 CLEANFILES = $(SCANOBJ_FILES) $(REPORT_FILES) $(DOC_STAMPS)
 
 if ENABLE_GTK_DOC
-if GTK_DOC_BUILD_HTML
 HTML_BUILD_STAMP=html-build.stamp
-else
-HTML_BUILD_STAMP=
-endif
-if GTK_DOC_BUILD_PDF
-PDF_BUILD_STAMP=pdf-build.stamp
-else
-PDF_BUILD_STAMP=
-endif
 
-all-local: $(HTML_BUILD_STAMP) $(PDF_BUILD_STAMP)
+
+all-local: $(HTML_BUILD_STAMP)
 else
 all-local:
 endif
 
-docs: $(HTML_BUILD_STAMP) $(PDF_BUILD_STAMP)
+docs: $(HTML_BUILD_STAMP)
 
 $(REPORT_FILES): sgml-build.stamp
 
@@ -184,29 +175,6 @@ html-build.stamp: sgml.stamp $(DOC_MAIN_SGML_FILE) $(content_files)
 	@gtkdoc-fixxref --module=$(DOC_MODULE) --module-dir=html --html-dir=$(HTML_DIR) $(FIXXREF_OPTIONS)
 	@touch html-build.stamp
 
-#### pdf ####
-
-pdf-build.stamp: sgml.stamp $(DOC_MAIN_SGML_FILE) $(content_files)
-	@echo '  DOC   Building PDF'
-	@rm -f $(DOC_MODULE).pdf
-	@mkpdf_options=""; \
-	gtkdoc-mkpdf 2>&1 --help | grep  >/dev/null "\-\-verbose"; \
-	if test "$(?)" = "0"; then \
-	  if test "x$(V)" = "x1"; then \
-	    mkpdf_options="$$mkpdf_options --verbose"; \
-	  fi; \
-	fi; \
-	if test "x$(HTML_IMAGES)" != "x"; then \
-	  for img in $(HTML_IMAGES); do \
-	    part=`dirname $$img`; \
-	    echo $$mkpdf_options | grep >/dev/null "\-\-imgdir=$$part "; \
-	    if test $$? != 0; then \
-	      mkpdf_options="$$mkpdf_options --imgdir=$$part"; \
-	    fi; \
-	  done; \
-	fi; \
-	gtkdoc-mkpdf --path="$(abs_srcdir)" $$mkpdf_options $(DOC_MODULE) $(DOC_MAIN_SGML_FILE) $(MKPDF_OPTIONS)
-	@touch pdf-build.stamp
 
 ##############
 
@@ -215,7 +183,7 @@ clean-local:
 	@rm -rf .libs
 
 distclean-local:
-	@rm -rf xml html $(REPORT_FILES) $(DOC_MODULE).pdf \
+	@rm -rf xml html $(REPORT_FILES) \
 	    $(DOC_MODULE)-decl-list.txt $(DOC_MODULE)-decl.txt
 	@if test "$(abs_srcdir)" != "$(abs_builddir)" ; then \
 	    rm -f $(SETUP_FILES) $(expand_content_files) $(DOC_MODULE).types; \
@@ -271,7 +239,6 @@ dist-hook: dist-check-gtkdoc dist-hook-local
 	@mkdir $(distdir)/html
 	@-cp ./tmpl/*.sgml $(distdir)/tmpl
 	@cp ./html/* $(distdir)/html
-	@-cp ./$(DOC_MODULE).pdf $(distdir)/
 	@-cp ./$(DOC_MODULE).types $(distdir)/
 	@-cp ./$(DOC_MODULE)-sections.txt $(distdir)/
 	@cd $(distdir) && rm -f $(DISTCLEANFILES)

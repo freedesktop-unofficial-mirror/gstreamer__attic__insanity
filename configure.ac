@@ -51,7 +51,8 @@ AC_SUBST(WARNING_CFLAGS)
 AM_PATH_PYTHON(,HAVE_PYTHON=yes, HAVE_PYTHON=no)
 AM_CONDITIONAL(HAVE_PYTHON,test "${HAVE_PYTHON}" = "yes")
 
-AC_SUBST(ACLOCAL_AMFLAGS, "-I m4")
+dnl Add parameters for aclocal
+AC_SUBST(ACLOCAL_AMFLAGS, "-I m4 -I common/m4")
 
 # headers
 
@@ -82,9 +83,6 @@ GTK_DOC_CHECK([1.3])
 dnl Check for documentation xrefs
 GLIB_PREFIX="`$PKG_CONFIG --variable=prefix glib-2.0`"
 AC_SUBST(GLIB_PREFIX)
-
-dnl Add parameters for aclocal
-AC_SUBST(ACLOCAL_AMFLAGS, "-I m4 -I common/m4")
 
 AC_CONFIG_FILES(
   [Makefile]
