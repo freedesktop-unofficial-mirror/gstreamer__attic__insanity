@@ -69,9 +69,9 @@ fi
 
 AC_CHECK_PROG(HAVE_PKG_CONFIG,pkg-config,yes)
 
-PKG_CHECK_MODULES(GLIB, glib-2.0)
-PKG_CHECK_MODULES(GOBJECT, gobject-2.0)
-PKG_CHECK_MODULES(GTHREAD, gthread-2.0)
+PKG_CHECK_MODULES(GLIB, glib-2.0 >= 2.30)
+PKG_CHECK_MODULES(GOBJECT, gobject-2.0 >= 2.30)
+PKG_CHECK_MODULES(GTHREAD, gthread-2.0 >= 2.30)
 PKG_CHECK_MODULES(DBUS, dbus-1)
 
 dnl check for gobject-introspection

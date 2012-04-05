@@ -99,7 +99,7 @@ insanity_threaded_test_class_init (InsanityThreadedTestClass * klass)
       G_TYPE_FROM_CLASS (gobject_class),
       G_SIGNAL_RUN_LAST | G_SIGNAL_NO_RECURSE | G_SIGNAL_NO_HOOKS,
       G_STRUCT_OFFSET (InsanityThreadedTestClass, test),
-      NULL, NULL, g_cclosure_marshal_VOID__VOID, G_TYPE_NONE /* return_type */ ,
+      NULL, NULL, NULL, G_TYPE_NONE /* return_type */ ,
       0, NULL);
 }
 
