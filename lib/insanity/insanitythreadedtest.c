@@ -63,6 +63,8 @@ insanity_threaded_test_start (InsanityTest * itest)
   if (!INSANITY_TEST_CLASS (insanity_threaded_test_parent_class)->start (itest))
     return FALSE;
 
+  g_assert (test->priv->thread == NULL);
+
   test->priv->thread =
 #if GLIB_CHECK_VERSION(2,31,2)
       g_thread_new ("insanity_worker", test_thread_func, test);
@@ -74,6 +76,15 @@ insanity_threaded_test_start (InsanityTest * itest)
     return FALSE;
 
   return TRUE;
+}
+
+static void
+insanity_threaded_test_stop (InsanityTest * itest)
+{
+  InsanityThreadedTest *test = INSANITY_THREADED_TEST (itest);
+
+  INSANITY_TEST_CLASS (insanity_threaded_test_parent_class)->start (itest);
+  test->priv->thread = NULL;
 }
 
 static void
@@ -92,6 +103,7 @@ insanity_threaded_test_class_init (InsanityThreadedTestClass * klass)
   InsanityTestClass *test_class = INSANITY_TEST_CLASS (klass);
 
   test_class->start = &insanity_threaded_test_start;
+  test_class->stop = &insanity_threaded_test_stop;
 
   g_type_class_add_private (klass, sizeof (InsanityThreadedTestPrivateData));
 
