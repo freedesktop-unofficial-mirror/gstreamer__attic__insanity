@@ -243,8 +243,8 @@ class DBusTest(Test, dbus.service.Object):
     def stop(self):
         info("uuid:%s", self.uuid)
         self.callRemoteStop()
-        self._prepareArguments()
-        Test.stop(self)
+	# Chaining up to the parent class happens after
+	# receiving the DBus method reply
 
     def ping(self):
         Test.ping(self)
@@ -293,6 +293,10 @@ class DBusTest(Test, dbus.service.Object):
             error("FATAL : Failed to start test")
             self.tearDown()
 
+    def _voidRemoteStopCallBackHandler(self):
+        self._prepareArguments()
+        Test.stop(self)
+
     def _voidRemoteErrBackHandler(self, exc, caller=None, fatal=True):
         error("%r : %s", caller, exc)
         if fatal:
@@ -340,7 +344,7 @@ class DBusTest(Test, dbus.service.Object):
         # call remote instance "remoteStop()"
         if not self._remoteinstance:
             return
-        self._remoteinstance.remoteStop(reply_handler=self._voidRemoteCallBackHandler,
+        self._remoteinstance.remoteStop(reply_handler=self._voidRemoteStopCallBackHandler,
                                         error_handler=self._voidRemoteStopErrBackHandler)
 
     def callRemoteTearDown(self):
