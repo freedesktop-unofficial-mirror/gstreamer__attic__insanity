@@ -243,8 +243,8 @@ class DBusTest(Test, dbus.service.Object):
     def stop(self):
         info("uuid:%s", self.uuid)
         self.callRemoteStop()
-	# Chaining up to the parent class happens after
-	# receiving the DBus method reply
+        # Chaining up to the parent class happens after
+        # the DBus method reply arrived
 
     def ping(self):
         Test.ping(self)
@@ -284,7 +284,10 @@ class DBusTest(Test, dbus.service.Object):
         pass
 
     def _voidRemoteSetUpCallBackHandler(self, success):
-        if not success:
+        if success:
+            self.ping()
+            self.start()
+        else:
             error("FATAL : Failed to setup test")
             self.tearDown()
 
@@ -294,8 +297,18 @@ class DBusTest(Test, dbus.service.Object):
             self.tearDown()
 
     def _voidRemoteStopCallBackHandler(self):
+        info("%s", self.uuid)
+
         self._prepareArguments()
         Test.stop(self)
+
+        self.ping()
+        # Check if we have new arguments and
+        # have to run another time
+        if self.args:
+            self.start()
+        else:
+            self.tearDown()
 
     def _voidRemoteErrBackHandler(self, exc, caller=None, fatal=True):
         error("%r : %s", caller, exc)
@@ -363,15 +376,7 @@ class DBusTest(Test, dbus.service.Object):
             self.args = None
 
     ## callbacks from remote signals
-    def _remoteReadyCb(self):
-        info("%s", self.uuid)
-        self.ping()
-        if self.args:
-            self.start()
-        else:
-            self.tearDown()
-
-    def _remoteStopCb(self):
+    def _remoteDoneCb(self):
         info("%s", self.uuid)
         self.ping()
         self.stop()
@@ -419,10 +424,8 @@ class DBusTest(Test, dbus.service.Object):
             self._remoteinstance = dbus.Interface(remoteobj,
                                                   "net.gstreamer.Insanity.Test")
             info ('Listening to signals from %s' % self._remoteinstance)
-            self._remoteinstance.connect_to_signal("remoteReadySignal",
-                                                   self._remoteReadyCb)
-            self._remoteinstance.connect_to_signal("remoteStopSignal",
-                                                   self._remoteStopCb)
+            self._remoteinstance.connect_to_signal("remoteDoneSignal",
+                                                   self._remoteDoneCb)
             self._remoteinstance.connect_to_signal("remoteValidateChecklistItemSignal",
                                                    self._remoteValidateChecklistItemCb)
             self._remoteinstance.connect_to_signal("remoteExtraInfoSignal",

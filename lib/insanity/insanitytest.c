@@ -358,9 +358,7 @@ insanity_test_record_stop_time (InsanityTest * test)
   "    </method>\n" \
   "    <method name=\"remoteTearDown\">\n" \
   "    </method>\n" \
-  "    <signal name=\"remoteReadySignal\">\n" \
-  "    </signal>\n" \
-  "    <signal name=\"remoteStopSignal\">\n" \
+  "    <signal name=\"remoteDoneSignal\">\n" \
   "    </signal>\n" \
   "    <signal name=\"remoteValidateChecklistItemSignal\">\n" \
   "      <arg name=\"name\" type=\"s\" />\n" \
@@ -722,7 +720,7 @@ insanity_test_done (InsanityTest * test)
 
   LOCK (test);
   if (!test->priv->standalone) {
-    send_signal (test->priv->conn, "remoteStopSignal", test->priv->name,
+    send_signal (test->priv->conn, "remoteDoneSignal", test->priv->name,
         DBUS_TYPE_INVALID);
   }
   UNLOCK (test);
@@ -796,16 +794,6 @@ on_setup (InsanityTest * test)
   LOCK (test);
 
   insanity_test_record_start_time (test);
-  if (!test->priv->standalone) {
-    if (!ret) {
-      send_signal (test->priv->conn, "remoteStopSignal", test->priv->name,
-          DBUS_TYPE_INVALID);
-    } else {
-      send_signal (test->priv->conn, "remoteReadySignal", test->priv->name,
-          DBUS_TYPE_INVALID);
-    }
-  }
-
   test->priv->runlevel = rl_setup;
   test->priv->iteration = 0;
   UNLOCK (test);
@@ -834,10 +822,6 @@ on_stop (InsanityTest * test)
   g_signal_emit (test, stop_signal, 0, NULL);
 
   LOCK (test);
-  if (!test->priv->standalone) {
-    send_signal (test->priv->conn, "remoteReadySignal", test->priv->name,
-        DBUS_TYPE_INVALID);
-  }
   test->priv->runlevel = rl_setup;
   test->priv->iteration++;
   UNLOCK (test);
