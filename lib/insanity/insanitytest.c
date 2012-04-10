@@ -1716,10 +1716,10 @@ insanity_test_run_standalone (InsanityTest * test)
       timeout = WAIT_TIMEOUT (test);
     }
     UNLOCK_SIGNAL (test);
-    if (started)
-      on_stop (test);
-    on_teardown (test);
+    on_stop (test);
   }
+  on_teardown (test);
+
   return (!timeout && insanity_report_failed_tests (test, TRUE) == 0);
 }
 
