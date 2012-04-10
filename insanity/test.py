@@ -205,6 +205,7 @@ class Test(gobject.GObject):
         self.iteration_checklist = {}
         self.iteration_extrainfo = {}
         self.iteration_outputfiles = {}
+        self.iteration_success_percentage = {}
         self._iteration = 0
         self._stopping = False
 
@@ -418,6 +419,7 @@ class Test(gobject.GObject):
         self.iteration_checklist[self._iteration] = self._checklist
         self.iteration_extrainfo[self._iteration] = self._extrainfo
         self.iteration_outputfiles[self._iteration] = self._outputfiles
+        self.iteration_success_percentage[self._iteration] = self.getSuccessPercentage()
         self.emit("stop", self._iteration)
 
     def start(self):
@@ -659,6 +661,9 @@ class Test(gobject.GObject):
             if key in validkeys:
                 res[key] = args[key]
         return res
+
+    def getIterationSuccessPercentage(self,iteration):
+        return self.iteration_success_percentage[iteration]
 
     def getSuccessPercentage(self):
         """

@@ -965,7 +965,7 @@ class DBStorage(DataStorage, AsyncStorage):
 
         # finally update the test
         updatestr = "UPDATE test SET resultpercentage=?, parentid=? WHERE id=?"
-        resultpercentage = test.getSuccessPercentage()
+        resultpercentage = test.getIterationSuccessPercentage(iteration)
         self._ExecuteCommit(updatestr, (resultpercentage, parentid, tid))
 
         debug("done adding information for test %d", tid)
@@ -1008,8 +1008,15 @@ class DBStorage(DataStorage, AsyncStorage):
 
     def __newTestFinished(self, testrun, test, parentid=None):
         debug("testrun:%r, test:%r", testrun, test)
-        # store monitor results
+
         tid = self.__tests[test]
+
+        # finally update the test
+        updatestr = "UPDATE test SET resultpercentage=?, parentid=? WHERE id=?"
+        resultpercentage = test.getSuccessPercentage()
+        self._ExecuteCommit(updatestr, (resultpercentage, parentid, tid))
+
+        # store monitor results
         for monitor in test._monitorinstances:
             self.__storeMonitor(monitor, tid, self.__testruns[testrun])
         pass
