@@ -3,6 +3,8 @@ prefix=
 exec_prefix=
 libdir=${pcfiledir}/insanity
 includedir=${pcfiledir}
+girdir=${pcfiledir}/insanity
+typelibdir=${pcfiledir}/insanity
 
 Name: insanity-@LIBINSANITY_API_VERSION@
 Description: insanity is a library to help write tests (not installed)

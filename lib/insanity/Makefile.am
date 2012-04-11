@@ -34,7 +34,7 @@ Insanity-@LIBINSANITY_API_VERSION@.gir: $(INTROSPECTION_SCANNER) libinsanity-@LI
 		--nsversion=@LIBINSANITY_API_VERSION@ \
 		--warn-all \
 		-I$(top_srcdir)/lib \
-		-I$(top_builddir) \
+		-I$(top_builddir)/lib \
 		-DIN_GOBJECT_INTROSPECTION=1 \
 		--c-include='insanity/insanity.h' \
 		--library=libinsanity-@LIBINSANITY_API_VERSION@.la \
@@ -60,7 +60,10 @@ typelibsdir = $(libdir)/girepository-1.0/
 typelibs_DATA = $(BUILT_GIRSOURCES:.gir=.typelib)
 
 %.typelib: %.gir $(INTROSPECTION_COMPILER)
-	$(AM_V_GEN)$(INTROSPECTION_COMPILER) --includedir=$(srcdir) --includedir=$(builddir) $(INTROSPECTION_COMPILER_OPTS) $< -o $(@F)
+	$(AM_V_GEN)$(INTROSPECTION_COMPILER) \
+		--includedir=$(srcdir)/lib \
+		--includedir=$(builddir)/lib \
+		$(INTROSPECTION_COMPILER_OPTS) $< -o $(@F)
 
 CLEANFILES = $(BUILT_GIRSOURCES) $(typelibs_DATA)
 endif
