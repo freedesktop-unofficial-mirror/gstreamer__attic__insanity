@@ -235,8 +235,8 @@ class DBusTest(Test, dbus.service.Object):
                 self._process = None
             if not self._returncode is None:
                 info("Process returned %d", self._returncode)
-                self.validateChecklistItem("subprocess-exited-normally", self._returncode == 0)
                 self.extraInfo("subprocess-return-code", self._returncode)
+            self.validateChecklistItem("subprocess-exited-normally", self._returncode == 0)
 
         Test.tearDown(self)
 
