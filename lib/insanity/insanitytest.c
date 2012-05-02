@@ -1764,10 +1764,13 @@ insanity_test_run (InsanityTest * test, int *argc, char ***argv)
   GOptionContext *ctx;
   GError *err = NULL;
   gboolean ret = TRUE;
+  gchar *prgname;
 
   g_return_val_if_fail (INSANITY_IS_TEST (test), FALSE);
 
-  g_set_prgname ((*argv)[0]);
+  prgname = g_path_get_basename ((*argv)[0]);
+  g_set_prgname (prgname);
+  g_free (prgname);
 
   /* Make warnings/criticals fatal */
   g_log_set_always_fatal (G_LOG_LEVEL_ERROR | G_LOG_LEVEL_CRITICAL |
