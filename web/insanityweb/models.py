@@ -46,7 +46,7 @@ class CustomSQLInterface:
         return res
 
 class Client(models.Model):
-    id = models.IntegerField(null=True, primary_key=True, blank=True)
+    id = models.IntegerField(null=False, primary_key=True, blank=True)
     software = models.TextField(blank=True)
     name = models.TextField(blank=True)
     user = models.TextField(blank=True)
@@ -79,7 +79,7 @@ class TestClassInfoManager(models.Manager):
 
 class TestClassInfo(models.Model):
     objects = TestClassInfoManager()
-    id = models.IntegerField(null=True, primary_key=True, blank=True)
+    id = models.IntegerField(null=False, primary_key=True, blank=True)
     type = models.TextField(unique=True)
     parent = models.ForeignKey("self", to_field="type",
                                db_column="parent",
@@ -131,7 +131,7 @@ class TestClassInfo(models.Model):
         db_table = 'testclassinfo'
 
 class TestClassInfoArgumentsDict(models.Model):
-    id = models.IntegerField(null=True, primary_key=True, blank=True)
+    id = models.IntegerField(null=False, primary_key=True, blank=True)
     containerid = models.ForeignKey(TestClassInfo,
                                     db_column="containerid",
                                     related_name="arguments",
@@ -150,7 +150,7 @@ class TestClassInfoArgumentsDict(models.Model):
         db_table = 'testclassinfo_arguments_dict'
 
 class TestClassInfoCheckListDict(models.Model):
-    id = models.IntegerField(null=True, primary_key=True, blank=True)
+    id = models.IntegerField(null=False, primary_key=True, blank=True)
     containerid = models.ForeignKey(TestClassInfo,
                                     db_column="containerid",
                                     related_name="checklist",
@@ -166,7 +166,7 @@ class TestClassInfoCheckListDict(models.Model):
         db_table = 'testclassinfo_checklist_dict'
 
 class TestClassInfoExtraInfoDict(models.Model):
-    id = models.IntegerField(null=True, primary_key=True, blank=True)
+    id = models.IntegerField(null=False, primary_key=True, blank=True)
     containerid = models.ForeignKey(TestClassInfo,
                                     db_column="containerid",
                                     related_name="extrainfos",
@@ -180,7 +180,7 @@ class TestClassInfoExtraInfoDict(models.Model):
         db_table = 'testclassinfo_extrainfo_dict'
 
 class TestClassInfoOutputFilesDict(models.Model):
-    id = models.IntegerField(null=True, primary_key=True, blank=True)
+    id = models.IntegerField(null=False, primary_key=True, blank=True)
     containerid = models.ForeignKey(TestClassInfo,
                                     db_column="containerid",
                                     related_name="outputfiles",
@@ -200,7 +200,7 @@ class TestRunManager(models.Manager):
 
 class TestRun(models.Model, CustomSQLInterface):
     objects = TestRunManager()
-    id = models.IntegerField(null=True, primary_key=True, blank=True)
+    id = models.IntegerField(null=False, primary_key=True, blank=True)
     clientid = models.ForeignKey(Client, db_column="clientid")
     starttime = DateTimeIntegerField(null=True, blank=True)
     stoptime = DateTimeIntegerField(null=True, blank=True)
@@ -314,7 +314,7 @@ class TestManager(models.Manager):
 
 class Test(models.Model):
     objects = TestManager()
-    id = models.IntegerField(null=True, primary_key=True, blank=True)
+    id = models.IntegerField(null=False, primary_key=True, blank=True)
     testrunid = models.ForeignKey(TestRun, db_column="testrunid")
     type = models.ForeignKey(TestClassInfo, db_column="type",
                              related_name="instances")
@@ -482,7 +482,7 @@ class Test(models.Model):
         return "%s:%s" % (self.type.type, self.id)
 
 class TestArgumentsDict(models.Model):
-    id = models.IntegerField(null=True, primary_key=True, blank=True)
+    id = models.IntegerField(null=False, primary_key=True, blank=True)
     containerid = models.ForeignKey(Test, db_column="containerid",
                                     related_name="arguments")
     name = models.ForeignKey(TestClassInfoArgumentsDict,
@@ -522,7 +522,7 @@ class TestCheckListList(models.Model):
         (EXPECTED_FAILURE, 'Expected failure'),
     )
 
-    id = models.IntegerField(null=True, primary_key=True, blank=True)
+    id = models.IntegerField(null=False, primary_key=True, blank=True)
     containerid = models.ForeignKey(Test, db_column="containerid",
                                     related_name="checklist")
     name = models.ForeignKey(TestClassInfoCheckListDict,
@@ -551,7 +551,7 @@ class TestCheckListList(models.Model):
         db_table = 'test_checklist_list'
 
 class TestOutputFilesDict(models.Model):
-    id = models.IntegerField(null=True, primary_key=True, blank=True)
+    id = models.IntegerField(null=False, primary_key=True, blank=True)
     containerid = models.ForeignKey(Test, db_column="containerid",
                                     related_name="outputfiles")
     name = models.ForeignKey(TestClassInfoOutputFilesDict,
@@ -566,7 +566,7 @@ class TestOutputFilesDict(models.Model):
         db_table = 'test_outputfiles_dict'
 
 class TestExtraInfoDict(models.Model):
-    id = models.IntegerField(null=True, primary_key=True, blank=True)
+    id = models.IntegerField(null=False, primary_key=True, blank=True)
     containerid = models.ForeignKey(Test, db_column="containerid",
                                     related_name="extrainfo")
     name = models.ForeignKey(TestClassInfoExtraInfoDict,
@@ -590,7 +590,7 @@ class TestExtraInfoDict(models.Model):
         db_table = 'test_extrainfo_dict'
 
 class TestErrorExplanationDict(models.Model):
-    id = models.IntegerField(null=True, primary_key=True, blank=True)
+    id = models.IntegerField(null=False, primary_key=True, blank=True)
     containerid = models.ForeignKey(Test, db_column="containerid",
                                     related_name="error_explanations")
     name = models.ForeignKey(TestClassInfoCheckListDict,
@@ -604,7 +604,7 @@ class TestErrorExplanationDict(models.Model):
         db_table = 'test_error_explanation_dict'
 
 class TestRunEnvironmentDict(models.Model):
-    id = models.IntegerField(null=True, primary_key=True, blank=True)
+    id = models.IntegerField(null=False, primary_key=True, blank=True)
     containerid = models.ForeignKey(TestRun, db_column="containerid",
                                     related_name="environment")
     name = models.TextField(blank=True)
@@ -624,7 +624,7 @@ class TestRunEnvironmentDict(models.Model):
         db_table = 'testrun_environment_dict'
 
 class Version(models.Model):
-    version = models.IntegerField(null=True, blank=True)
+    version = models.IntegerField(null=False, blank=True)
     modificationtime = models.IntegerField(null=True, blank=True)
     class Meta:
         db_table = 'version'
