@@ -793,12 +793,11 @@ class DBStorage(DataStorage, AsyncStorage):
 
         debug("Updating test.parentid with new values")
         self._ExecuteMany("""UPDATE test SET parentid=? WHERE id=?""",
-                          [(testmapping[pid][0], newid) for oldid, newid, pid in testmapping.iteritems() if pid])
+                          [(pid, newid) for newid, pid in testmapping.itervalues() if pid])
 
         debug("done merging testrun")
 
-    def __mergeTest(self, otherdb, otid, testrunid, testclassmap,
-                    monitorclassmap):
+    def __mergeTest(self, otherdb, otid, testrunid, testclassmap):
         """
         Copy all information about test 'otid' from otherdb into self,
         including monitor.
@@ -843,9 +842,10 @@ class DBStorage(DataStorage, AsyncStorage):
         if ptype and not self.__hasTestClassInfo(ptype):
             self.__mergeTestClassInfo(ptype, otherdb)
 
-        self.__rawInsertTestClassInfo(ttype, desc, fdesc, args, checks, extras,
-                                      outputfiles, ptype)
-
+        self.__rawInsertTestClassInfo(ctype=ttype, description=desc,
+                                      fulldescription=fdesc, args=args,
+                                      checklist=checks, extrainfo=extras,
+                                      outputfiles=outputfiles, parent=ptype)
 
     def __getRemoteMapping(self, tablename, otherdb, field1='type', field2='id'):
         # field1 is the common field
@@ -1295,6 +1295,9 @@ class DBStorage(DataStorage, AsyncStorage):
         # description : description of the class
         debug("ctype:%r, description:%r", ctype, description)
         # insert into db
+        if not parent:
+            parent = ""
+
         insertstr = """INSERT INTO testclassinfo
         (type, parent, description, fulldescription)
         VALUES (?, ?, ?, ?)"""
