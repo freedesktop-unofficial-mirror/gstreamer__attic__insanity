@@ -125,3 +125,34 @@ Example configuration:
           }
       }
   }
+
+Web frontend through Apache
+---------------------------
+
+To run insanity through Apache, you'll need to install mod_wsgi and add the
+following to your apache configuration.
+
+  WSGIDaemonProcess insanity user=buildbot group=buildbot threads=25
+  WSGIProcessGroup insanity
+
+  Alias /media/ /usr/local/share/insanity/web/site_media
+
+  <Directory /usr/local/share/insanity/web/site_media>
+      Order deny,allow
+      Allow from all
+  </Directory>
+
+  WSGIScriptAlias / /usr/local/share/insanity/web/wsgi.py
+
+  <Directory /usr/local/share/insanity/web/>
+    <Files wsgi.py>
+      Order deny,allow
+      Allow from all
+    </Files>
+  </Directory>
+
+Change 'buildbot' to any valid username and group you want to use. Change
+'/usr/local/' to match your installation prefix. You may need to change
+DATA_PATH in @prefix@/share/insanity/web/settings.py to a location where
+the selected user can write. Use 'manage.py syncdb' to initialized the
+the database, as one would normally with other Django webapp.
