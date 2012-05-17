@@ -12,7 +12,7 @@ install-data-local:
        #    done \
 #  fi \
 #done
-	cp -ar $(top_srcdir)/web/* $(DESTDIR)$(webdir)
+	cp -a $(top_srcdir)/web/* $(DESTDIR)$(webdir)
 
 uninstall-local:
 	rm -rf $(DESTDIR)$(webdir)
