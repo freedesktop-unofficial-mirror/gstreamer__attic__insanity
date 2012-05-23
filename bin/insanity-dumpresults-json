@@ -68,7 +68,7 @@ def getTestName(db, testid):
             ismon, isscen = db.getFullTestInfo(testid)
     assert not ismon, "Monitors do not have well defined names."
 
-    if parentid:
+    if parentid and parentid != testid:
         parent_name = getTestName(db, parentid)
     else:
         parent_name = ""
@@ -114,7 +114,8 @@ def getTestInfo(db, testid):
     if logfile:
         data["log_filename"] = logfile
 
-    data["duration"] = "0d 0s %u000us" % dict(extras)["test-total-duration"]
+    if "test-total-duration" in extras:
+        data["duration"] = "0d 0s %u000us" % extras["test-total-duration"]
 
     # Flatten extra information into the attributes dict for debugging.
     attributes = {}
