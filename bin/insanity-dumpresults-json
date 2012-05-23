@@ -127,7 +127,7 @@ def getTestInfo(db, testid):
         attributes[("check." + k)[:MAX_ATTR_LEN]] = str(v)
         if v == 0 and expl and checkid in expl:
           attributes[("check." + k + ".explanation")[:MAX_ATTR_LEN]] = expl[checkid]
-    for k, v in extras:
+    for k, v in extras.items():
         attributes[("extra." + k)[:MAX_ATTR_LEN]] = str(v)
     for k, v in outputfiles.items():
         attributes[("out." + k)[:MAX_ATTR_LEN]] = str(v)

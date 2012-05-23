@@ -47,7 +47,7 @@ def printTestInfo(db, testid, failedonly=False):
         print "\t% -30s:\t%s" % (key, val)
     if extras:
         print "Extra Information:"
-        for key,val in extras:
+        for key,val in extras.iteritems():
             print "\t% -30s:\t%s" % (key, val)
     if outputfiles:
         print "Output files:"
