@@ -316,7 +316,7 @@ class DBStorage(DataStorage, AsyncStorage):
         # WE SHOULD NOT DO SEVERAL QUERIES !
         args = self.__getArguments(testid, rawinfo)
         if onlyargs:
-            results, extras, ofs = [], [], {}
+            results, extras, ofs = [], {}, {}
         else:
             results = self.__getCheckList(testid, rawinfo)
             extras = self.__getExtraInfo(testid, rawinfo)
@@ -1161,13 +1161,12 @@ class DBStorage(DataStorage, AsyncStorage):
             res = self._FetchAll(fullsearch, (containerid, ))
         else:
             res = self._FetchAll(normalsearch, (containerid, ))
-        d = []
+        d = {}
         for n, iv, tv in res:
             if iv != None:
-                d.append((n, iv))
+                d[n] = iv
             else:
-                d.append((n, tv))
-        d.sort()
+                d[n] = tv
         return d
 
     def __getCheckList(self, containerid, rawinfo=False):
