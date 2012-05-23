@@ -23,21 +23,15 @@
 
 import sys
 import os
-import os.path
 import optparse
 
 import pygtk
 pygtk.require("2.0")
 del pygtk
 
-import gobject
-import gtk
-
 import insanity
-import insanity.utils
 
 from insanity.client import CommandLineTesterClient
-from insanity.scenario import Scenario
 from insanity.testrun import TestRun
 
 from insanity.storage.sqlite import SQLiteStorage
