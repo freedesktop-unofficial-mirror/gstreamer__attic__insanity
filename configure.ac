@@ -32,7 +32,8 @@ AC_SUBST(LIBINSANITY_SHARED_VERSION)
 LIBINSANITY_API_VERSION=1.0
 AC_SUBST(LIBINSANITY_API_VERSION)
 
-AM_PROG_AR
+# automake 1.12 seems to require this, but automake 1.11 doesn't recognize it
+m4_ifdef([AM_PROG_AR], [AM_PROG_AR])
 
 AC_PROG_CC
 AC_PROG_CC_STDC
