@@ -71,3 +71,4 @@ Makefile
 /lib/insanity/insanity-marshal.h
 /py-compile
 /tests/insanity-test-blank
+/outputfiles/*
