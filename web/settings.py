@@ -4,6 +4,12 @@ import sys
 PROJECT_PATH = os.path.abspath(os.path.dirname(__file__))
 DATA_PATH = os.path.join(PROJECT_PATH, '..')
 
+# Url of the online folder that containes all log files
+ONLINE_OUTPUTFILES_URL = "http:///there/are/the/outputfiles/"
+
+# Url of the online directory that containes media files
+ONLINE_MEDIAS_URL = "http:///there/are/the/media/files/"
+
 if not os.access(DATA_PATH, os.W_OK):
     sys.stderr.write("%s is not writable. Trying xdg-data-path.\n" %
             DATA_PATH)

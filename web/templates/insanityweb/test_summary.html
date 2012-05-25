@@ -9,110 +9,116 @@ Test #{{test.id}}
 
     <table>
       <tr>
-	<th></th>
-	<th>Test #{{ test.id }}</th>
+    <th></th>
+    <th>Test #{{ test.id }}</th>
       </tr>
 
       <tr>
-	<th class="side">TestRun</th>
-	<td><a href={{test.testrunid.get_absolute_url}}>{{test.testrunid}}</a></td>
+        <th class="side">TestRun</th>
+            <td><a href={{test.testrunid.get_absolute_url}}>{{test.testrunid}}</a></td>
       </tr>
 
       <tr>
-	<th class="side">test type</th>
-	<td>{{test.type.type}}</td>
+    <th class="side">test type</th>
+    <td>{{test.type.type}}</td>
       </tr>
 
       <tr>
-	<th class="side">Success rate</th>
-	<td>{{test.resultpercentage|floatformat:1}}%</td>
+    <th class="side">Success rate</th>
+    <td>{{test.resultpercentage|floatformat:1}}%</td>
       </tr>
 
       {% if test.is_scenario %}
       {% if test.child.count %}
       <tr>
-	<th class="side">Subtests</th>
-	<td>
-	  {% for subtest in test.child.all %}
-	  Test <a href={{subtest.get_absolute_url}}>#{{ subtest.id }}</a> Success:{{subtest.resultpercentage|floatformat:1}}%<br/>
-	  {% endfor %}
-	</td>
+    <th class="side">Subtests</th>
+    <td>
+      {% for subtest in test.child.all %}
+      Test <a href={{subtest.get_absolute_url}}>#{{ subtest.id }}</a> Success:{{subtest.resultpercentage|floatformat:1}}%<br/>
+      {% endfor %}
+    </td>
       </tr>
       {% endif %}
       {% endif %}
 
       {% if test.is_subtest %}
       <tr>
-	<th class="side">Container</th>
-	<td>Scenario #<a href={{test.parent.get_absolute_url}}>{{ test.parent.id }}</a></td>
+    <th class="side">Container</th>
+    <td>Scenario #<a href={{test.parent.get_absolute_url}}>{{ test.parent.id }}</a></td>
       </tr>
       {% endif %}
 
       {% if test.arguments %}
       <tr>
-	<th class="side">Arguments</th>
-	<td>
-	  {% test_args_dict test %}
-	</td>
+    <th class="side">Arguments</th>
+    <td>
+      {% test_args_dict test %}
+    </td>
       </tr>
       {% endif %}
 
       {% if test.checklist %}
       <tr>
-	<th class="side">CheckList</th>
-	<td>
-	  {% test_checklist_dict test %}
-	</td>
+    <th class="side">CheckList</th>
+    <td>
+      {% test_checklist_dict test %}
+    </td>
       </tr>
       {% endif %}
 
       {% if test.outputfiles %}
       <tr>
-	<th class="side">OutputFiles</th>
-	<td>
-	  <ul>
-	    {% for outf in test.outputfiles.all %}
-	    <li>{{outf.name.name}} : {{outf.value}}</li>
-	    {% endfor %}
-	  </ul>
-	</td>
+    <th class="side">OutputFiles</th>
+    <td>
+      <ul>
+        {% for outf in test.outputfiles.all %}
+        <li>{{outf.name.name}} : <a>
+            {% if logs_base %}
+                {{logs_base}}{{outf.basename}}
+            {% else %}
+                {{outf.value}}
+            {% endif %}
+            </a></li>
+        {% endfor %}
+      </ul>
+    </td>
       </tr>
       {% endif %}
 
       {% if test.extrainfo %}
       <tr>
-	<th class="side">ExtraInfo</th>
-	<td>
-	  {% test_extrainfo_dict test %}
-	</td>
+    <th class="side">ExtraInfo</th>
+    <td>
+      {% test_extrainfo_dict test %}
+    </td>
       </tr>
       {% endif %}
 
       {% if test.monitors %}
       <tr>
-	<th class="side">Monitors</th>
-	<td>
-	  <table class="inside">
-	    <tr>
-	      <th>ID</th>
-	      <th>Type</th>
-	      <th>Output files</th>
-	    </tr>
-	    {% for mon in test.monitors %}
-	    <tr class="{% cycle row1,row2 %}">
-	      <td>{{ mon.id }}</td>
-	      <td>{{ mon.type.type }}</td>
-	      {% if mon.outputfiles %}
-	      <td>
-		{% for outf in mon.outputfiles.all %}
-		<a href="{{ outf.value|safe }}">{{ outf.basename }}</a><br/>
-		{% endfor %}
-	      </td>
-	      {% endif %}
-	    </tr>
-	    {% endfor %}
-	  </table>
-	</td>
+    <th class="side">Monitors</th>
+    <td>
+      <table class="inside">
+        <tr>
+          <th>ID</th>
+          <th>Type</th>
+          <th>Output files</th>
+        </tr>
+        {% for mon in test.monitors %}
+        <tr class="{% cycle row1,row2 %}">
+          <td>{{ mon.id }}</td>
+          <td>{{ mon.type.type }}</td>
+          {% if mon.outputfiles %}
+          <td>
+        {% for outf in mon.outputfiles.all %}
+        <a href="{{ outf.value|safe }}">{{ outf.basename }}</a><br/>
+        {% endfor %}
+          </td>
+          {% endif %}
+        </tr>
+        {% endfor %}
+      </table>
+    </td>
       </tr>
       {% endif %}
 

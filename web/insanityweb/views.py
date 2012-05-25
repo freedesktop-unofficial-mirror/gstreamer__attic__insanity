@@ -2,14 +2,13 @@ from web.insanityweb.models import TestRun, Test, TestClassInfo, TestCheckListLi
 from django.shortcuts import render_to_response, get_object_or_404, redirect
 from django.http import HttpResponse
 from django.conf import settings
-import time
-from datetime import date
 
 from insanityweb.runner import get_runner
+from django.utils.encoding import smart_str
 
 from functools import wraps
-from django.http import HttpResponse
 from django.utils import simplejson as json
+from settings import ONLINE_OUTPUTFILES_URL
 
 def index(request):
     nbruns = request.GET.get("nbruns", 20)
@@ -26,7 +25,13 @@ def testrun_summary(request, testrun_id):
 
 def test_summary(request, test_id):
     tr = get_object_or_404(Test, pk=test_id)
-    return render_to_response('insanityweb/test_summary.html', {'test': tr})
+    if ONLINE_OUTPUTFILES_URL:
+        log_base = ONLINE_OUTPUTFILES_URL
+    else:
+        log_base = None
+
+    return render_to_response('insanityweb/test_summary.html', {'test': tr,
+            'logs_base':log_base})
 
 def available_tests(request):
     """ Returns a tree of all available tests """
