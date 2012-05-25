@@ -46,6 +46,17 @@ from insanity.arguments import Arguments
 import insanity.environment as environment
 import insanity.dbustools as dbustools
 
+from xml.etree.ElementTree import parse
+from insanity.utils import get_test_metadata
+
+from insanity.generator import Generator
+
+# Not directly used but necessary for eval()
+from insanity.generators.filesystem import FileSystemGenerator, URIFileSystemGenerator
+from insanity.generators.playlist import PlaylistGenerator
+from insanity.generators.external import ExternalGenerator
+from insanity.generators.constant import ConstantGenerator
+
 ##
 ## TODO/FIXME
 ##
@@ -398,6 +409,79 @@ class ListTestRun(TestRun):
         TestRun.__init__(self, *args, **kwargs)
         for test in tests:
             self.addTest(test, arguments, monitors)
+
+
+class XmlTestRun(TestRun):
+    """
+    Convenience class to create a list of tests from an xml file.
+
+    Example of an xml file content:
+
+    <insanity-tests>
+        <test name="exmple-test">
+            <occurrence>
+                <argument name="argument-name" type="GeneratorClasseName" args="List of argument to pass to the GeneratorClasseName constructor">
+                <argument name="decoder-name" type="ConstantGenerator" args="constant='theoradec'"/>
+            </occurrence>
+            <occurrence>
+              <argument name="location" type="ExternalGenerator" args="command='find $basedir -xtype f -name *Vorbis*', max_length=30" />
+              <argument name="decoder-name" type="ConstantGenerator" args="constant='vorbisdec'" />
+            </occurrence>
+        </test>
+        <test name="another-test">
+            <!-- Some other tests -->
+        </test>
+    </insanity-tests>
+    """
+
+    def __init__(self, xmlpath, workingdir, substitutes={}):
+        """
+        Creates a testrun base on the content of @xmlpath
+        """
+        TestRun.__init__(self, maxnbtests=1, workingdir=workingdir)
+        self.substitutes = substitutes
+        self._root = parse(xmlpath)
+        self._fillTestRunFromXml()
+
+    def _fillTestRunFromXml(self):
+
+        for testn in self._root.findall("test"):
+            for occ in testn.findall("occurrence"):
+                test_args = []
+                test = get_test_metadata(testn.attrib["name"])
+                test_arguments = {}
+                for arg in occ.findall("argument"):
+                    try:
+                        val = arg.attrib["args"]
+                    except KeyError:
+                        val = ''
+
+                    for old, new in self.substitutes.iteritems():
+                        if old in val:
+                            val = val.replace(old, new)
+
+                    str_instantiator = arg.attrib["type"] + "(" + val + ")"
+                    try:
+                        debug ("Creating %s", str_instantiator)
+                        gen = eval (str_instantiator)
+                    except Exception, e:
+                        error("Could not instantiate %s, reason: %s",
+                                str_instantiator, e)
+                        break
+
+                    if not isinstance(gen, Generator):
+                        info("%s is not a generator type", arg.attrib["type"])
+
+                    test_arguments[arg.attrib["name"]] = gen
+
+                # FIXME handle monitors!
+                monitors = []
+                try:
+                    self.addTest(test, arguments=test_arguments, monitors=monitors)
+                except Exception, e:
+                    warning("Could not add %s with arguments %s and montors %s. Reason %s",
+                        test, test_arguments, monitors, e)
+
 
 def single_test_run(test, arguments=[], monitors=None):
     """
