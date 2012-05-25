@@ -41,7 +41,7 @@ import dbus.gobject_service
 import tempfile
 import os
 from insanity.log import error, warning, debug, info
-from insanity.test import Test, PythonDBusTest
+from insanity.test import PythonDBusTest
 from insanity.arguments import Arguments
 import insanity.environment as environment
 import insanity.dbustools as dbustools
@@ -52,6 +52,7 @@ import insanity.dbustools as dbustools
 ## Add possibility to add/modify/remove env variables
 ##   This will be needed to run test with different environments
 ##   WITHOUT having to restart the daemon.
+
 
 class TestRun(gobject.GObject):
     """
@@ -68,33 +69,33 @@ class TestRun(gobject.GObject):
     Access to the TestRun from test instances will be possible via DBus IPC.
     """
     __gsignals__ = {
-        "start" : (gobject.SIGNAL_RUN_LAST,
+        "start": (gobject.SIGNAL_RUN_LAST,
                    gobject.TYPE_NONE,
                    ()),
-        "done" : (gobject.SIGNAL_RUN_LAST,
+        "done": (gobject.SIGNAL_RUN_LAST,
                    gobject.TYPE_NONE,
                    ()),
-        "aborted" : (gobject.SIGNAL_RUN_LAST,
+        "aborted": (gobject.SIGNAL_RUN_LAST,
                    gobject.TYPE_NONE,
                    ( )),
         # a test started/ended
         # Warning, it is not automatically a SingleTest
-        "single-test-done" : (gobject.SIGNAL_RUN_LAST,
+        "single-test-done": (gobject.SIGNAL_RUN_LAST,
                               gobject.TYPE_NONE,
                               (gobject.TYPE_PYOBJECT, )),
-        "single-test-start" : (gobject.SIGNAL_RUN_LAST,
+        "single-test-start": (gobject.SIGNAL_RUN_LAST,
                               gobject.TYPE_NONE,
                               (gobject.TYPE_PYOBJECT, gobject.TYPE_INT)),
-        "single-test-stop" : (gobject.SIGNAL_RUN_LAST,
+        "single-test-stop": (gobject.SIGNAL_RUN_LAST,
                               gobject.TYPE_NONE,
                               (gobject.TYPE_PYOBJECT, gobject.TYPE_INT)),
 
         # new-remote-test (uuid)
         #  emitted when a new test has appeared on the private bus
-        "new-remote-test" : (gobject.SIGNAL_RUN_LAST,
+        "new-remote-test": (gobject.SIGNAL_RUN_LAST,
                              gobject.TYPE_NONE,
                              (gobject.TYPE_STRING, )),
-        "removed-remote-test" : (gobject.SIGNAL_RUN_LAST,
+        "removed-remote-test": (gobject.SIGNAL_RUN_LAST,
                                  gobject.TYPE_NONE,
                                  (gobject.TYPE_STRING, ))
         }
@@ -380,6 +381,7 @@ class TestRun(gobject.GObject):
 
 
 gobject.type_register(TestRun)
+
 
 class ListTestRun(TestRun):
     """
