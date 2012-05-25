@@ -23,7 +23,7 @@
 External process generator
 """
 
-import os.path
+import random
 import subprocess
 import signal
 
@@ -49,16 +49,24 @@ class ExternalGenerator(Generator):
     # We don't know any semantics, derived classes are welcome to add some
     __produces__ = None
 
-    def __init__(self, command="", cwd=None,
+    def __init__(self, command="", cwd=None, max_length=0, randomize=False, seed=5,
                  *args,
                  **kwargs):
         """
         command: Command line to run
         cwd: Directory where to run the program
+        max_length: The maximum size of the generated list
+        randomize: Wether the result list will be randomized or not.
+        seed: The seed to us to shuffle the list. 0 means no seed. default: 5
         """
         Generator.__init__(self, *args, **kwargs)
         self.command = command
         self.cwd = cwd
+        self._max_length = max_length
+        self._randomize = randomize
+        self._seed = seed
+        info ("randomize %s", randomize)
+        info ("Seed used %i", seed)
         info("command:%r, cwd:%r" % (command, cwd))
 
     def _generate(self):
@@ -82,15 +90,15 @@ class ExternalGenerator(Generator):
 
         def timeout_handler(signum, frame):
             raise Exception()
- 
-        old_handler = signal.signal(signal.SIGALRM, timeout_handler) 
+
+        old_handler = signal.signal(signal.SIGALRM, timeout_handler)
         signal.alarm(5)
 
         lines=[]
         try:
             line=process.stdout.readline()
             while line:
-                lines.append(line)
+                lines.append(line.replace("\n", ''))
                 line=process.stdout.readline()
         except:
             exception("Timeout running external generator '%r'", self.command)
@@ -100,6 +108,16 @@ class ExternalGenerator(Generator):
         signal.alarm(0)
         process.stdout.close()
 
+        if self._randomize:
+            debug ("Randomizing list")
+            if self._seed:
+                random.seed(self._seed)
+            random.shuffle(lines)
+
+        if self._max_length != 0:
+            lines = lines[:self._max_length]
+
         info("Returning %d lines" % len(lines))
+
         return lines
 
