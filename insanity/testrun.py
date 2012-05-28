@@ -49,6 +49,7 @@ import insanity.dbustools as dbustools
 from xml.etree.ElementTree import parse
 from insanity.utils import get_test_metadata
 
+from insanity.monitor import getMonitorClass
 from insanity.generator import Generator
 
 # Not directly used but necessary for eval()
@@ -418,6 +419,9 @@ class XmlTestRun(TestRun):
     Example of an xml file content:
 
     <insanity-tests>
+        <monitors>
+          <monitor name="gdb-monitor" type="GDBMonitor" args="'gdb-script' : '$gdbscriptfile'" />
+        </monitors>
         <test name="exmple-test">
             <occurrence>
                 <argument name="argument-name" type="GeneratorClasseName" args="List of argument to pass to the GeneratorClasseName constructor">
@@ -443,24 +447,39 @@ class XmlTestRun(TestRun):
         self._root = parse(xmlpath)
         self._fillTestRunFromXml()
 
+    def _applySubstitutes(self, string):
+        for old, new in self.substitutes.iteritems():
+            if old in string:
+                string = string.replace(old, new)
+        return string
+
+    def _getStrInstantiator(self, node):
+        str_instantiator = node.attrib["type"] + "(" + node.attrib["args"] + ")"
+        return self._applySubstitutes(str_instantiator)
+
     def _fillTestRunFromXml(self):
 
+        standard_monitor = []
+        monitorsn = self._root.find("monitors")
+        if monitorsn is not None:
+            for monitor in monitorsn.findall("monitor"):
+                standard_monitor.append((getMonitorClass(monitor.attrib["type"]),
+                            eval('{' + monitor.attrib["args"] + '}')))
+
         for testn in self._root.findall("test"):
+            monitors = [mon for mon in standard_monitor]
+            monitorsn = testn.find("monitors")
+            if monitorsn is not None:
+                for monitor in monitorsn.findall("monitor"):
+                    monitors.append((getMonitorClass(self._applySubstitutes (monitor.attrib["type"])),
+                                eval('{' + self._applySubstitutes (monitor.attrib["args"]) + '}')))
+
             for occ in testn.findall("occurrence"):
                 test_args = []
                 test = get_test_metadata(testn.attrib["name"])
                 test_arguments = {}
                 for arg in occ.findall("argument"):
-                    try:
-                        val = arg.attrib["args"]
-                    except KeyError:
-                        val = ''
-
-                    for old, new in self.substitutes.iteritems():
-                        if old in val:
-                            val = val.replace(old, new)
-
-                    str_instantiator = arg.attrib["type"] + "(" + val + ")"
+                    str_instantiator = self._getStrInstantiator(arg)
                     try:
                         debug ("Creating %s", str_instantiator)
                         gen = eval (str_instantiator)
@@ -470,12 +489,12 @@ class XmlTestRun(TestRun):
                         break
 
                     if not isinstance(gen, Generator):
-                        info("%s is not a generator type", arg.attrib["type"])
+                        error("%s is not a generator type", arg.attrib["type"])
+                        break
 
                     test_arguments[arg.attrib["name"]] = gen
 
-                # FIXME handle monitors!
-                monitors = []
+
                 try:
                     self.addTest(test, arguments=test_arguments, monitors=monitors)
                 except Exception, e:

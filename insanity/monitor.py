@@ -438,3 +438,6 @@ class GDBMonitor(Monitor):
             if fname == "core.%d" % self.test._pid:
                 return os.path.join(cwd, fname)
         return None
+
+def getMonitorClass(classname):
+    return eval(classname)
