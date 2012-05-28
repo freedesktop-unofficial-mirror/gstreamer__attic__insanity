@@ -24,7 +24,7 @@ Constant generator
 """
 
 from insanity.generator import Generator
-from insanity.log import debug, info, exception
+from insanity.log import debug, info
 
 class ConstantGenerator(Generator):
     """
@@ -53,4 +53,34 @@ class ConstantGenerator(Generator):
     def _generate(self):
         info("Returning %r" % (self.constant))
         return [self.constant]
+
+
+class ConstantListGenerator(Generator):
+    """
+    Arguments:
+    * a list of constant string
+
+    Returns:
+    * The list of constants
+    """
+
+    __args__ = {
+        "constants":"The list of constant strings",
+        }
+
+    # We don't know any semantics, derived classes are welcome to add some
+    __produces__ = None
+
+    def __init__(self, constants=[], *args, **kwargs):
+        """
+        constants: A list of constant strings
+        """
+        Generator.__init__(self, *args, **kwargs)
+        self._constants = constants
+
+        debug("constant:%r" % (self._constants))
+
+    def _generate(self):
+        info("Returning %r" % (self._constants))
+        return self._constants
 
