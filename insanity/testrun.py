@@ -56,7 +56,7 @@ from insanity.generator import Generator
 from insanity.generators.filesystem import FileSystemGenerator, URIFileSystemGenerator
 from insanity.generators.playlist import PlaylistGenerator
 from insanity.generators.external import ExternalGenerator
-from insanity.generators.constant import ConstantGenerator
+from insanity.generators.constant import ConstantGenerator, ConstantListGenerator
 
 ##
 ## TODO/FIXME
@@ -456,9 +456,22 @@ class XmlTestRun(TestRun):
                 string = string.replace(old, new)
         return string
 
-    def _getStrInstantiator(self, node):
+    def _getGenerator(self, node):
         str_instantiator = node.attrib["type"] + "(" + node.attrib["args"] + ")"
-        return self._applySubstitutes(str_instantiator)
+        str_instantiator = self._applySubstitutes(str_instantiator)
+        try:
+            debug ("Creating %s", str_instantiator)
+            gen = eval (str_instantiator)
+        except Exception, e:
+            error("Could not instantiate %s, reason: %s",
+                    str_instantiator, e)
+            return None
+
+        if not isinstance(gen, Generator):
+            error("%s is not a generator type", arg.attrib["type"])
+            return None
+
+        return gen
 
     def _fillTestRunFromXml(self):
 
@@ -481,25 +494,39 @@ class XmlTestRun(TestRun):
                 test_args = []
                 test = get_test_metadata(testn.attrib["name"])
                 test_arguments = {}
+                test_kwargs = {}
                 for arg in occ.findall("argument"):
-                    str_instantiator = self._getStrInstantiator(arg)
-                    try:
-                        debug ("Creating %s", str_instantiator)
-                        gen = eval (str_instantiator)
-                    except Exception, e:
-                        error("Could not instantiate %s, reason: %s",
-                                str_instantiator, e)
-                        break
-
-                    if not isinstance(gen, Generator):
-                        error("%s is not a generator type", arg.attrib["type"])
+                    gen = self._getGenerator(arg)
+                    if not gen:
                         break
 
                     test_arguments[arg.attrib["name"]] = gen
 
+                e_failures = []
+                for expected_failure in occ.findall("expected-failures"):
+                    checkitems = expected_failure.findall("checkitem")
+                    efail = {}
+                    results = {}
+                    for item in checkitems:
+                        results[item.attrib["name"]] = item.attrib['values']
 
+                    efail["results"] = results
+
+                    args = expected_failure.findall("arguments")
+                    if args:
+                        arguments = {}
+                        for arg in args:
+                            gen = self._getGenerator(arg)
+                            vals = gen.generate()
+                            arguments[item.attrib['name']] = vals
+                        efail["arguments"] = results
+
+                    e_failures.append(efail)
+
+                if e_failures:
+                    test_kwargs['expected-failures'] = e_failures
                 try:
-                    self.addTest(test, arguments=test_arguments, monitors=monitors)
+                    self.addTest(test, arguments=test_arguments, monitors=monitors, kwargs=test_kwargs)
                 except Exception, e:
                     warning("Could not add %s with arguments %s and montors %s. Reason %s",
                         test, test_arguments, monitors, e)
