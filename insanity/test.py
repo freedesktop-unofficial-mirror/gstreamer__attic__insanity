@@ -87,7 +87,15 @@ class Test(gobject.GObject):
         "expected-failures": {
             "global": False,
             "description": "List of expected failing checkpoints",
-            "full_description": "Comma separated string of expected failing checkpoints",
+            "full_description": """ Must be of the form:
+            [{
+                "arguments": {argname: [broken_value, ...], ...},
+                "results": {checkitemname: ['0' or 'None'], ...}
+             },
+            ...],
+            If the test's arguments all match values in arguments, and the
+            result of the check matches one in "results", mark the failure as
+            expected.""",
             "type": "s",
             "default_value": None
         }
@@ -527,6 +535,8 @@ class Test(gobject.GObject):
                         break
                 else:
                     return True
+            else:
+                return True
 
         return False
 
@@ -674,7 +684,7 @@ class Test(gobject.GObject):
         for iteration in self.iteration_checklist:
             ckl = self.getIterationCheckList(iteration)
             nbitems = len(self._possiblechecklist)
-            nbsucc = len([item for item, val in ckl if val == True])
+            nbsucc = len([item for item, val in ckl if val >= 1])
             total_nbitems = total_nbitems + nbitems
             total_nbsucc = total_nbsucc + nbsucc
         if total_nbitems == 0:
