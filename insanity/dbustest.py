@@ -299,6 +299,7 @@ class DBusTest(Test, dbus.service.Object):
     def _voidRemoteStopCallBackHandler(self):
         info("%s", self.uuid)
 
+        self.validateChecklistItem("subprocess-exited-normally")
         self._prepareArguments()
         Test.stop(self)
 
