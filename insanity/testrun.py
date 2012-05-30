@@ -126,10 +126,11 @@ class TestRun(gobject.GObject):
         self._dbusiface = None
         self._setupPrivateBus()
 
-        self._tests = [] # list of (test, arguments, monitors)
+        self._tests = [] # list of (test, arguments, monitors, kwargs)
         self._storage = None
         self._currenttest = None
         self._currentmonitors = None
+        self._currentkwargs = None
         self._currentarguments = None
         self._runninginstances = []
         self._maxnbtests = maxnbtests
@@ -172,7 +173,7 @@ class TestRun(gobject.GObject):
         """
         self._storage = storage
 
-    def addTest(self, test, arguments, monitors=None):
+    def addTest(self, test, arguments, monitors=None, kwargs={}):
         """
         Adds test with the given arguments (or generator) and monitors
         to the list of tests to be run
@@ -190,7 +191,8 @@ class TestRun(gobject.GObject):
             arguments = Arguments(**arguments)
         elif not isinstance(arguments, Arguments):
             raise TypeError("Test arguments need to be of type Arguments or dict")
-        self._tests.append((test, arguments, monitors))
+
+        self._tests.append((test, arguments, monitors, kwargs))
 
     def getEnvironment(self):
         """
@@ -269,9 +271,9 @@ class TestRun(gobject.GObject):
         # grab the next arguments
         testclass = self._currenttest
         monitors = self._currentmonitors
+        kwargs= self._currentkwargs
 
         # create test with arguments
-        kwargs={}
         debug("Creating test %r with arguments %r" % (testclass, kwargs))
         test = PythonDBusTest(testrun=self, bus=self._bus,
                          bus_address=self._bus_address,
@@ -317,10 +319,11 @@ class TestRun(gobject.GObject):
 
         info("Getting next test batch")
         # pop out the next batch
-        test, args, monitors = self._tests.pop(0)
+        test, args, monitors, kwargs = self._tests.pop(0)
         self._currenttest = test
         self._currentmonitors = monitors
         self._currentarguments = args
+        self._currentkwargs = kwargs
 
         info("Current test : %r" % test)
         info("Current monitors : %r" % monitors)
