@@ -150,7 +150,7 @@ class DBusTest(Test, dbus.service.Object):
         self._subprocessspawntime = 0
         self._subprocessconnecttime = 0
         self._pid = 0
-        
+
     # Test class overrides
 
     def test(self):
@@ -340,6 +340,7 @@ class DBusTest(Test, dbus.service.Object):
         args = dict((k, v) for k, v in self.args.items() if (k in self.getFullArgumentList() and self.getFullArgumentList()[k]["global"] == True))
         args = self._parse_test_arguments(args)
 
+        debug("Setting up remote with argunents %s outputfiles %s", args, self.getOutputFiles())
         self._remoteinstance.remoteSetUp(args, self.getOutputFiles(),
                                          reply_handler=self._voidRemoteSetUpCallBackHandler,
                                          error_handler=self._voidRemoteSetUpErrBackHandler)
@@ -350,6 +351,7 @@ class DBusTest(Test, dbus.service.Object):
             return
 
         self.args = self._parse_test_arguments(self.args)
+        debug("Starting remote with argunents %s outputfiles %s", self.args, self.getOutputFiles())
         self._remoteinstance.remoteStart(self.args, self.getOutputFiles(),
                                          reply_handler=self._voidRemoteStartCallBackHandler,
                                          error_handler=self._voidRemoteStartErrBackHandler)
@@ -450,6 +452,9 @@ class DBusTest(Test, dbus.service.Object):
 
     def getFullCheckList(self):
         return self._metadata.getFullCheckList()
+
+    def getSharedCheckList(self):
+        return self._metadata.getSharedCheckList()
 
     def getFullArgumentList(self):
         return self._metadata.getFullArgumentList()
