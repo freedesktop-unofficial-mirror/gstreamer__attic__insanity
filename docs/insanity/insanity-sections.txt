@@ -19,6 +19,7 @@ insanity_test_new
 
 insanity_test_add_argument
 insanity_test_add_checklist_item
+insanity_test_add_shared_checklist_item
 insanity_test_add_extra_info
 insanity_test_add_output_file
 
