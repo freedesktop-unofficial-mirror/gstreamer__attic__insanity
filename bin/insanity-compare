@@ -169,8 +169,11 @@ if __name__ == "__main__":
         sys.exit(0)
     initLogging()
     if sys.argv[1] == "-m":
-        from insanity.storage.mysql import MySQLStorage
-        db = MySQLStorage(async=False)
+        try:
+            from insanity.storage.mysql import MySQLStorage
+            db = MySQLStorage(async=False)
+        except  ImportError:
+            exit(1)
     else:
         db = SQLiteStorage(path=sys.argv[1], async=False)
     # the last two arguments are the testrunid to compare

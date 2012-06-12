@@ -154,7 +154,11 @@ if __name__ == "__main__":
         sys.exit()
     initLogging()
     if options.usemysql:
-        from insanity.storage.mysql import MySQLStorage
+        try:
+            from insanity.storage.mysql import MySQLStorage
+        except  ImportError:
+            exit(1)
+
         if len(args):
             kw = MySQLStorage.parse_uri(args[0])
             db = MySQLStorage(async=False, **kw)

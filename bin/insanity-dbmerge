@@ -28,7 +28,11 @@ import sys
 from optparse import OptionParser
 from insanity.log import initLogging
 from insanity.storage.sqlite import SQLiteStorage
-from insanity.storage.mysql import MySQLStorage
+try:
+    from insanity.storage.mysql import MySQLStorage
+except  ImportError:
+    MySQLStorage = None
+
 
 # Use URI for DBStorage
 # mysql://user:password@location/dbname
@@ -38,6 +42,8 @@ def make_sqlite_storage(location):
     return SQLiteStorage(path=location, async=False)
 
 def make_mysql_storage(uri):
+    if MySQLStorage is None:
+        return None
     kw = MySQLStorage.parse_uri(uri)
     return MySQLStorage(async=False, **kw)
 
@@ -70,6 +76,8 @@ if __name__ == "__main__":
         origin = make_sqlite_storage(options.origin)
     elif options.origin_mysql:
         origin = make_mysql_storage(options.origin_mysql)
+        if origin is None:
+            exit(1)
     if options.destination:
         destination = make_sqlite_storage(options.destination)
     elif options.destination_mysql:
