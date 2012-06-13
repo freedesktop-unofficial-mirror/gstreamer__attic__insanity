@@ -132,7 +132,6 @@ struct _InsanityTestPrivateData
   char *test_name;
   char *test_desc;
   char *test_full_desc;
-  GList *shareditems;
   GHashTable *test_checklist;
   GHashTable *test_arguments;
   GHashTable *test_extra_infos;
@@ -1492,30 +1491,6 @@ output_checklist_table (InsanityTest * test, FILE * f)
 }
 
 static void
-output_shared_items (InsanityTest * test, FILE * f)
-{
-  GList *tmp;
-  const char *comma = "";
-
-  fprintf (f, ",\n  \"__shared_checklist_items__\": {\n");
-  for (tmp = test->priv->shareditems; tmp; tmp = tmp->next) {
-    ChecklistItem *item = (ChecklistItem *) tmp->data;
-
-    fprintf (f, "%s    \"%s\" : \n", comma, item->label);
-    fprintf (f, "    {\n");
-    fprintf (f, "        \"description\" : \"%s\"", item->description);
-    if (item->likely_error) {
-      fprintf (f, ",\n        \"likely_error\" : \"%s\"", item->likely_error);
-    }
-    fprintf (f, "\n    }");
-
-    comma = ",\n";
-  }
-
-  fprintf (f, "\n  }");
-}
-
-static void
 output_arguments_table (InsanityTest * test, FILE * f)
 {
   GHashTableIter it;
@@ -1593,7 +1568,6 @@ insanity_test_write_metadata (InsanityTest * test)
   fprintf (f, "  \"__name__\": \"%s\",\n", name);
   fprintf (f, "  \"__description__\": \"%s\"", desc);
   output_checklist_table (test, f);
-  output_shared_items (test, f);
   output_arguments_table (test, f);
   output_table (test, f, test->priv->test_extra_infos, "__extra_infos__",
       &get_raw_string);
@@ -1940,7 +1914,6 @@ insanity_test_finalize (GObject * gobject)
   g_free (test->priv->test_name);
   g_free (test->priv->test_desc);
   g_free (test->priv->test_full_desc);
-  g_list_free (priv->shareditems);
   g_hash_table_destroy (priv->test_checklist);
   g_hash_table_destroy (priv->test_arguments);
   g_hash_table_destroy (priv->test_extra_infos);
@@ -2213,37 +2186,6 @@ insanity_test_add_checklist_item (InsanityTest * test, const char *label,
   i->global = global;
 
   g_hash_table_insert (test->priv->test_checklist, g_strdup (label), i);
-}
-
-/**
- * insanity_test_add_shared_checklist_item:
- * @test: A #InsanityTest to operate on
- * @label: The label of the checklist item that is shared between start/stop
- * iterations.
- *
- * This function adds a checklist item as being shared between iterations of
- * start/stop when the test is run. This means that the item value of this
- * checklist item will be the same between all iterations of start/stop.
- */
-void
-insanity_test_add_shared_checklist_item (InsanityTest * test,
-    const gchar * label)
-{
-  ChecklistItem *item;
-
-  g_return_if_fail (INSANITY_IS_TEST (test));
-
-  item = g_hash_table_lookup (test->priv->test_checklist, label);
-
-  if (item == NULL) {
-    INSANITY_LOG (INSANITY_TEST ((test)), "test", INSANITY_LOG_LEVEL_INFO,
-        "%s not in the checklist item list, can't add it to the shared item list",
-        label);
-
-    return;
-  }
-
-  test->priv->shareditems = g_list_prepend (test->priv->shareditems, item);
 }
 
 /**
