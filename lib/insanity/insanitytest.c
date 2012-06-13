@@ -530,6 +530,43 @@ insanity_test_ping_unlocked (InsanityTest * test)
 }
 
 /**
+ * insanity_test_checklist_item_set_global:
+ * @test: a #InsanityTest to operate on
+ * @label: the label of the checklist item
+ * @global: the new value for global
+ *
+ * Sets whether a given checklist item is global.
+ *
+ * Returns: TRUE if the item was found, FALSE otherwise.
+ */
+gboolean
+insanity_test_checklist_item_set_global (InsanityTest * test, const char *label,
+    gboolean global)
+{
+  ChecklistItem *item;
+  gboolean ret = FALSE;
+
+  g_return_val_if_fail (INSANITY_IS_TEST (test), FALSE);
+  g_return_val_if_fail (label != NULL, FALSE);
+  g_return_val_if_fail (check_valid_label (label), FALSE);
+  g_return_val_if_fail (g_hash_table_lookup (test->priv->test_checklist,
+          label) != NULL, FALSE);
+
+  LOCK (test);
+
+  item = g_hash_table_lookup (test->priv->test_checklist, label);
+  if (!item)
+    goto done;
+
+  item->global = global;
+  ret = TRUE;
+
+done:
+  UNLOCK (test);
+  return ret;
+}
+
+/**
  * insanity_test_validate_checklist_item:
  * @test: a #InsanityTest to operate on
  * @label: the label of the checklist item

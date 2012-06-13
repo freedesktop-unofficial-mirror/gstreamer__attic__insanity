@@ -101,6 +101,7 @@ void insanity_test_add_extra_info(InsanityTest *test, const char *label, const c
 gboolean insanity_test_get_argument(InsanityTest *test, const char *label, GValue *value);
 const char *insanity_test_get_output_filename(InsanityTest *test, const char *label);
 void insanity_test_done(InsanityTest *test);
+gboolean insanity_test_checklist_item_set_global(InsanityTest *test, const char *label, gboolean global);
 void insanity_test_validate_checklist_item(InsanityTest *test, const char *label, gboolean success, const char *description);
 void insanity_test_set_extra_info(InsanityTest *test, const char *label, const GValue *data);
 void insanity_test_ping(InsanityTest *test);
