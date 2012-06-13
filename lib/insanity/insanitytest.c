@@ -217,6 +217,7 @@ typedef struct _Argument
 
 typedef struct _ChecklistItem
 {
+  gboolean global;
   char *label;
   char *description;
   char *likely_error;
@@ -544,6 +545,8 @@ void
 insanity_test_validate_checklist_item (InsanityTest * test, const char *label,
     gboolean success, const char *description)
 {
+  const ChecklistItem *item;
+
   g_return_if_fail (INSANITY_IS_TEST (test));
   g_return_if_fail (label != NULL);
   g_return_if_fail (check_valid_label (label));
@@ -551,6 +554,14 @@ insanity_test_validate_checklist_item (InsanityTest * test, const char *label,
           label) != NULL);
 
   LOCK (test);
+
+  item = g_hash_table_lookup (test->priv->test_checklist, label);
+  if (!item->global &&test->priv->runlevel != rl_started
+      && test->priv->runlevel != rl_setup) {
+    g_critical ("Non-global checklist item '%s' requested to validate but "
+        "not set up yet\n", label);
+    goto done;
+  }
 
   insanity_test_ping_unlocked (test);
 
@@ -582,6 +593,8 @@ insanity_test_validate_checklist_item (InsanityTest * test, const char *label,
 
   g_hash_table_insert (test->priv->checklist_results, g_strdup (label),
       (success ? ((gpointer) 1) : ((gpointer) 0)));
+
+done:
   UNLOCK (test);
 }
 
@@ -1466,6 +1479,7 @@ output_checklist_table (InsanityTest * test, FILE * f)
 
     fprintf (f, "%s    \"%s\" : \n", comma, label);
     fprintf (f, "    {\n");
+    fprintf (f, "        \"global\" : %s,\n", (i->global ? "true" : "false"));
     fprintf (f, "        \"description\" : \"%s\"", i->description);
     if (i->likely_error) {
       fprintf (f, ",\n        \"likely_error\" : \"%s\"", i->likely_error);
@@ -2172,6 +2186,7 @@ insanity_add_metadata_entry (GHashTable * hash, const char *label,
  * @label: the new checklist item's label
  * @description: a one line description of that item
  * @error_hint: (allow-none): an optional explanatory description of why this error may happen
+ * @global: if this is a global item
  *
  * This function adds a checklist item declaration to the test.
  *
@@ -2180,7 +2195,7 @@ insanity_add_metadata_entry (GHashTable * hash, const char *label,
  */
 void
 insanity_test_add_checklist_item (InsanityTest * test, const char *label,
-    const char *description, const char *error_hint)
+    const char *description, const char *error_hint, gboolean global)
 {
   ChecklistItem *i;
 
@@ -2195,6 +2210,7 @@ insanity_test_add_checklist_item (InsanityTest * test, const char *label,
   i->label = g_strdup (label);
   i->description = g_strdup (description);
   i->likely_error = g_strdup (error_hint);
+  i->global = global;
 
   g_hash_table_insert (test->priv->test_checklist, g_strdup (label), i);
 }

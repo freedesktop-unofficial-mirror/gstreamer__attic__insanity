@@ -128,9 +128,9 @@ main (int argc, char **argv)
 
   insanity_test_add_checklist_item (test, "random-checklist-item",
       "Some random checklist item, nothing much",
-      "Probably something wrong here");
+      "Probably something wrong here", FALSE);
   insanity_test_add_checklist_item (test, "random-other-checklist-item",
-      "Some random checklist item, nothing much", "Not going to happen");
+      "Some random checklist item, nothing much", "Not going to happen", FALSE);
   insanity_test_add_extra_info (test, "random-extra-info",
       "Some random extra info");
 
