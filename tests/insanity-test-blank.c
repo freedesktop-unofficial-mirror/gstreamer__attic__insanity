@@ -97,16 +97,16 @@ blank_test_test (InsanityTest * test)
 
   insanity_test_ping (test);
 
-  insanity_test_validate_checklist_item (test, "random-other-checklist-item", TRUE,
-      "Explanation of random-checklist-item failure");
+  insanity_test_validate_checklist_item (test, "random-other-checklist-item",
+      TRUE, "Explanation of random-checklist-item failure");
 
-  INSANITY_LOG(test,"default",INSANITY_LOG_LEVEL_NONE,"log:none\n");
-  INSANITY_LOG(test,"default",INSANITY_LOG_LEVEL_INFO,"log:info\n");
-  INSANITY_LOG(test,"default",INSANITY_LOG_LEVEL_DEBUG,"log:debug\n");
-  INSANITY_LOG(test,"default",INSANITY_LOG_LEVEL_SPAM,"log:spam\n");
-  insanity_test_printf(test,"log:via-test\n");
-  INSANITY_LOG(test,"cat1",INSANITY_LOG_LEVEL_INFO,"log:cat1\n");
-  INSANITY_LOG(test,"cat2",INSANITY_LOG_LEVEL_INFO,"log:cat2\n");
+  INSANITY_LOG (test, "default", INSANITY_LOG_LEVEL_NONE, "log:none\n");
+  INSANITY_LOG (test, "default", INSANITY_LOG_LEVEL_INFO, "log:info\n");
+  INSANITY_LOG (test, "default", INSANITY_LOG_LEVEL_DEBUG, "log:debug\n");
+  INSANITY_LOG (test, "default", INSANITY_LOG_LEVEL_SPAM, "log:spam\n");
+  insanity_test_printf (test, "log:via-test\n");
+  INSANITY_LOG (test, "cat1", INSANITY_LOG_LEVEL_INFO, "log:cat1\n");
+  INSANITY_LOG (test, "cat2", INSANITY_LOG_LEVEL_INFO, "log:cat2\n");
 
 done:
   /* Must be called when the test is done */
@@ -127,7 +127,8 @@ main (int argc, char **argv)
           "Sample test that does nothing", "some longer description"));
 
   insanity_test_add_checklist_item (test, "random-checklist-item",
-      "Some random checklist item, nothing much", "Probably something wrong here");
+      "Some random checklist item, nothing much",
+      "Probably something wrong here");
   insanity_test_add_checklist_item (test, "random-other-checklist-item",
       "Some random checklist item, nothing much", "Not going to happen");
   insanity_test_add_extra_info (test, "random-extra-info",
