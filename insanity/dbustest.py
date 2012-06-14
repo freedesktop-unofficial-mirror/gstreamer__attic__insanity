@@ -453,9 +453,6 @@ class DBusTest(Test, dbus.service.Object):
     def getFullCheckList(self):
         return self._metadata.getFullCheckList()
 
-    def getSharedCheckList(self):
-        return self._metadata.getSharedCheckList()
-
     def getFullArgumentList(self):
         return self._metadata.getFullArgumentList()
 

@@ -108,8 +108,6 @@ class TestMetadata():
         self.__test_arguments__ = self.get_metadata (metadata, "__arguments__")
         self.__test_output_files__ = self.get_metadata (metadata, "__output_files__")
         self.__test_checklist__ = self.get_metadata (metadata, "__checklist__")
-        self.__test_shared_checklist_items__ = self.get_metadata (metadata,
-            "__shared_checklist_items__")
         self.__test_extra_infos__ = self.get_metadata (metadata, "__extra_infos__")
         info('It is a valid test')
 
@@ -133,6 +131,7 @@ class TestMetadata():
         The format of the returned argument dictionary is:
         key : checklist name
         value : dictionary with :
+            global: if this is a global checklist item
             description: short description
             likely_error: The likely error
         """
@@ -140,17 +139,6 @@ class TestMetadata():
         if self.__test_checklist__ != None:
             dc.update(self.__test_checklist__)
         return dc
-
-    def getSharedCheckList(self):
-        """
-        Return the list of checklist items that are shared between iterations
-        of start/stop
-        """
-        dc = self.__test_class__.getClassSharedCheckList()
-        if self.__test_shared_checklist_items__ != None:
-            dc.update(self.__test_shared_checklist_items__)
-        return dc
-
 
     def getFullArgumentList(self):
         """

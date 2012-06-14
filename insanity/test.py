@@ -112,10 +112,13 @@ class Test(gobject.GObject):
 
     __test_checklist__ = {
         "test-started": {
+            "global": False,
             "description": "The test started"},
         "no-timeout": {
+            "global": False,
             "description": "The test didn't timeout"},
         "no-unexpected-failures": {
+            "global": False,
             "description": "All failed checks were expected."},
         }
     """
@@ -463,12 +466,15 @@ class Test(gobject.GObject):
         self._running = True
         self.emit("start", self._iteration)
         self.validateChecklistItem("test-started")
+
         if self._iteration > 1:
-            for shareditems in self.getSharedCheckList():
-                for name, res in self.getIterationCheckList(self._iteration -1):
-                    if name == shareditems:
-                        self.validateChecklistItem(name, res)
-                        break
+            iteraction_checklist = self.getIterationCheckList(self._iteration - 1)
+            for item, value in self.getFullCheckList().iteritems():
+                if value.get("global", False):
+                    for name, res in iteraction_checklist:
+                        if item == name:
+                            self.validateChecklistItem(name, res)
+                            break
 
         # start timeout for test !
         self._testtimeouttime = time.time() + self._timeout
@@ -572,20 +578,6 @@ class Test(gobject.GObject):
         for cl in cls.mro():
             if "__test_checklist__" in cl.__dict__:
                 dc.update(cl.__test_checklist__)
-            if cl == Test:
-                break
-        return dc
-
-    @classmethod
-    def getClassSharedCheckList(cls):
-        """
-        Returns the shared test checklist. This is used to know the checklist
-        item result that are shared between iterations of start/stop
-        """
-        dc = {}
-        for cl in cls.mro():
-            if "__test_shared_checklist_items__" in cl.__dict__:
-                dc.update(cl.__test_shared_checklist_items__)
             if cl == Test:
                 break
         return dc
@@ -817,9 +809,6 @@ class Test(gobject.GObject):
         return self.getFullCheckList().get(checkitem, None).get("likely_error", None)
 
     def getFullCheckList(self):
-        raise NotImplementedError
-
-    def getSharedCheckList(self):
         raise NotImplementedError
 
     def getTestName(self):
