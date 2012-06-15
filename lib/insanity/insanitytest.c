@@ -547,6 +547,7 @@ insanity_test_checklist_item_set_global (InsanityTest * test, const char *label,
   gboolean ret = FALSE;
 
   g_return_val_if_fail (INSANITY_IS_TEST (test), FALSE);
+  g_return_val_if_fail (test->priv->runlevel == rl_idle, FALSE);
   g_return_val_if_fail (label != NULL, FALSE);
   g_return_val_if_fail (check_valid_label (label), FALSE);
   g_return_val_if_fail (g_hash_table_lookup (test->priv->test_checklist,
@@ -2212,6 +2213,7 @@ insanity_test_add_checklist_item (InsanityTest * test, const char *label,
   ChecklistItem *i;
 
   g_return_if_fail (INSANITY_IS_TEST (test));
+  g_return_if_fail (test->priv->runlevel == rl_idle);
   g_return_if_fail (label != NULL);
   g_return_if_fail (check_valid_label (label));
   g_return_if_fail (description != NULL);
@@ -2257,6 +2259,7 @@ insanity_test_add_argument (InsanityTest * test, const char *label,
   Argument *arg;
 
   g_return_if_fail (INSANITY_IS_TEST (test));
+  g_return_if_fail (test->priv->runlevel == rl_idle);
   g_return_if_fail (label != NULL);
   g_return_if_fail (check_valid_label (label));
   g_return_if_fail (g_hash_table_lookup (test->priv->test_arguments,
