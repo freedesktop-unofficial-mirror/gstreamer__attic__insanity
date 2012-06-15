@@ -582,6 +582,7 @@ insanity_test_validate_checklist_item (InsanityTest * test, const char *label,
     gboolean success, const char *description)
 {
   const ChecklistItem *item;
+  gpointer cur_success;
 
   g_return_if_fail (INSANITY_IS_TEST (test));
   g_return_if_fail (label != NULL);
@@ -601,12 +602,13 @@ insanity_test_validate_checklist_item (InsanityTest * test, const char *label,
 
   insanity_test_ping_unlocked (test);
 
-  /* if the item has already been (in)validated, then we invalidate if success is FALSE,
-     and do nothing if success is TRUE. This ends up doing a AND operation on all booleans
+  /* if the item has already been invalidated, then we do nothing.
+     This ends up doing a AND operation on all booleans
      passed for that checklist item (ie, a checklist item succeeds only if all calls to
      validate for that item succeed, and fails if any call to validate for that item fails). */
-  if (g_hash_table_lookup (test->priv->checklist_results, label) != NULL) {
-    if (success) {
+  if ((cur_success =
+          g_hash_table_lookup (test->priv->checklist_results, label)) != NULL) {
+    if (!GPOINTER_TO_UINT (cur_success)) {
       UNLOCK (test);
       return;
     }
@@ -628,7 +630,7 @@ insanity_test_validate_checklist_item (InsanityTest * test, const char *label,
   }
 
   g_hash_table_insert (test->priv->checklist_results, g_strdup (label),
-      (success ? ((gpointer) 1) : ((gpointer) 0)));
+      (success ? GUINT_TO_POINTER (1) : GUINT_TO_POINTER (0)));
 
 done:
   UNLOCK (test);
