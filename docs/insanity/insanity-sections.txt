@@ -27,6 +27,7 @@ insanity_test_get_output_filename
 
 insanity_test_run
 insanity_test_set_extra_info
+insanity_test_checklist_item_set_global
 insanity_test_validate_checklist_item
 INSANITY_TEST_CHECK
 insanity_test_check
