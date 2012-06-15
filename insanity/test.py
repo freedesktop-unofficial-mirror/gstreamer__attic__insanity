@@ -427,11 +427,11 @@ class Test(gobject.GObject):
             self._testtimeoutid = 0
             notimeout = True
         self.validateChecklistItem("no-timeout", notimeout)
+        self.emit("stop", self._iteration)
         self.iteration_checklist[self._iteration] = self._checklist
         self.iteration_extrainfo[self._iteration] = self._extrainfo
         self.iteration_outputfiles[self._iteration] = self._outputfiles
         self.iteration_success_percentage[self._iteration] = self.getSuccessPercentage()
-        self.emit("stop", self._iteration)
 
     def start(self):
         """
