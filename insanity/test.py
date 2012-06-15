@@ -468,7 +468,7 @@ class Test(gobject.GObject):
         self.validateChecklistItem("test-started")
 
         if self._iteration > 1:
-            iteraction_checklist = self.getIterationCheckList(self._iteration - 1)
+            iteraction_checklist = self.getIterationCheckList(self._iteration - 1, False)
             for item, value in self.getFullCheckList().iteritems():
                 if value.get("global", False):
                     for name, res in iteraction_checklist:
@@ -519,7 +519,6 @@ class Test(gobject.GObject):
             if explanation is not None:
                 self._error_explanations[checkitem] = explanation
 
-        #self._checklist[checkitem] = True
         self.emit("check", checkitem, validated)
 
     def isExpectedFailure(self, checkitem, extra_info):
@@ -628,7 +627,7 @@ class Test(gobject.GObject):
                 break
         return dc
 
-    def getIterationCheckList(self,iteration):
+    def getIterationCheckList(self, iteration, warn=True):
         """
         Returns the instance checklist as a list of tuples of:
         * checkitem name
@@ -659,8 +658,9 @@ class Test(gobject.GObject):
                     d[k] = self.SKIPPED
 
         if unexpected_failures:
-            warning("The following tests failed unexpectedly: %s",
-                    unexpected_failures)
+            if warn:
+                warning("The following tests failed unexpectedly: %s",
+                        unexpected_failures)
             d["no-unexpected-failures"] = 0
 
         return d.items()
