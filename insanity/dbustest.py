@@ -331,6 +331,17 @@ class DBusTest(Test, dbus.service.Object):
         self._voidRemoteErrBackHandler(exc, "remoteTearDown", fatal=False)
 
 
+    # Stdin and stderr setters
+    def setStderr(self, stderr):
+        self._stderr = stderr
+
+    def setStdout(self, stdout):
+        self._stderr = stdout
+
+    def setStdOutAndErr(self, stderrandout):
+        self._stdout = stderrandout
+        self._stderr = self._stdout
+
     ## Proxies for remote DBUS calls
     def callRemoteSetUp(self):
         # call remote instance "remoteSetUp()"

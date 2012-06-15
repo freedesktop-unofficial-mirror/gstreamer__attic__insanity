@@ -44,7 +44,6 @@ information, run extra analysis, etc...
 # * can modify timeout (i.e. with valgrind)
 
 import os
-import os.path
 import subprocess
 from insanity.test import Test, DBusTest
 from insanity.log import warning, debug, info, exception
@@ -438,6 +437,112 @@ class GDBMonitor(Monitor):
             if fname == "core.%d" % self.test._pid:
                 return os.path.join(cwd, fname)
         return None
+
+class TerminalRedirectionMonitor(Monitor):
+    """
+    Redirects stderr and stdout of a given test to a file
+    """
+    __monitor_name__ = "output-redirection-monitor"
+    __monitor_description__ = """
+    Redirects stderr and stdout of a given test to a file
+    """
+    __monitor_arguments__ = {
+        "desc":"How to save stderr/stdout. Possible values are 'stderr', only"
+        " is saved in the stderr-file, 'stdout', only stdout is saved in the"
+        " stdout-file outptufile, 'stderr,stdout' both files are saved."
+        " Note that by default both are saved in the stdout-and-stderr-file"
+        " output file",
+        "outputfile-basename":"The category of outputfiles (default='')",
+        "category":"The category of outputfiles (default='insanity-output')",
+        "compress-outputfiles":"Whether the resulting output should be compressed (default:True)"
+        }
+    __monitor_output_files__ = {
+        "stdout-and-stderr-file":"File with both stderr and stdout",
+        "stdout-file":"File with stdout only",
+        "stderr-file":"File with stderr only",
+        }
+    __applies_on__ = DBusTest
+
+    def setUp(self):
+        Monitor.setUp(self)
+        desc = self.arguments.get("desc", 'stderrstdout')
+        basename = self.arguments.get("outputfile-basename")
+        category = self.arguments.get("category")
+
+        self._files = []
+        self._paths = {}
+        if desc:
+            info("No path set, trying to use stdout and stding specific files")
+            if not 'stderr' in desc and not 'stdout' in desc:
+                warning("Neither of stdout-path, stderr-path and path specified"
+                        "Can not use the monitor")
+                return False
+
+            if 'stderr' in desc:
+                if basename is None:
+                    nameid = "stderr"
+                else:
+                    nameid = basename
+
+                if category:
+                    stderr_file, stderr_path = self.testrun.get_temp_file(nameid=nameid, category=category)
+                else:
+                    stderr_file, stderr_path = self.testrun.get_temp_file(nameid=nameid)
+
+                self.test.setStderr(stderr_file)
+                self._files.append(stderr_file)
+                self._paths["stderr-file"] = stderr_path
+
+            if 'stdout' in desc:
+                if basename is None:
+                    nameid = "stdout"
+                else:
+                    nameid = basename
+                if category:
+                    stdout_file, stdout_path = self.testrun.get_temp_file(nameid=nameid, category=category)
+                else:
+                    stdout_file, stdout_path = self.testrun.get_temp_file(nameid=nameid)
+
+                self.test.setStdout(stdout_file)
+                self._files.append(stdout_file)
+                self._paths["stdout-file"] = stdout_path
+        else:
+            if basename is None:
+                nameid = "stdoutanderr"
+            else:
+                nameid = basename
+
+            if category:
+                _file, path = self.testrun.get_temp_file(nameid=nameid, category=category)
+            else:
+                _file, path = self.testrun.get_temp_file(nameid=nameid)
+
+            self.test.setStdOutAndErr(_file)
+            self._files.append(_file)
+            self._paths["stdout-and-stderr-file"] = path
+
+        return True
+
+    def tearDown(self):
+        Monitor.tearDown(self)
+        for f in self._files:
+            os.close(f)
+
+        for output, path in self._paths.iteritems():
+            if not os.path.getsize(path):
+                # if log file is empty remove it
+                debug("log file is empty, removing it")
+                os.remove(path)
+            else:
+                if self.arguments.get("compress", True):
+                    res = path + ".gz"
+                    debug("compressing debug log to %s", res)
+                    compress_file(path, res)
+                    os.remove(path)
+                    path = res
+                # else report it
+                print "SETTING", output, path
+                self.setOutputFile(output, path)
 
 def getMonitorClass(classname):
     return eval(classname)
