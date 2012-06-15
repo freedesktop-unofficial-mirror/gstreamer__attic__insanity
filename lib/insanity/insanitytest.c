@@ -788,9 +788,9 @@ insanity_test_done (InsanityTest * test)
 static gboolean
 on_setup (InsanityTest * test)
 {
-  GValue log_level = { 0 };
   gboolean ret = TRUE;
-  const char *log_level_string, *ptr;
+  const gchar *ptr;
+  gchar *log_level;
 
   LOCK (test);
   if (test->priv->runlevel != rl_idle) {
@@ -799,10 +799,9 @@ on_setup (InsanityTest * test)
   }
   UNLOCK (test);
 
-  insanity_test_get_argument (test, "log-level", &log_level);
+  insanity_test_get_string_argument (test, "log-level", &log_level);
   LOCK (test);
-  log_level_string = g_value_get_string (&log_level);
-  for (ptr = log_level_string; *ptr;) {
+  for (ptr = log_level; *ptr;) {
     const char *colon, *end, *slev;
     char *category = NULL, *lptr = NULL;
     unsigned long level;
@@ -842,7 +841,6 @@ on_setup (InsanityTest * test)
     ptr = *end ? end + 1 : end;
   }
   UNLOCK (test);
-  g_value_unset (&log_level);
 
   g_signal_emit (test, setup_signal, 0, &ret);
 
