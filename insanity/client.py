@@ -331,12 +331,11 @@ class CommandLineTesterClient(TesterClient):
             print stub, "Test %r is done (Success:%5.1f%%)" % (test, test.getSuccessPercentage())
         if self._verbose:
             # print out all details from test
-# TODO: very probably broken
             print stub, "Arguments:"
             ta = test.arguments
             fa = test.getFullArgumentList()
             for arg in [x for x in fa if ta.has_key(x)]:
-                print stub, "  %s : %s\t\t%s" % (arg, fa[arg][0], ta[arg])
+                print stub, "  %s : %s\t\t%s" % (arg, fa[arg], ta[arg])
             # print results from test
             print stub, "Results"
             tc = test.getIterationCheckList(1) # TODO! iterations
