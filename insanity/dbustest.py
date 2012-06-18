@@ -26,18 +26,15 @@ DBus Test Class
 import os
 import sys
 import subprocess
-import resource
-import signal
 import time
 import dbus
-import dbus.gobject_service
 from insanity.threads import RedirectTerminalOuputThread
 from insanity.test import Test
 from insanity.dbustools import unwrap
 from insanity.log import error, warning, debug, info, exception
 import insanity.utils as utils
 import gobject
-import re
+
 
 class DBusTest(Test, dbus.service.Object):
     """
@@ -66,7 +63,7 @@ class DBusTest(Test, dbus.service.Object):
     __test_extra_infos__ = {
     "subprocess-return-code":"The exit value returned by the subprocess",
     "subprocess-spawn-time":"How long it took to spawn the subprocess (in milliseconds)",
-    "cpu-load" : "CPU load in percent (can exceed 100% on multi core systems)" # TODO: move to C
+    "cpu-load": "CPU load in percent (can exceed 100% on multi core systems)" # TODO: move to C
     }
 
     __test_arguments__ = {
