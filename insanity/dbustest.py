@@ -215,7 +215,7 @@ class DBusTest(Test, dbus.service.Object):
             return False
         return self.callRemoteStart()
 
-    def tearDown(self):
+    def tearDownVmethod(self):
         info("uuid:%s", self.uuid)
         # FIXME : tear down the other process gracefully
         #    by first sending it the termination remote signal
@@ -246,8 +246,6 @@ class DBusTest(Test, dbus.service.Object):
                 info("Process returned %d", self._returncode)
                 self.extraInfo("subprocess-return-code", self._returncode)
             self.validateChecklistItem("subprocess-exited-normally", self._returncode == 0)
-
-        Test.tearDown(self)
 
     def stop(self):
         info("uuid:%s", self.uuid)

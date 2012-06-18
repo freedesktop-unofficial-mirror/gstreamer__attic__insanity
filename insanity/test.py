@@ -376,15 +376,26 @@ class Test(gobject.GObject):
             self._monitorinstances.append(instance)
         return True
 
+    def tearDownVmethod(self):
+        """
+        Virtual method for subclasses to implement teardown
+
+        You should chain up to the parent function at the BEGINNING
+        of your method
+        """
+        pass
+
     def tearDown(self):
         """
         Clear test
 
-        If you implement this method, you need to chain up to the
-        parent class' tearDown() at the END of your method.
+        Subclassed should not implement this method directly but rather
+        the tearDownVmethod instead
 
         Your teardown MUST happen in a synchronous fashion.
         """
+        self.tearDownVmethod()
+
         stoptime = time.time()
         if self._asynctimeoutid:
             gobject.source_remove(self._asynctimeoutid)
@@ -406,8 +417,11 @@ class Test(gobject.GObject):
                   stoptime, self._teststarttime)
             self.extraInfo("test-total-duration",
                            int((stoptime - self._teststarttime) * 1000))
+
+        # Finaly clear monitors
         for instance in self._monitorinstances:
             instance.tearDown()
+
         self.emit("done")
 
     def stop(self):
