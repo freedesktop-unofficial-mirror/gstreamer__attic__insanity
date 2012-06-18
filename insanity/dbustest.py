@@ -31,6 +31,7 @@ import signal
 import time
 import dbus
 import dbus.gobject_service
+from insanity.threads import RedirectTerminalOuputThread
 from insanity.test import Test
 from insanity.dbustools import unwrap
 from insanity.log import error, warning, debug, info, exception
@@ -144,6 +145,7 @@ class DBusTest(Test, dbus.service.Object):
         self._stdin = None
         self._stdout = None
         self._stderr = None
+        self._redir_tty_thread = None
         self._preargs = []
         self._environ = env or {}
         self._environ.update(os.environ.copy())
@@ -185,11 +187,15 @@ class DBusTest(Test, dbus.service.Object):
             self._subprocessspawntime = time.time()
             self._process = subprocess.Popen(pargs,
                                              stdin = self._stdin,
-                                             stdout = self._stdout,
-                                             stderr = self._stderr,
+                                             stdout = subprocess.PIPE,
+                                             stderr = subprocess.PIPE,
                                              env=self._environ,
                                              shell = shell,
                                              cwd=cwd)
+
+            self._redir_tty_thread = RedirectTerminalOuputThread(self._process,
+                    self._stdout, self._stderr)
+            self._redir_tty_thread.start()
             self._pid = self._process.pid
         except:
             exception("Error starting the subprocess command ! %r", pargs)
@@ -233,6 +239,9 @@ class DBusTest(Test, dbus.service.Object):
                 if self._returncode is None:
                     self._returncode = utils.kill_process (self._process)
                 self._process = None
+                if self._redir_tty_thread is not None:
+                    self._redir_tty_thread.exit()
+                    self._redir_tty_thread = None
             if not self._returncode is None:
                 info("Process returned %d", self._returncode)
                 self.extraInfo("subprocess-return-code", self._returncode)
@@ -274,6 +283,9 @@ class DBusTest(Test, dbus.service.Object):
         info("subprocess returned %r" % res)
         self._returncode = res
         self._process = None
+        if self._redir_tty_thread is not None:
+            self._redir_tty_thread.abort()
+            self._redir_tty_thread = None
         self._processpollid = 0
         self.stop()
         return False
@@ -334,13 +346,21 @@ class DBusTest(Test, dbus.service.Object):
     # Stdin and stderr setters
     def setStderr(self, stderr):
         self._stderr = stderr
+        if self._process is not None:
+            self._process.stderr = stderr
 
     def setStdout(self, stdout):
         self._stderr = stdout
+        if self._process is not None:
+            self._process.stdout = stdout
 
-    def setStdOutAndErr(self, stderrandout):
-        self._stdout = stderrandout
+    def setStdOutAndErr(self, stderr_out_path):
+        debug("New path: %s", stderr_out_path)
+        self._stdout = stderr_out_path
         self._stderr = self._stdout
+        if self._redir_tty_thread is not None:
+            self._redir_tty_thread.setStdoutFile(stderr_out_path)
+            self._redir_tty_thread.setStderrFile(stderr_out_path)
 
     ## Proxies for remote DBUS calls
     def callRemoteSetUp(self):
