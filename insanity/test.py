@@ -427,11 +427,24 @@ class Test(gobject.GObject):
             self._testtimeoutid = 0
             notimeout = True
         self.validateChecklistItem("no-timeout", notimeout)
+        self._stopMonitors()
         self.emit("stop", self._iteration)
+
         self.iteration_checklist[self._iteration] = self._checklist
         self.iteration_extrainfo[self._iteration] = self._extrainfo
         self.iteration_outputfiles[self._iteration] = self._outputfiles
         self.iteration_success_percentage[self._iteration] = self.getSuccessPercentage()
+
+    def _stopMonitors(self):
+        for monitorinstance in self._monitorinstances:
+            if not monitorinstance.stop():
+                info("Could not stop monitor %s", monitorinstance)
+                continue
+
+            ofiles =  monitorinstance.getIterationOutputFiles(self._iteration)
+            if ofiles:
+                self.iteration_outputfiles.update(ofiles)
+
 
     def start(self):
         """
@@ -446,6 +459,7 @@ class Test(gobject.GObject):
         # Upon first start, we save checklist, etc so they can be copied
         # as base for each successive iteration, while keeping the state
         # acquired in setup
+        self._startMonitors()
         if self._iteration == 1:
             self._base_checklist = self._checklist[:]
             self._base_extrainfo = self._extrainfo.copy()
@@ -466,7 +480,6 @@ class Test(gobject.GObject):
         self._running = True
         self.emit("start", self._iteration)
         self.validateChecklistItem("test-started")
-
         if self._iteration > 1:
             iteraction_checklist = self.getIterationCheckList(self._iteration - 1, False)
             for item, value in self.getFullCheckList().iteritems():
@@ -481,6 +494,13 @@ class Test(gobject.GObject):
         self._testtimeoutid = gobject.timeout_add(self._timeout * 1000,
                                                   self._testTimeoutCb)
         self.test()
+
+    def _startMonitors(self):
+        for monitorinstance in self._monitorinstances:
+            if not monitorinstance.start(self._iteration):
+                info("Could not start monitor %s", monitorinstance)
+                return False
+        return True
 
     def test(self):
         """

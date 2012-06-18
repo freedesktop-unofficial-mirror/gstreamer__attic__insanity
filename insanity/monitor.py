@@ -105,6 +105,8 @@ class Monitor(object):
         self._checklist = {}
         self._extraInfo = {}
         self._outputfiles = {}
+        self._iteration = 0
+        self._iteration_outputfiles = {}
 
     def setUp(self):
         """
@@ -113,6 +115,27 @@ class Monitor(object):
         Returns True if everything went well, else False.
 
         Sub-classes should call their parent-class setUp() before
+        their implementation.
+        """
+        return True
+
+    def start(self, iteration):
+        """
+        Prepare the monitor.
+
+        Returns True if everything went well, else False.
+
+        Sub-classes should call their parent-class start() before
+        their implementation.
+        """
+        self._iteration = iteration
+        return True
+
+    def stop(self):
+        """
+        Stop the monitor.
+
+        Sub-classes should call their parent-class stop() before
         their implementation.
         """
         return True
@@ -160,6 +183,29 @@ class Monitor(object):
         """
         debug("%s : %r", key, value)
         self._extraInfo[key] = value
+
+    def addIterationOutputFile(self, key, value):
+        """
+        Report the location of an output file for a specific iteration
+        """
+        debug("%s : %s", key, value)
+        try:
+            self._iteration_outputfiles[self._iteration][key] = value
+        except KeyError:
+            kv = {}
+            kv[key] = value
+            self._iteration_outputfiles[self._iteration] = kv
+
+    def getIterationOutputFiles(self, iteration):
+        """
+        Return a dictionnary containing the outputfiles in the form of
+        {outputfile-name: /path/to/file} for a specific iteration
+        """
+        try:
+            return self._iteration_outputfiles[iteration]
+        except KeyError:
+            debug("No outputfile for iteration %s", iteration)
+            return None
 
     def setOutputFile(self, key, value):
         """
