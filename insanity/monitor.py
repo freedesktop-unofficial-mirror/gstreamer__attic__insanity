@@ -510,6 +510,12 @@ class TerminalRedirectionMonitor(Monitor):
         "compress-outputfiles":"Whether the resulting output should be compressed (default:True)"
         }
     __monitor_output_files__ = {
+        "glob-stdout-and-stderr-file":"File with both stderr and stdout used between"
+            " setup and first start iteration and last stop and teardown",
+        "glob-stdout-file":"File with stdout used between setup and first start "
+            "iteration and last stop and teardown",
+        "glob-stderr-file":"File with stderr used between setup and first start"
+            " iteration and last stop and teardown",
         "stdout-and-stderr-file":"File with both stderr and stdout",
         "stdout-file":"File with stdout only",
         "stderr-file":"File with stderr only",
@@ -519,6 +525,8 @@ class TerminalRedirectionMonitor(Monitor):
     def setUp(self):
         Monitor.setUp(self)
         self._files, self._paths = self._start()
+        for desc, path in self._paths.iteritems():
+            self.setOutputFile("glob-" + desc, self._compressFile(path, False))
         self._it_files = []
         self._it_paths = []
 
@@ -592,23 +600,41 @@ class TerminalRedirectionMonitor(Monitor):
         Monitor.stop(self)
         for f in self._it_files:
             os.close(f)
-        self._stop(self.addIterationOutputFile, self._it_paths)
+        self._stop(self._it_paths)
 
-    def _stop(self, outputfile_func, paths):
-        for output, path in paths.iteritems():
+    def _compressFile(self, path, for_real=True):
+        """
+        Compress @path if needed and return the new path
+        if @for_real is False, just return the path where
+        the file will land when compressed.
+        """
+        res = path
+        if self.arguments.get("compress", True):
+
+            if not res.endswith(".gz"):
+                res = path + ".gz"
+            if not for_real:
+                return res
+
+            debug("compressing debug log to %s", res)
+            compress_file(path, res)
+            os.remove(path)
+
+        return res
+
+    def _stop(self, paths):
+        for desc, path in paths.iteritems():
             if not os.path.getsize(path):
                 # if log file is empty remove it
                 debug("log file is empty, removing it")
                 os.remove(path)
             else:
-                ##if self.arguments.get("compress", True):
-                    #res = path + ".gz"
-                    #debug("compressing debug log to %s", res)
-                    #compress_file(path, res)
-                    #os.remove(path)
-                    #path = res
-                # else report it
-                outputfile_func(output, path)
+                path = self._compressFile(path)
+                self.addIterationOutputFile(desc, path)
+
+        # Add global outputfiles
+        for desc, path in self.getOutputFiles().iteritems():
+            self.addIterationOutputFile(desc, self._compressFile(path, False))
 
         return True
 
@@ -628,7 +654,9 @@ class TerminalRedirectionMonitor(Monitor):
         Monitor.tearDown(self)
         for f in self._files:
             os.close(f)
-        self._stop(self.setOutputFile, self._paths)
+
+        for desc, path in self._paths.iteritems():
+            self._compressFile(path)
 
 def getMonitorClass(classname):
     return eval(classname)
