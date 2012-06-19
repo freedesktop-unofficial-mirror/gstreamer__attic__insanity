@@ -140,6 +140,13 @@ class Monitor(object):
         """
         return True
 
+    def prepareTearDown(self):
+        """
+        This method is called between the last iteration call of stop and finallize
+        the teardown with tearDown
+        """
+        pass
+
     def tearDown(self):
         """
         Clean up the monitor.

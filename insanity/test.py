@@ -394,6 +394,11 @@ class Test(gobject.GObject):
 
         Your teardown MUST happen in a synchronous fashion.
         """
+
+        # Tell monitors that we are starting the teardown process
+        for instance in self._monitorinstances:
+            instance.prepareTearDown()
+
         self.tearDownVmethod()
 
         stoptime = time.time()
