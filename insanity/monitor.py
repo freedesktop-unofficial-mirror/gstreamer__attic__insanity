@@ -518,12 +518,19 @@ class TerminalRedirectionMonitor(Monitor):
 
     def setUp(self):
         Monitor.setUp(self)
-        desc = self.arguments.get("desc", 'stderrstdout')
+        self._files, self._paths = self._start()
+        self._it_files = []
+        self._it_paths = []
+
+        return True
+
+    def _start(self):
+        desc = self.arguments.get("desc")
         basename = self.arguments.get("outputfile-basename")
         category = self.arguments.get("category")
 
-        self._files = []
-        self._paths = {}
+        files = []
+        paths = {}
         if desc:
             info("No path set, trying to use stdout and stding specific files")
             if not 'stderr' in desc and not 'stdout' in desc:
@@ -543,8 +550,8 @@ class TerminalRedirectionMonitor(Monitor):
                     stderr_file, stderr_path = self.testrun.get_temp_file(nameid=nameid)
 
                 self.test.setStderr(stderr_file)
-                self._files.append(stderr_file)
-                self._paths["stderr-file"] = stderr_path
+                files.append(stderr_file)
+                paths["stderr-file"] = stderr_path
 
             if 'stdout' in desc:
                 if basename is None:
@@ -557,8 +564,8 @@ class TerminalRedirectionMonitor(Monitor):
                     stdout_file, stdout_path = self.testrun.get_temp_file(nameid=nameid)
 
                 self.test.setStdout(stdout_file)
-                self._files.append(stdout_file)
-                self._paths["stdout-file"] = stdout_path
+                files.append(stdout_file)
+                paths["stdout-file"] = stdout_path
         else:
             if basename is None:
                 nameid = "stdoutanderr"
@@ -570,32 +577,58 @@ class TerminalRedirectionMonitor(Monitor):
             else:
                 _file, path = self.testrun.get_temp_file(nameid=nameid)
 
-            self.test.setStdOutAndErr(_file)
-            self._files.append(_file)
-            self._paths["stdout-and-stderr-file"] = path
+            self.test.setStdOutAndErr(path)
+            files.append(_file)
+            paths["stdout-and-stderr-file"] = path
 
+        return files, paths
+
+    def start(self, iteration):
+        Monitor.start(self, iteration)
+        self._it_files, self._it_paths = self._start()
         return True
 
-    def tearDown(self):
-        Monitor.tearDown(self)
-        for f in self._files:
+    def stop(self):
+        Monitor.stop(self)
+        for f in self._it_files:
             os.close(f)
+        self._stop(self.addIterationOutputFile, self._it_paths)
 
-        for output, path in self._paths.iteritems():
+    def _stop(self, outputfile_func, paths):
+        for output, path in paths.iteritems():
             if not os.path.getsize(path):
                 # if log file is empty remove it
                 debug("log file is empty, removing it")
                 os.remove(path)
             else:
-                if self.arguments.get("compress", True):
-                    res = path + ".gz"
-                    debug("compressing debug log to %s", res)
-                    compress_file(path, res)
-                    os.remove(path)
-                    path = res
+                ##if self.arguments.get("compress", True):
+                    #res = path + ".gz"
+                    #debug("compressing debug log to %s", res)
+                    #compress_file(path, res)
+                    #os.remove(path)
+                    #path = res
                 # else report it
-                print "SETTING", output, path
-                self.setOutputFile(output, path)
+                outputfile_func(output, path)
+
+        return True
+
+    def prepareTearDown(self):
+        Monitor.prepareTearDown(self)
+        # We use the same file between setUp and start as
+        # after last stop and the real tearDown
+        for desc, path in self._paths.iteritems():
+            if desc == "stderr-file":
+                self.test.setStderr(path)
+            elif desc == "stdout-file":
+                self.test.setStdout(path)
+            elif desc == "stdout-and-stderr-file":
+                self.test.setStdOutAndErr(path)
+
+    def tearDown(self):
+        Monitor.tearDown(self)
+        for f in self._files:
+            os.close(f)
+        self._stop(self.setOutputFile, self._paths)
 
 def getMonitorClass(classname):
     return eval(classname)
