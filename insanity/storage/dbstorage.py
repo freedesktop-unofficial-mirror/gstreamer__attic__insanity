@@ -962,6 +962,9 @@ class DBStorage(DataStorage, AsyncStorage):
                                       test.getTestName())
         self.__storeTestErrorExplanationDict(tid, test.getErrorExplanations(),
                                              test.getTestName())
+        # store monitor results
+        for monitor in test._monitorinstances:
+            self.__storeMonitor(monitor, tid, self.__testruns[testrun], iteration=iteration)
 
         # finally update the test
         updatestr = "UPDATE test SET resultpercentage=?, parentid=? WHERE id=?"
@@ -992,18 +995,26 @@ class DBStorage(DataStorage, AsyncStorage):
         self.__storeTestExtraInfoDict(mid, extras, monitorname)
         self.__storeTestOutputFileDict(mid, outputfiles, monitorname)
 
-    def __storeMonitor(self, monitor, testid, testrunid):
+    def __storeMonitor(self, monitor, testid, testrunid, iteration=-1):
         debug("monitor:%r:%d", monitor, testid)
         # store monitor
         self.__storeMonitorClassInfo(monitor)
 
         monitortype = self._getTestTypeID(monitor.__monitor_name__)
+        if iteration != -1:
+            outputfiles = monitor.getIterationOutputFiles(iteration)
+        else:
+            outputfiles = monitor.getOutputFiles()
+
+        if outputfiles is None:
+            outputfiles = {}
+
         self.__rawStoreMonitor(testid, monitortype, monitor.__monitor_name__,
                                monitor.getSuccessPercentage(),
                                monitor.getArguments(),
                                monitor.getCheckList(),
                                monitor.getExtraInfo(),
-                               monitor.getOutputFiles(),
+                               outputfiles,
                                testrunid)
 
     def __newTestFinished(self, testrun, test, parentid=None):
@@ -1015,11 +1026,6 @@ class DBStorage(DataStorage, AsyncStorage):
         updatestr = "UPDATE test SET resultpercentage=?, parentid=? WHERE id=?"
         resultpercentage = test.getSuccessPercentage()
         self._ExecuteCommit(updatestr, (resultpercentage, parentid, tid))
-
-        # store monitor results
-        for monitor in test._monitorinstances:
-            self.__storeMonitor(monitor, tid, self.__testruns[testrun])
-        pass
 
 
     def __getTestClassMapping(self, testtype, dictname):
