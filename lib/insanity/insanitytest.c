@@ -2431,8 +2431,6 @@ insanity_test_logv (InsanityTest * test, const char *category,
   g_return_if_fail (INSANITY_IS_TEST (test));
   g_return_if_fail (check_valid_label (category));
 
-  if (!test->priv->standalone)
-    return;
   if (level == INSANITY_LOG_LEVEL_NONE)
     return;
   if (level > find_log_level (test, category))
@@ -2442,9 +2440,10 @@ insanity_test_logv (InsanityTest * test, const char *category,
 
   msg = g_strdup_vprintf (format, args);
 
-  printf ("%" TIME_FORMAT "\t%p\t%s\t%s\t%s:%u\t%s",
+  g_printerr (stderr, "%" TIME_FORMAT "\t%p\t%s\t%s\t%s:%u\t%s",
       TIME_ARGS (dt), g_thread_self (), log_level_names[level], category, file,
       line, msg);
+
   g_free (msg);
 }
 
