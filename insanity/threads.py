@@ -199,6 +199,9 @@ class FileReadingThread(threading.Thread):
         threading.Thread.__init__(self)
         self._fd = fd
         self._queue = queue
+        self._lock = threading.Condition()
+        self._exit = False
+        self._ignore = False
 
     def setQueue(self, queue):
         old_q = self._queue
@@ -208,11 +211,33 @@ class FileReadingThread(threading.Thread):
 
     def run(self):
         '''The body of the tread: read lines and put them on the queue.'''
+        self._exit = False
         while True:
             line =  self._fd.readline()
-            self._queue.put(line)
+            self._lock.acquire()
+            if not self._ignore:
+                self._queue.put(line)
+
             if not line:
+                self._lock.release()
                 break
+
+            if self._exit:
+                self._lock.release()
+                return
+
+            self._lock.release()
+
+    def setIgnore(self, ignore):
+        self._lock.acquire()
+        self._ignore = ignore
+        self._lock.release()
+
+    def exit(self):
+        self._lock.acquire()
+        self._exit = True
+        self._lock.notify()
+        self._lock.release()
 
 class RedirectTerminalOuputThread(threading.Thread):
     """
@@ -225,7 +250,7 @@ class RedirectTerminalOuputThread(threading.Thread):
 
     def __init__(self, process, outfile_path, errfile_path):
         threading.Thread.__init__(self)
-        self._lock = threading.Lock()
+        self._lock = threading.Condition()
         # if set to True, the thread will exit even though
         # there are remaining actions
         self._abort = False
@@ -246,7 +271,7 @@ class RedirectTerminalOuputThread(threading.Thread):
         # We are working with the paths here because the file descriptor
         # are not shared between the various threads
         self.setStdoutFile(outfile_path)
-        self.setStderrFile(outfile_path)
+        self.setStderrFile(errfile_path)
 
     def setStderrFile(self, errfile_path):
         self._lock.acquire()
@@ -256,7 +281,13 @@ class RedirectTerminalOuputThread(threading.Thread):
         self.stderr_reader.setQueue(n_queue)
         self._emptyErrQueue()
         self.stderr_queue = n_queue
-        self._stderrfile = open(errfile_path, "a")
+        if errfile_path:
+            self._stderrfile = open(errfile_path, "a")
+            self.stdout_reader.setIgnore(False)
+            self._lock.notify()
+        else:
+            self.stdout_reader.setIgnore(True)
+            self._stderrfile = None
         self._lock.release()
 
     def setStdoutFile(self, outfile_path):
@@ -268,7 +299,14 @@ class RedirectTerminalOuputThread(threading.Thread):
         self._emptyOutQueue()
         self.stdout_queue = n_queue
 
-        self._stdoutfile = open(outfile_path, "a")
+        if outfile_path:
+            self._stdoutfile = open(outfile_path, "a")
+            self.stdout_reader.setIgnore(False)
+            self._lock.notify()
+        else:
+            self.stdout_reader.setIgnore(True)
+            self._stdoutfile = None
+
         self._lock.release()
 
     def _emptyErrQueue(self):
@@ -283,8 +321,8 @@ class RedirectTerminalOuputThread(threading.Thread):
         #Empty all the queue and make sure the reader thread are done
         self._emptyErrQueue()
         self._emptyOutQueue()
-        self.stdout_reader.join()
-        self.stderr_reader.join()
+        self.stdout_reader.exit()
+        self.stderr_reader.exit()
 
 
     def run(self):
@@ -292,6 +330,9 @@ class RedirectTerminalOuputThread(threading.Thread):
 
         while True:
             self._lock.acquire()
+            if self._stderrfile is None and self._stdoutfile is None:
+                self._lock.wait()
+
             if self._exit:
                 self._lock.release()
 
@@ -324,11 +365,13 @@ class RedirectTerminalOuputThread(threading.Thread):
     def exit(self):
         self._lock.acquire()
         self._exit = True
+        self._lock.notify()
         self._lock.release()
 
     def abort(self):
         self._lock.acquire()
         self._abort = True
+        self._lock.notify()
         self._lock.release()
 
 

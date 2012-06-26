@@ -190,9 +190,7 @@ class DBusTest(Test, dbus.service.Object):
                                              shell = shell,
                                              cwd=cwd)
 
-            self._redir_tty_thread = RedirectTerminalOuputThread(self._process,
-                    self._stdout, self._stderr)
-            self._redir_tty_thread.start()
+            self._ensureOutRedirection()
             self._pid = self._process.pid
         except:
             exception("Error starting the subprocess command ! %r", pargs)
@@ -242,7 +240,19 @@ class DBusTest(Test, dbus.service.Object):
             if not self._returncode is None:
                 info("Process returned %d", self._returncode)
                 self.extraInfo("subprocess-return-code", self._returncode)
+
             self.validateChecklistItem("subprocess-exited-normally", self._returncode == 0)
+
+    def _ensureOutRedirection(self):
+        if self._redir_tty_thread is None and self._process is not None \
+            and (self._stdout or self._stderr):
+            self._redir_tty_thread = RedirectTerminalOuputThread(self._process,
+                    self._stdout, self._stderr)
+            self._redir_tty_thread.start()
+        elif self._redir_tty_thread is not None and \
+            (self._stderr is None and self._stdout is None):
+            self._redir_tty_thread.exit()
+            self._redir_tty_thread = None
 
     def stop(self):
         info("uuid:%s", self.uuid)
@@ -341,18 +351,21 @@ class DBusTest(Test, dbus.service.Object):
     # Stdin and stderr setters
     def setStderr(self, stderr):
         self._stderr = stderr
-        if self._process is not None:
-            self._process.stderr = stderr
+        self._ensureOutRedirection()
+        if self._redir_tty_thread is not None:
+            self._redir_tty_thread.setStderrFile(stderr)
 
     def setStdout(self, stdout):
         self._stderr = stdout
-        if self._process is not None:
-            self._process.stdout = stdout
+        self._ensureOutRedirection()
+        if self._redir_tty_thread is not None:
+            self._redir_tty_thread.setStdoutFile(stdout)
 
     def setStdOutAndErr(self, stderr_out_path):
         debug("New path: %s", stderr_out_path)
         self._stdout = stderr_out_path
         self._stderr = self._stdout
+        self._ensureOutRedirection()
         if self._redir_tty_thread is not None:
             self._redir_tty_thread.setStdoutFile(stderr_out_path)
             self._redir_tty_thread.setStderrFile(stderr_out_path)
