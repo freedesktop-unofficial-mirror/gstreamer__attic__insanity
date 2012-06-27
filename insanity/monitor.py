@@ -507,7 +507,8 @@ class TerminalRedirectionMonitor(Monitor):
         " output file",
         "outputfile-basename":"The category of outputfiles (default='')",
         "category":"The category of outputfiles (default='insanity-output')",
-        "compress-outputfiles":"Whether the resulting output should be compressed (default:True)"
+        "compress-outputfiles":"Whether the resulting output should be compressed (default:True)",
+        "one-file-per-iteration":"Whether it outputs one file per iteration of start/stop or not (default: False)"
         }
     __monitor_output_files__ = {
         "global-stdout-and-stderr-file":"File with both stderr and stdout used between"
@@ -592,11 +593,17 @@ class TerminalRedirectionMonitor(Monitor):
         return files, paths
 
     def start(self, iteration):
+        if not self.arguments.get("one-file-per-iteration", False):
+            return
+
         Monitor.start(self, iteration)
         self._it_files, self._it_paths = self._start()
         return True
 
     def stop(self):
+        if not self.arguments.get("one-file-per-iteration", False):
+            return
+
         Monitor.stop(self)
         for f in self._it_files:
             os.close(f)
@@ -610,7 +617,7 @@ class TerminalRedirectionMonitor(Monitor):
         the file will land when compressed.
         """
         res = path
-        if self.arguments.get("compress", True):
+        if self.arguments.get("compress-outputfiles", True):
 
             if not res.endswith(".gz"):
                 res = path + ".gz"
