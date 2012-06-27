@@ -510,11 +510,11 @@ class TerminalRedirectionMonitor(Monitor):
         "compress-outputfiles":"Whether the resulting output should be compressed (default:True)"
         }
     __monitor_output_files__ = {
-        "glob-stdout-and-stderr-file":"File with both stderr and stdout used between"
+        "global-stdout-and-stderr-file":"File with both stderr and stdout used between"
             " setup and first start iteration and last stop and teardown",
-        "glob-stdout-file":"File with stdout used between setup and first start "
+        "global-stdout-file":"File with stdout used between setup and first start "
             "iteration and last stop and teardown",
-        "glob-stderr-file":"File with stderr used between setup and first start"
+        "global-stderr-file":"File with stderr used between setup and first start"
             " iteration and last stop and teardown",
         "stdout-and-stderr-file":"File with both stderr and stdout",
         "stdout-file":"File with stdout only",
@@ -526,7 +526,7 @@ class TerminalRedirectionMonitor(Monitor):
         Monitor.setUp(self)
         self._files, self._paths = self._start()
         for desc, path in self._paths.iteritems():
-            self.setOutputFile("glob-" + desc, self._compressFile(path, False))
+            self.setOutputFile("global-" + desc, self._compressFile(path, False))
         self._it_files = []
         self._it_paths = []
 
@@ -601,6 +601,7 @@ class TerminalRedirectionMonitor(Monitor):
         for f in self._it_files:
             os.close(f)
         self._stop(self._it_paths)
+        return True
 
     def _compressFile(self, path, for_real=True):
         """
