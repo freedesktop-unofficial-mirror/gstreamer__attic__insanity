@@ -39,7 +39,7 @@ from insanity.generators.filesystem import FileSystemGenerator, URIFileSystemGen
 from insanity.generators.playlist import PlaylistGenerator
 from insanity.generators.external import ExternalGenerator
 from insanity.generators.constant import ConstantGenerator
-from insanity.monitor import ValgrindMemCheckMonitor, GDBMonitor
+from insanity.monitor import ValgrindMemCheckMonitor, GDBMonitor, TerminalRedirectionMonitor
 
 class Client(CommandLineTesterClient):
 
@@ -127,6 +127,16 @@ class OptionParser(optparse.OptionParser):
                         help="add a valgrind suppression file to use",
                         metavar="SUPP",
                         default=None)
+        self.add_option("--terminal-redirection",
+                        dest="redirect_terminal",
+                        action="store_true",
+                        help="Redirects stdout and stderr of the remote instance to a file",
+                        default=None)
+        self.add_option("--compress-output-files",
+                        dest="compress_output",
+                        action="store_true",
+                        help="Whether to compress the output files",
+                        default=False)
 
     def parse_args(self, *a, **kw):
 
@@ -283,6 +293,10 @@ def main():
         if options.valgrind:
             monitors.append((ValgrindMemCheckMonitor,
                              {"suppression-files":options.supp}))
+
+        if options.redirect_terminal:
+            monitors.append((TerminalRedirectionMonitor,
+                             {"compress-outputfiles":options.compress_output}))
 
         test_arguments = {}
         for arg_name, gen_name, gen_args in options.args or []:
