@@ -23,7 +23,7 @@
 
 import sys
 import os
-import optparse
+import argparse
 
 import pygtk
 pygtk.require("2.0")
@@ -41,6 +41,12 @@ from insanity.generators.external import ExternalGenerator
 from insanity.generators.constant import ConstantGenerator
 from insanity.monitor import ValgrindMemCheckMonitor, GDBMonitor, TerminalRedirectionMonitor
 
+generators = {"filesystem": FileSystemGenerator,
+              "urifilesystem": URIFileSystemGenerator,
+              "playlist": PlaylistGenerator,
+              "external": ExternalGenerator,
+              "constant": ConstantGenerator}
+
 class Client(CommandLineTesterClient):
 
     __software_name__ = "insanity-run"
@@ -49,98 +55,90 @@ class Client(CommandLineTesterClient):
 
         CommandLineTesterClient.__init__(self, verbose=verbose, singlerun=singlerun, *a, **kw)
 
-class OptionParser(optparse.OptionParser):
+class ArgumentParser(argparse.ArgumentParser):
 
     def __init__(self):
 
-        optparse.OptionParser.__init__(self)
+        argparse.ArgumentParser.__init__(self)
 
-        self.add_option("-s",
+        self.add_argument("-s",
                         "--storage",
                         dest="storage",
-                        type="string",
                         action="store",
                         help="configure data storage (default: sqlite:testrun.db)",
                         metavar="SPEC",
                         default="sqlite:testrun.db")
-        self.add_option("-o",
+        self.add_argument("-o",
                         "--output",
                         dest="output",
-                        type="string",
                         action="store",
                         help="output directory (default: current)",
                         metavar="DIRECTORY",
                         default=".")
-        self.add_option("-x",
+        self.add_argument("-x",
                         "--xmlpath",
                         dest="xmlpath",
-                        type="string",
                         action="store",
                         help="Path to an XML file describing the tests to run",
                         metavar="XMLPATH",
                         default=None)
-        self.add_option("-T",
+        self.add_argument("-T",
                         "--tests",
                         dest="tests",
-                        type="string",
                         action="store",
                         help="tests directory (default: current)",
                         metavar="TESTS",
                         default=".")
-        self.add_option("-l",
+        self.add_argument("-l",
                         "--substitutes-list",
                         dest="substitutes",
-                        type="string",
                         help="List of words to substitues in the XML file " \
                             "in the form of '-l old:new,old1:new1'",
                         metavar="SUBSTITUTES",
                         default=None)
-        self.add_option("-t",
+        self.add_argument("-t",
                         "--test",
                         dest="test",
-                        type="string",
                         help="test or scenario to run (pass help for list of tests)",
                         metavar="TESTNAME",
                         default=None)
-        self.add_option("-a",
+        self.add_argument("-a",
                         "--args",
                         dest="args",
-                        type="string",
+                        nargs="+",
                         action="store",
                         help="set test arguments (pass help for list of arguments)",
                         metavar="SPEC",
                         default=None)
-        self.add_option("--gdb",
+        self.add_argument("--gdb",
                         dest="gdb",
                         action="store_true",
                         help="Use gdb to gather a stack trace after a crash",
                         default=None)
-        self.add_option("--valgrind",
+        self.add_argument("--valgrind",
                         dest="valgrind",
                         action="store_true",
                         help="run tests on valgrind",
                         default=None)
-        self.add_option("--valgrind-supp",
+        self.add_argument("--valgrind-supp",
                         dest="supp",
-                        type="string",
                         action="append",
                         help="add a valgrind suppression file to use",
                         metavar="SUPP",
                         default=None)
-        self.add_option("--compress-output-files",
+        self.add_argument("--compress-output-files",
                         dest="compress_output",
                         action="store_true",
                         help="Whether to compress the output files",
                         default=False)
 
-    def parse_args(self, *a, **kw):
-
-        options, args = optparse.OptionParser.parse_args(self, *a, **kw)
+    def parse_args(self, a):
+        options = argparse.ArgumentParser.parse_args(self, a)
         options.storage = self.__parse_storage(options.storage)
         options.args = self.__parse_args(options.args)
         options.substitutes = self.__parse_subsitutes(options.substitutes)
 
-        return (options, args,)
+        return options
 
     def __parse_subsitutes(self, value):
         dic = {}
@@ -168,29 +166,33 @@ class OptionParser(optparse.OptionParser):
 
         return (type_, arg,)
 
-    def __parse_args(self, value):
-
-        if value is None:
+    def __parse_args(self, args):
+        if args is None:
             return None
 
-        if value == "help":
+        if args == "help" or "help" in args:
             return "help"
 
         result = []
-        args = value.split(";")
         for arg in args:
             if not ":" in arg:
                 return "help"
-            arg_name = arg.split(":")[0]
-            rest = arg[len(arg_name)+1:]
-            if not ":" in rest:
-                gen_name = rest
-                gen_args = None
+            (arg_name, rest) = arg.split(":", 1)
+
+            found = False
+	    for generator in generators.keys():
+                if rest.startswith(generator + ":"):
+                    found = True
+                    break
+
+            if not found:
+                gen_name = "constant"
+                gen_args = rest
             else:
-                gen_name = rest.split(":")[0]
-                gen_args = rest[len(gen_name)+1:]
+                (gen_name, gen_args) = rest.split(":", 1)
             result.append((arg_name, gen_name, gen_args,))
 
+        print result
         return result
 
 def storage_help():
@@ -227,21 +229,23 @@ def args_help():
 
     # FIXME: Hardcoded list!
     print "Usage for --args (-a) option:"
-    print "  --args [ARG[;ARG1...]]"
-    print "Each ARG in the semicolon separated list takes the following form:"
-    print "  ARGLIST:GENERATOR[:GENERATOR-ARGUMENTS]"
-    print "ARGLIST is either a single argument, or a comma separated list of arguments."
-    print "The generator should generate the appropirate number of arguments."
+    print "  --args ARG ARG1..."
+    print "Each ARG in the space separated list takes the following form:"
+    print "  ARGLIST:[GENERATOR:]GENERATOR-ARGUMENTS"
+    print "ARGLIST is a single argument. If no generator is provided a constant"
+    print "value is used for the argument, otherwise the generator should generate"
+    print "the appropriate number of arguments."
     print "Possible generators and arguments:"
     print "  filesystem:PATH"
     print "  urifilesystem:PATH"
     print "  playlist:PATH"
     print "  external:COMMANDLINE"
     print "Examples:"
+    print "  uri:file://foo/bar"
     print "  uri:urifilesystem:/testclips"
     print "  uri:playlist:/home/user/playlist.txt"
     print "  uri:external:\"find `pwd` | sed -e s:^:file\\\://:\""
-    print "  uri:urifilesystem:/testclips\;videodec,audiodec:playlist:/decoders"
+    print "  uri:urifilesystem:/testclips videodec:playlist:/decoders"
 
 def storage_closed():
     pass
@@ -249,8 +253,8 @@ def storage_closed():
 def main():
 
     error = False
-    parser = OptionParser()
-    (options, args) = parser.parse_args(sys.argv[1:])
+    parser = ArgumentParser()
+    options = parser.parse_args(sys.argv[1:])
 
     if options.storage == "help":
         storage_help()
@@ -294,20 +298,13 @@ def main():
 
         test_arguments = {}
         for arg_name, gen_name, gen_args in options.args or []:
-            # FIXME: Hardcoded list.
-            if gen_name == "filesystem":
-                gen_class = FileSystemGenerator
-            elif gen_name == "urifilesystem":
-                gen_class = URIFileSystemGenerator
-            elif gen_name == "playlist":
-                gen_class = PlaylistGenerator
-            elif gen_name == "external":
-                gen_class = ExternalGenerator
-            elif gen_name == "constant":
-                gen_class = ConstantGenerator
-            else:
+            if not gen_name or not gen_name in generators.keys():
                 args_help()
                 return True
+
+            # FIXME: Hardcoded list.
+	    gen_class = generators[gen_name]
+
             if gen_args:
                 # FIXME:
                 if gen_class == PlaylistGenerator:
