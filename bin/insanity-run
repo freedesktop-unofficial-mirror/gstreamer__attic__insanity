@@ -207,23 +207,7 @@ def test_help():
     all_tests = list(insanity.utils.list_available_tests())
     all_tests.extend(insanity.utils.list_available_scenarios())
     for test in sorted(all_tests):
-        all_args = test.getFullArgumentList()
-        if not all_args:
-            arg_desc = "no arguments"
-        else:
-            arg_desc = ", ".join(sorted(all_args.keys()))
-        print "  %s (%s)" % (test.__test_name__, arg_desc,)
-
-        # This prints the full info, but the output is a bit messy then:
-        ## if all_args:
-        ##     for arg_name, arg_info in sorted(all_args.iteritems()):
-        ##         arg_doc, arg_default = arg_info[:2]
-        ##         if arg_default is not None:
-        ##             print "      %s: %s (default: %r)" % (arg_name, arg_doc, arg_default,)
-        ##         else:
-        ##             print "      %s: %s" % (arg_name, arg_doc,)
-        ## else:
-        ##     print "      (no arguments)"
+        print "  %s (%s)" % (test.__test_name__, test.__test_description__,)
 
 def args_help():
 
