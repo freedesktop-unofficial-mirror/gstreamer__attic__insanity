@@ -193,7 +193,6 @@ class ArgumentParser(argparse.ArgumentParser):
                 (gen_name, gen_args) = rest.split(":", 1)
             result.append((arg_name, gen_name, gen_args,))
 
-        print result
         return result
 
 def storage_help():
