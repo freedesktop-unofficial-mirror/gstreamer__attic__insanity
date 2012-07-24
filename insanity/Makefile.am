@@ -1,6 +1,7 @@
 SUBDIRS=generators storage
 
-modules = __init__ arguments client dbustest dbustools environment generator log monitor profile scenario test testmetadata testrun threads type utils
+dist_modules = __init__ arguments client dbustest dbustools environment generator log monitor profile scenario test testmetadata testrun threads type utils
+modules = $(dist_modules) config
 
 # dummy - this is just for automake to copy py-compile, as it won't do it
 # if it doesn't see anything in a PYTHON variable. KateDJ is Python, but
@@ -28,5 +29,10 @@ uninstall-local:
 	done
 	rmdir "$(DESTDIR)$(pythondir)/insanity"
 
-EXTRA_DIST=$(foreach module, $(modules), $(module).py)
+config.py: config.py.in
+	$(SED) 's;@INSANITY_TEST_DIR@;$(libexecdir)/insanity-1.0;g' config.py.in > config.py
+
+all: config.py
+
+EXTRA_DIST=$(foreach module, $(dist_modules), $(module).py) config.py.in
 

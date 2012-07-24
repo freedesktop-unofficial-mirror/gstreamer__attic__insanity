@@ -28,6 +28,7 @@ import os
 import argparse
 
 import insanity
+import insanity.config
 import insanity.utils
 from insanity.client import CommandLineTesterClient
 from insanity.testrun import TestRun
@@ -42,9 +43,9 @@ class ArgumentParser(argparse.ArgumentParser):
                         "--tests",
                         dest="tests",
                         action="store",
-                        help="tests directory (default: current)",
+                        help="tests directory (default: %s)" % insanity.config.Config.test_dir,
                         metavar="TESTS",
-                        default=".")
+                        default=insanity.config.Config.test_dir)
         self.add_argument("-t",
                         "--test",
                         dest="test",

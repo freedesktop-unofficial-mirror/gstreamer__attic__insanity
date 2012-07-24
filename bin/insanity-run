@@ -30,6 +30,7 @@ pygtk.require("2.0")
 del pygtk
 
 import insanity
+import insanity.config
 
 from insanity.client import CommandLineTesterClient
 from insanity.testrun import TestRun, XmlTestRun
@@ -86,9 +87,9 @@ class ArgumentParser(argparse.ArgumentParser):
                         "--tests",
                         dest="tests",
                         action="store",
-                        help="tests directory (default: current)",
+                        help="tests directory (default: %s)" % insanity.config.Config.test_dir,
                         metavar="TESTS",
-                        default=".")
+                        default=insanity.config.Config.test_dir)
         self.add_argument("-l",
                         "--substitutes-list",
                         dest="substitutes",
@@ -180,7 +181,7 @@ class ArgumentParser(argparse.ArgumentParser):
             (arg_name, rest) = arg.split(":", 1)
 
             found = False
-	    for generator in generators.keys():
+            for generator in generators.keys():
                 if rest.startswith(generator + ":"):
                     found = True
                     break
