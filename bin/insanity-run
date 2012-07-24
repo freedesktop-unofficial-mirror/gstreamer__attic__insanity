@@ -242,12 +242,10 @@ def args_help(test_name):
     args = test.getFullArgumentList()
     for arg in args:
         print "  %s: %s" % (arg, args[arg]["description"])
-        if "full_description" in args[arg]:
-            print "    description: %s" % (args[arg]["full_description"])
+        print "    description: %s" % (args[arg]["full_description"])
         print "    type: %s" % (args[arg]["type"])
         print "    global: %d" % (args[arg]["global"])
-        if "default_value" in args[arg]:
-            print "    default value: %s" % (str(args[arg]["default_value"]))
+        print "    default value: %s" % (str(args[arg]["default_value"]))
         print ""
 
 def storage_closed():
