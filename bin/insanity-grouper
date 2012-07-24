@@ -28,7 +28,6 @@ Finds similarities in a testrun and groups them
 import sys
 import string
 import time
-from optparse import OptionParser
 from insanity.storage.sqlite import SQLiteStorage
 
 ( TRUE_VALIDATED,

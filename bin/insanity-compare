@@ -27,7 +27,6 @@ Compare two testruns
 
 import sys
 import time
-from optparse import OptionParser
 from insanity.storage.sqlite import SQLiteStorage
 from insanity.log import initLogging
 
