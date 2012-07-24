@@ -7,7 +7,8 @@ bin_SCRIPTS=\
   bin/insanity-dumpresults-json \
   bin/insanity-grouper \
   bin/insanity-gtk \
-  bin/insanity-run
+  bin/insanity-run \
+  bin/insanity-inspect
 
 insanitygtkdir = $(datadir)/applications
 insanitygtk_DATA = insanity-gtk.desktop

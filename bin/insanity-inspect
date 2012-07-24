@@ -1,0 +1,128 @@
+#!/usr/bin/env python
+# -*- mode: python; -*-
+#
+# Copyright (c) 2008 Nokia Corporation
+# Copyright (c) 2012 Collabora Ltd.
+#   Author: Sebastian Droege <sebastian.droege@collabora.co.uk>
+#
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU Lesser General Public
+# License as published by the Free Software Foundation; either
+# version 2.1 of the License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public
+# License along with this program; if not, write to the
+# Free Software Foundation, Inc., 59 Temple Place - Suite 330,
+# Boston, MA 02111-1307, USA.
+#
+# Authors: Rene Stadler <rene.stadler@nokia.com>
+#
+
+import sys
+import os
+import argparse
+
+import insanity
+import insanity.utils
+from insanity.client import CommandLineTesterClient
+from insanity.testrun import TestRun
+
+class ArgumentParser(argparse.ArgumentParser):
+
+    def __init__(self):
+
+        argparse.ArgumentParser.__init__(self)
+
+        self.add_argument("-T",
+                        "--tests",
+                        dest="tests",
+                        action="store",
+                        help="tests directory (default: current)",
+                        metavar="TESTS",
+                        default=".")
+        self.add_argument("-t",
+                        "--test",
+                        dest="test",
+                        help="test or scenario to run (pass help for list of tests)",
+                        metavar="TESTNAME",
+                        required=True,
+                        default=None)
+
+    def parse_args(self, a):
+        options = argparse.ArgumentParser.parse_args(self, a)
+
+        return options
+
+def test_help():
+
+    print "Possible arguments for --test (-t):"
+    all_tests = list(insanity.utils.list_available_tests())
+    all_tests.extend(insanity.utils.list_available_scenarios())
+    for test in sorted(all_tests):
+        print "  %s (%s)" % (test.__test_name__, test.__test_description__,)
+
+def main():
+
+    error = False
+    parser = ArgumentParser()
+    options = parser.parse_args(sys.argv[1:])
+
+    insanity.utils.scan_for_tests(options.tests)
+
+    if options.test == "help":
+        test_help()
+        return True
+    elif options.test is None:
+        parser.print_help()
+        return True
+
+    test = insanity.utils.get_test_metadata(options.test)
+
+    print "Test information"
+    print ""
+    print "Test: %s" % test.__test_name__
+    print "Description: %s" % test.__test_description__
+    print "Full Description: %s" % test.__test_full_description__
+    print "Filename: %s" % test.__test_filename__
+
+    print ""
+    print "Arguments:"
+    args = test.getFullArgumentList()
+    for arg in args:
+        print "  %s: %s" % (arg, args[arg]["description"])
+        print "    Description: %s" % (args[arg]["full_description"])
+        print "    Type: %s" % (args[arg]["type"])
+        print "    Global: %d" % (args[arg]["global"])
+        print "    Default value: %s" % (str(args[arg]["default_value"]))
+        print ""
+    
+    print ""
+    print "Output Files:"
+    outputfiles = test.getFullOutputFilesList()
+    for file in outputfiles:
+        print "  %s: %s" % (file, outputfiles[file]["description"])
+        print "    Global: %d" % outputfiles[file]["global"]
+
+    print ""
+    print "Checklist Items:"
+    checklist = test.getFullCheckList()
+    for item in checklist:
+        print "  %s: %s" % (item, checklist[item]["description"])
+        print "    Global: %d" % checklist[item]["global"]
+
+    print ""
+    print "Extra Infos:"
+    infos = test.getFullExtraInfoList()
+    for info in infos:
+        print "  %s: %s" % (info, infos[info])
+
+    return error
+
+if __name__ == "__main__":
+    if main():
+        sys.exit(1)
