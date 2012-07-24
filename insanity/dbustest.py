@@ -50,13 +50,16 @@ class DBusTest(Test, dbus.service.Object):
 
     __test_checklist__ = {
     "dbus-process-spawned": {
-        "description": "The DBus child process spawned itself"
+        "description": "The DBus child process spawned itself",
+        "global": True
     },
     "dbus-process-connected": {
-        "description": "The DBus child process connected properly to the private Bus"
+        "description": "The DBus child process connected properly to the private Bus",
+        "global": True
     },
     "subprocess-exited-normally": {
-        "description": "The subprocess returned a null exit code (success)"
+        "description": "The subprocess returned a null exit code (success)",
+        "global": True
     }
     }
 
@@ -70,7 +73,9 @@ class DBusTest(Test, dbus.service.Object):
     "bus_address": {
         "global": True,
         "description": "The private DBus bus address",
-        "type": "s"
+        "full_description": "The private DBus bus address",
+        "type": "s",
+        "default_value": None
     }
     }
 
