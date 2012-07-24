@@ -78,7 +78,7 @@ class OptionParser(optparse.OptionParser):
                         action="store",
                         help="Path to an XML file describing the tests to run",
                         metavar="XMLPATH",
-                        default=".")
+                        default=None)
         self.add_option("-T",
                         "--tests",
                         dest="tests",
