@@ -209,9 +209,8 @@ def test_help():
     for test in sorted(all_tests):
         print "  %s (%s)" % (test.__test_name__, test.__test_description__,)
 
-def args_help():
+def args_help(test_name):
 
-    # FIXME: Hardcoded list!
     print "Usage for --args (-a) option:"
     print "  --args ARG ARG1..."
     print "Each ARG in the space separated list takes the following form:"
@@ -219,17 +218,37 @@ def args_help():
     print "ARGLIST is a single argument. If no generator is provided a constant"
     print "value is used for the argument, otherwise the generator should generate"
     print "the appropriate number of arguments."
+    print ""
     print "Possible generators and arguments:"
     print "  filesystem:PATH"
     print "  urifilesystem:PATH"
     print "  playlist:PATH"
     print "  external:COMMANDLINE"
+    print ""
     print "Examples:"
     print "  uri:file://foo/bar"
     print "  uri:urifilesystem:/testclips"
     print "  uri:playlist:/home/user/playlist.txt"
     print "  uri:external:\"find `pwd` | sed -e s:^:file\\\://:\""
     print "  uri:urifilesystem:/testclips videodec:playlist:/decoders"
+
+    if not test_name:
+        return
+
+    test = insanity.utils.get_test_metadata(test_name)
+    print ""
+    print "Arguments for test %s:" % test_name
+
+    args = test.getFullArgumentList()
+    for arg in args:
+        print "  %s: %s" % (arg, args[arg]["description"])
+        if "full_description" in args[arg]:
+            print "    description: %s" % (args[arg]["full_description"])
+        print "    type: %s" % (args[arg]["type"])
+        print "    global: %d" % (args[arg]["global"])
+        if "default_value" in args[arg]:
+            print "    default value: %s" % (str(args[arg]["default_value"]))
+        print ""
 
 def storage_closed():
     pass
@@ -245,7 +264,7 @@ def main():
         return True
 
     if options.args == "help":
-        args_help()
+        args_help(options.test)
         return True
 
     insanity.utils.scan_for_tests(options.tests)
@@ -283,11 +302,11 @@ def main():
         test_arguments = {}
         for arg_name, gen_name, gen_args in options.args or []:
             if not gen_name or not gen_name in generators.keys():
-                args_help()
+                args_help(options.test)
                 return True
 
             # FIXME: Hardcoded list.
-	    gen_class = generators[gen_name]
+            gen_class = generators[gen_name]
 
             if gen_args:
                 # FIXME:
