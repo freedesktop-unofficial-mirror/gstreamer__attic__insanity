@@ -116,6 +116,8 @@ void insanity_test_log (InsanityTest *test, const char *category, InsanityLogLev
   insanity_test_log(test, category, loglevel, __FILE__, __LINE__, format, ##args)
 #define insanity_test_printf(test,format,args...) \
   INSANITY_LOG(test, "default", INSANITY_LOG_LEVEL_DEBUG, format, ##args)
+#define insanity_test_report(test,format,args...) \
+  INSANITY_LOG(test, "report", INSANITY_LOG_LEVEL_INFO, format, ##args)
 
 gboolean insanity_test_run(InsanityTest *test, int *argc, char ***argv);
 

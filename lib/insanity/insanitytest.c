@@ -1734,7 +1734,7 @@ insanity_report_failed_tests (InsanityTest * test, gboolean verbose)
   while (g_hash_table_iter_next (&i, &label, &value)) {
     gboolean success = (value != NULL);
     if (verbose)
-      insanity_test_printf (test, "%s: %s\n", (const char *) label,
+      insanity_test_report (test, "%s: %s\n", (const char *) label,
           success ? "PASS" : "FAIL");
     if (!success)
       failed++;
@@ -1746,13 +1746,13 @@ insanity_report_failed_tests (InsanityTest * test, gboolean verbose)
     if (!g_hash_table_lookup_extended (test->priv->checklist_results, label,
             NULL, NULL)) {
       if (verbose)
-        insanity_test_printf (test, "%s: SKIP\n", (const char *) label);
+        insanity_test_report (test, "%s: SKIP\n", (const char *) label);
       ++failed;
     }
   }
 
   if (verbose)
-    insanity_test_printf (test, "%u/%u failed tests\n", failed,
+    insanity_test_report (test, "%u/%u failed tests\n", failed,
         g_hash_table_size (test->priv->test_checklist));
 
   return failed;
